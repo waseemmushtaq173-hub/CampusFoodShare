@@ -1,35 +1,19 @@
-/**
- * src/storage/db.js
- * JSON persistent data store (with automatic expiry sweeping for listings).
- * Readily extensible to MongoDB via Mongoose when MONGODB_URI is configured.
- */
-
 const fs = require('fs');
 const path = require('path');
 const { LISTING_STATUS } = require('../models/schemas');
-
 const DB_FILE_PATH = path.join(__dirname, '../../data/db.json');
 
 function ensureDbFile() {
   const dir = path.dirname(DB_FILE_PATH);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   if (!fs.existsSync(DB_FILE_PATH)) {
-    const initialData = {
-      donors: [],
-      ngos: [],
-      listings: [],
-      claims: [],
-    };
-    fs.writeFileSync(DB_FILE_PATH, JSON.stringify(initialData, null, 2), 'utf-8');
+    fs.writeFileSync(DB_FILE_PATH, JSON.stringify({ users: [], donors: [], ngos: [], listings: [], claims: [], notifications: [], feedbacks: [] }, null, 2), 'utf-8');
   }
 }
 
 function readDb() {
   ensureDbFile();
-  const raw = fs.readFileSync(DB_FILE_PATH, 'utf-8');
-  return JSON.parse(raw);
+  return JSON.parse(fs.readFileSync(DB_FILE_PATH, 'utf-8'));
 }
 
 function writeDb(data) {
@@ -37,39 +21,37 @@ function writeDb(data) {
   fs.writeFileSync(DB_FILE_PATH, JSON.stringify(data, null, 2), 'utf-8');
 }
 
-/**
- * Automatically transitions any 'posted' listing whose 'useBefore' timestamp has passed
- * into the 'expired' state (Objective 4).
- */
+function addNotification(db, { type, title, message, channel = 'In-App + SMS/Telegram Alert' }) {
+  if (!db.notifications) db.notifications = [];
+  db.notifications.unshift({
+    id: 'ntf-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+    type,
+    title,
+    message,
+    channel,
+    createdAt: new Date().toISOString(),
+  });
+  db.notifications = db.notifications.slice(0, 30);
+}
+
 function sweepExpiredListings() {
   const db = readDb();
   const now = Date.now();
   let updatedCount = 0;
-
-  db.listings = db.listings.map((listing) => {
-    if (
-      listing.status === LISTING_STATUS.POSTED &&
-      new Date(listing.useBefore).getTime() <= now
-    ) {
+  db.listings = (db.listings || []).map((listing) => {
+    if (listing.status === LISTING_STATUS.POSTED && new Date(listing.useBefore).getTime() <= now) {
       updatedCount++;
-      return {
-        ...listing,
-        status: LISTING_STATUS.EXPIRED,
-        expiredAt: new Date().toISOString(),
-      };
+      addNotification(db, {
+        type: 'EXPIRY_AUTO_SWEEP',
+        title: 'Listing Auto-Expired',
+        message: `"${listing.foodTitle}" from ${listing.donorName} passed its Use-Before window and was removed.`,
+      });
+      return { ...listing, status: LISTING_STATUS.EXPIRED, expiredAt: new Date().toISOString() };
     }
     return listing;
   });
-
-  if (updatedCount > 0) {
-    writeDb(db);
-  }
+  if (updatedCount > 0) writeDb(db);
   return { db, expiredSwept: updatedCount };
 }
 
-module.exports = {
-  readDb,
-  writeDb,
-  sweepExpiredListings,
-  DB_FILE_PATH,
-};
+module.exports = { readDb, writeDb, sweepExpiredListings, addNotification, DB_FILE_PATH };

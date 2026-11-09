@@ -1,23 +1,12 @@
-/**
- * server.js
- * Express Backend Server for CampusFoodShare
- * Implements REST APIs for Donors, NGOs, Claims, Expiry Cleanup,
- * Haversine Distance Matching, Priority Queue Ranking, and SDG Impact Metrics.
- */
-
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-
 const { calculateHaversineDistance } = require('./src/utils/haversine');
 const { rankListingsForNGO } = require('./src/utils/priorityQueue');
-const {
-  LISTING_STATUS,
-  FOOD_SAFETY_CHECKLIST,
-  validateListingPayload,
-} = require('./src/models/schemas');
-const { readDb, writeDb, sweepExpiredListings } = require('./src/storage/db');
+const { analyzeFoodFreshness } = require('./src/utils/aiFoodDetector');
+const { LISTING_STATUS, FOOD_SAFETY_CHECKLIST, validateListingPayload } = require('./src/models/schemas');
+const { readDb, writeDb, sweepExpiredListings, addNotification } = require('./src/storage/db');
 const { generateSeedData } = require('./src/seed/seedFaker');
 
 const app = express();
@@ -27,68 +16,39 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Ensure initial seed data exists on first boot
 const initialDb = readDb();
 if (!initialDb.listings || initialDb.listings.length === 0) {
   writeDb(generateSeedData());
 }
 
-/**
- * GET /api/checklist
- * Objective 4: Share basic food-safety checklist with donors
- */
-app.get('/api/checklist', (req, res) => {
-  res.json({ checklist: FOOD_SAFETY_CHECKLIST });
-});
+app.get('/api/checklist', (req, res) => res.json({ checklist: FOOD_SAFETY_CHECKLIST }));
+app.post('/api/ai-detect', (req, res) => res.json(analyzeFoodFreshness(req.body || {})));
 
-/**
- * GET /api/listings
- * Objective 2 & 4: Automatically sweep expired listings, then return listings
- * ranked by Priority Queue (soonest expiry + Haversine distance from NGO).
- */
 app.get('/api/listings', (req, res) => {
-  const { lat, lng, status, includeExpired } = req.query;
+  const { lat, lng, status, foodType, search, includeExpired } = req.query;
   const { db, expiredSwept } = sweepExpiredListings();
-
   const ngoLat = lat ? parseFloat(lat) : 12.9716;
   const ngoLng = lng ? parseFloat(lng) : 77.5946;
 
-  let filtered = db.listings;
-  if (status) {
-    filtered = filtered.filter((item) => item.status === status);
-  } else if (includeExpired !== 'true') {
-    filtered = filtered.filter((item) => item.status !== LISTING_STATUS.EXPIRED);
+  let filtered = db.listings || [];
+  if (status) filtered = filtered.filter((i) => i.status === status);
+  else if (includeExpired !== 'true') filtered = filtered.filter((i) => i.status !== LISTING_STATUS.EXPIRED);
+  if (foodType) filtered = filtered.filter((i) => i.foodType === foodType);
+  if (search && String(search).trim() !== '') {
+    const q = String(search).toLowerCase().trim();
+    filtered = filtered.filter((i) => i.foodTitle.toLowerCase().includes(q) || i.donorName.toLowerCase().includes(q) || i.location.address.toLowerCase().includes(q));
   }
-
-  const rankedListings = rankListingsForNGO(
-    filtered,
-    ngoLat,
-    ngoLng,
-    calculateHaversineDistance
-  );
-
-  res.json({
-    expiredSwept,
-    referencePoint: { lat: ngoLat, lng: ngoLng },
-    count: rankedListings.length,
-    listings: rankedListings,
-  });
+  const rankedListings = rankListingsForNGO(filtered, ngoLat, ngoLng, calculateHaversineDistance);
+  res.json({ expiredSwept, referencePoint: { lat: ngoLat, lng: ngoLng }, count: rankedListings.length, listings: rankedListings });
 });
 
-/**
- * POST /api/listings
- * Objective 1: Let donors post surplus food with type, quantity, pickup location,
- * "use before" time, and verified food-safety checklist.
- */
 app.post('/api/listings', (req, res) => {
   const errors = validateListingPayload(req.body);
-  if (errors.length > 0) {
-    return res.status(400).json({ error: 'Validation failed', details: errors });
-  }
-
+  if (errors.length > 0) return res.status(400).json({ error: 'Validation failed', details: errors });
   const db = readDb();
   const quantityMeals = Number(req.body.quantityMeals);
   const weightKg = Number(req.body.weightKg || (quantityMeals * 0.35).toFixed(1));
+  const aiAnalysis = analyzeFoodFreshness({ foodTitle: req.body.foodTitle, hoursSinceCooked: 1 });
 
   const newListing = {
     id: 'lst-' + Date.now(),
@@ -99,200 +59,97 @@ app.post('/api/listings', (req, res) => {
     foodType: req.body.foodType,
     quantityMeals,
     weightKg,
-    preparedAt: req.body.preparedAt || new Date().toISOString(),
+    aiFreshnessScore: req.body.aiFreshnessScore || aiAnalysis.freshnessScore,
+    aiFreshnessStatus: req.body.aiFreshnessStatus || aiAnalysis.freshnessStatus,
+    preparedAt: new Date().toISOString(),
     useBefore: new Date(req.body.useBefore).toISOString(),
     status: LISTING_STATUS.POSTED,
     safetyChecklistConfirmed: Boolean(req.body.safetyChecklistConfirmed),
     checklistItems: req.body.checklistItems || [],
-    location: {
-      address: req.body.location.address || 'Campus Pickup Point',
-      lat: Number(req.body.location.lat),
-      lng: Number(req.body.location.lng),
-    },
+    location: { address: req.body.location.address || 'Campus Pickup Point', lat: Number(req.body.location.lat), lng: Number(req.body.location.lng) },
     claimedBy: null,
+    feedback: null,
     createdAt: new Date().toISOString(),
   };
-
   db.listings.unshift(newListing);
+  addNotification(db, { type: 'NEW_LISTING', title: 'New Surplus Food Posted', message: `${newListing.donorName} posted ${newListing.quantityMeals} ${newListing.foodType} meals ("${newListing.foodTitle}").` });
   writeDb(db);
-
-  res.status(201).json({
-    message: 'Surplus food listing posted successfully',
-    listing: newListing,
-  });
+  res.status(201).json({ message: 'Surplus food listing posted', listing: newListing });
 });
 
-/**
- * POST /api/listings/:id/claim
- * Objective 3: Let NGOs claim a listing and track pickup status.
- */
 app.post('/api/listings/:id/claim', (req, res) => {
   const { id } = req.params;
   const { ngoName, volunteerName, volunteerPhone } = req.body;
-
-  if (!ngoName || !volunteerName) {
-    return res
-      .status(400)
-      .json({ error: 'ngoName and volunteerName are required to claim a listing' });
-  }
-
+  if (!ngoName || !volunteerName) return res.status(400).json({ error: 'ngoName and volunteerName required' });
   const { db } = sweepExpiredListings();
-  const listing = db.listings.find((item) => item.id === id);
+  const listing = db.listings.find((i) => i.id === id);
+  if (!listing) return res.status(404).json({ error: 'Listing not found' });
+  if (listing.status !== LISTING_STATUS.POSTED) return res.status(409).json({ error: `Cannot claim listing in '${listing.status}' status` });
 
-  if (!listing) {
-    return res.status(404).json({ error: 'Listing not found' });
-  }
-  if (listing.status !== LISTING_STATUS.POSTED) {
-    return res.status(409).json({
-      error: `Listing cannot be claimed because its current status is '${listing.status}'`,
-    });
-  }
-
-  const claimedAt = new Date().toISOString();
   listing.status = LISTING_STATUS.CLAIMED;
-  listing.claimedBy = {
-    ngoName: ngoName.trim(),
-    volunteerName: volunteerName.trim(),
-    volunteerPhone: volunteerPhone || '+91 99000 00000',
-    claimedAt,
-    collectedAt: null,
-  };
-
-  const claimRecord = {
-    id: 'clm-' + Date.now(),
-    listingId: listing.id,
-    ngoName: ngoName.trim(),
-    volunteerName: volunteerName.trim(),
-    volunteerPhone: volunteerPhone || '+91 99000 00000',
-    status: LISTING_STATUS.CLAIMED,
-    claimedAt,
-    collectedAt: null,
-  };
-
-  db.claims.unshift(claimRecord);
+  listing.claimedBy = { ngoName: ngoName.trim(), volunteerName: volunteerName.trim(), volunteerPhone: volunteerPhone || '+91 99000 00000', claimedAt: new Date().toISOString(), collectedAt: null };
+  addNotification(db, { type: 'CLAIMED', title: 'Listing Claimed for Pickup', message: `${ngoName} (Volunteer: ${volunteerName}) claimed "${listing.foodTitle}".` });
   writeDb(db);
-
-  res.json({
-    message: 'Listing claimed by NGO successfully',
-    listing,
-    claim: claimRecord,
-  });
+  res.json({ message: 'Listing claimed', listing });
 });
 
-/**
- * POST /api/listings/:id/collect
- * Objective 3: Mark a claimed listing as collected once picked up by NGO/volunteer.
- */
 app.post('/api/listings/:id/collect', (req, res) => {
   const { id } = req.params;
   const db = readDb();
-  const listing = db.listings.find((item) => item.id === id);
+  const listing = db.listings.find((i) => i.id === id);
+  if (!listing) return res.status(404).json({ error: 'Listing not found' });
+  if (listing.status !== LISTING_STATUS.CLAIMED) return res.status(409).json({ error: 'Only claimed listings can be collected' });
 
-  if (!listing) {
-    return res.status(404).json({ error: 'Listing not found' });
-  }
-  if (listing.status !== LISTING_STATUS.CLAIMED) {
-    return res.status(409).json({
-      error: `Only 'claimed' listings can be marked as collected (current: '${listing.status}')`,
-    });
-  }
-
-  const collectedAt = new Date().toISOString();
   listing.status = LISTING_STATUS.COLLECTED;
-  if (listing.claimedBy) {
-    listing.claimedBy.collectedAt = collectedAt;
-  }
-
-  const claimRecord = db.claims.find((c) => c.listingId === id);
-  if (claimRecord) {
-    claimRecord.status = LISTING_STATUS.COLLECTED;
-    claimRecord.collectedAt = collectedAt;
-  }
-
+  if (listing.claimedBy) listing.claimedBy.collectedAt = new Date().toISOString();
+  addNotification(db, { type: 'COLLECTED', title: 'Food Rescued & Collected!', message: `${listing.quantityMeals} meals ("${listing.foodTitle}") collected by ${listing.claimedBy?.ngoName || 'NGO'}.` });
   writeDb(db);
-
-  res.json({
-    message: 'Food pickup confirmed and marked as collected!',
-    listing,
-  });
+  res.json({ message: 'Food collected', listing });
 });
 
-/**
- * GET /api/impact
- * Objective 5: Impact dashboard of meals saved and food rescued,
- * supporting SDG 2 (Zero Hunger), SDG 11 (Sustainable Cities) & SDG 12 (Responsible Consumption).
- */
+app.post('/api/listings/:id/feedback', (req, res) => {
+  const { id } = req.params;
+  const { rating, comment, ratedBy } = req.body;
+  const db = readDb();
+  const listing = db.listings.find((i) => i.id === id);
+  if (!listing) return res.status(404).json({ error: 'Listing not found' });
+  const fb = { id: 'fb-' + Date.now(), listingId: id, donorName: listing.donorName, ngoName: ratedBy || listing.claimedBy?.ngoName || 'Verified NGO', rating: Math.min(5, Math.max(1, Number(rating) || 5)), comment: comment || 'Smooth pickup and great quality.', createdAt: new Date().toISOString() };
+  listing.feedback = fb;
+  writeDb(db);
+  res.json({ message: 'Feedback saved', feedback: fb });
+});
+
 app.get('/api/impact', (req, res) => {
   const { db } = sweepExpiredListings();
-
-  const collectedListings = db.listings.filter(
-    (l) => l.status === LISTING_STATUS.COLLECTED
-  );
-  const claimedListings = db.listings.filter(
-    (l) => l.status === LISTING_STATUS.CLAIMED
-  );
-  const activeListings = db.listings.filter(
-    (l) => l.status === LISTING_STATUS.POSTED
-  );
-  const expiredListings = db.listings.filter(
-    (l) => l.status === LISTING_STATUS.EXPIRED
-  );
-
-  const totalMealsSaved = collectedListings.reduce(
-    (sum, item) => sum + Number(item.quantityMeals || 0),
-    0
-  );
-  const mealsInTransit = claimedListings.reduce(
-    (sum, item) => sum + Number(item.quantityMeals || 0),
-    0
-  );
-  const totalFoodRescuedKg = Number(
-    collectedListings
-      .reduce((sum, item) => sum + Number(item.weightKg || 0), 0)
-      .toFixed(1)
-  );
-
-  // Environmental calculation: 1 kg of food waste prevented avoids ~2.5 kg CO2e
+  const collected = db.listings.filter((l) => l.status === LISTING_STATUS.COLLECTED);
+  const claimed = db.listings.filter((l) => l.status === LISTING_STATUS.CLAIMED);
+  const active = db.listings.filter((l) => l.status === LISTING_STATUS.POSTED);
+  const expired = db.listings.filter((l) => l.status === LISTING_STATUS.EXPIRED);
+  const totalMealsSaved = collected.reduce((s, i) => s + Number(i.quantityMeals || 0), 0);
+  const mealsInTransit = claimed.reduce((s, i) => s + Number(i.quantityMeals || 0), 0);
+  const totalFoodRescuedKg = Number(collected.reduce((s, i) => s + Number(i.weightKg || 0), 0).toFixed(1));
   const co2PreventedKg = Number((totalFoodRescuedKg * 2.5).toFixed(1));
+  const rated = collected.filter((l) => l.feedback?.rating);
+  const avgRating = rated.length > 0 ? Number((rated.reduce((s, l) => s + Number(l.feedback.rating), 0) / rated.length).toFixed(1)) : 5.0;
 
   res.json({
-    metrics: {
-      totalMealsSaved,
-      mealsInTransit,
-      totalFoodRescuedKg,
-      co2PreventedKg,
-      activeListingsCount: activeListings.length,
-      claimedListingsCount: claimedListings.length,
-      collectedListingsCount: collectedListings.length,
-      expiredListingsCount: expiredListings.length,
-    },
-    sdgAlignment: [
-      {
-        sdg: 'SDG 2: Zero Hunger',
-        metric: `${totalMealsSaved} nutritious meals delivered to nearby shelters & communities`,
-      },
-      {
-        sdg: 'SDG 11: Sustainable Cities & Communities',
-        metric: `${collectedListings.length + claimedListings.length} campus-to-community hyperlocal food rescue pickups`,
-      },
-      {
-        sdg: 'SDG 12: Responsible Consumption & Production',
-        metric: `${totalFoodRescuedKg} kg of edible food diverted from landfills (${co2PreventedKg} kg CO2e avoided)`,
-      },
-    ],
+    metrics: { totalMealsSaved, mealsInTransit, totalFoodRescuedKg, co2PreventedKg, avgRating, activeListingsCount: active.length, claimedListingsCount: claimed.length, collectedListingsCount: collected.length, expiredListingsCount: expired.length },
+    notifications: (db.notifications || []).slice(0, 10),
+    users: db.users || [],
   });
 });
 
-/**
- * POST /api/reset-demo
- * Resets database to fresh Faker/demo seed state for live presentation/testing
- */
+app.delete('/api/listings/:id', (req, res) => {
+  const db = readDb();
+  db.listings = db.listings.filter((i) => i.id !== req.params.id);
+  writeDb(db);
+  res.json({ message: 'Deleted by Admin' });
+});
+
 app.post('/api/reset-demo', (req, res) => {
   const seeded = generateSeedData();
   writeDb(seeded);
-  res.json({ message: 'Demo database reset to fresh campus seed state', data: seeded });
+  res.json({ message: 'Demo reset', data: seeded });
 });
 
-app.listen(PORT, () => {
-  console.log(`CampusFoodShare server running at http://localhost:${PORT}`);
-});
+app.listen(PORT, () => console.log(`CampusFoodShare running on http://localhost:${PORT}`));

@@ -1,68 +1,40 @@
 {
-  "donors": [
+  "users": [
     {
-      "id": "donor-1",
-      "name": "Block-A Boys Hostel Mess",
-      "organizationType": "Hostel Mess",
-      "contactPerson": "Ramesh Kulkarni",
+      "id": "usr-admin-1",
+      "name": "Waseem Mushtaq Mir (Admin)",
+      "role": "admin",
+      "organization": "CampusFoodShare CSE Control Center",
+      "phone": "+91 60065 61291",
+      "verified": true
+    },
+    {
+      "id": "usr-donor-1",
+      "name": "Ramesh Kulkarni (Mess Warden)",
+      "role": "donor",
+      "organization": "Block-A Boys Hostel Mess",
       "phone": "+91 98450 11223",
-      "location": {
-        "address": "Main Campus North Gate, Bengaluru",
-        "lat": 12.9738,
-        "lng": 77.5935
-      }
+      "verified": true
     },
     {
-      "id": "donor-2",
-      "name": "Central Engineering Canteen",
-      "organizationType": "Campus Canteen",
-      "contactPerson": "Annapurna Devi",
-      "phone": "+91 98450 44556",
-      "location": {
-        "address": "Academic Block C, Bengaluru",
-        "lat": 12.9698,
-        "lng": 77.5968
-      }
-    },
-    {
-      "id": "donor-3",
-      "name": "IEEE Annual Tech Symposium Catering",
-      "organizationType": "Campus Event",
-      "contactPerson": "Prof. विक्रम Rao",
-      "phone": "+91 98450 77889",
-      "location": {
-        "address": "Main Auditorium Lawn, Bengaluru",
-        "lat": 12.9752,
-        "lng": 77.5991
-      }
-    }
-  ],
-  "ngos": [
-    {
-      "id": "ngo-1",
-      "name": "Robin Hood Army - Campus Chapter",
-      "registrationNo": "NGO-KA-2021-889",
-      "contactPerson": "Sneha Nair",
+      "id": "usr-ngo-1",
+      "name": "Sneha Nair (NGO Coordinator)",
+      "role": "ngo",
+      "organization": "Robin Hood Army - Campus Chapter",
       "phone": "+91 99001 22334",
-      "location": {
-        "address": "Indiranagar Community Hub, Bengaluru",
-        "lat": 12.9784,
-        "lng": 77.605
-      }
+      "verified": true
     },
     {
-      "id": "ngo-2",
-      "name": "Akshaya Seva Trust & Shelter",
-      "registrationNo": "NGO-KA-2019-312",
-      "contactPerson": "Mohammed Irfan",
-      "phone": "+91 99001 55667",
-      "location": {
-        "address": "Shivajinagar Relief Center, Bengaluru",
-        "lat": 12.9815,
-        "lng": 77.6012
-      }
+      "id": "usr-vol-1",
+      "name": "Harsha S (Lead Volunteer)",
+      "role": "volunteer",
+      "organization": "Campus NSS & Robin Hood Volunteer Wing",
+      "phone": "+91 99001 44556",
+      "verified": true
     }
   ],
+  "donors": [],
+  "ngos": [],
   "listings": [
     {
       "id": "lst-101",
@@ -73,8 +45,10 @@
       "foodType": "Veg",
       "quantityMeals": 65,
       "weightKg": 22.5,
-      "preparedAt": "2026-11-09T02:50:22.484Z",
-      "useBefore": "2026-11-09T06:32:22.484Z",
+      "aiFreshnessScore": 95,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-09T03:53:25.404Z",
+      "useBefore": "2026-11-09T07:23:25.404Z",
       "status": "posted",
       "safetyChecklistConfirmed": true,
       "checklistItems": [
@@ -89,7 +63,8 @@
         "lng": 77.5935
       },
       "claimedBy": null,
-      "createdAt": "2026-11-09T03:20:22.484Z"
+      "feedback": null,
+      "createdAt": "2026-11-09T04:05:25.404Z"
     },
     {
       "id": "lst-102",
@@ -100,8 +75,10 @@
       "foodType": "Veg",
       "quantityMeals": 45,
       "weightKg": 15.8,
-      "preparedAt": "2026-11-09T02:20:22.484Z",
-      "useBefore": "2026-11-09T05:32:22.484Z",
+      "aiFreshnessScore": 92,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-09T03:17:25.404Z",
+      "useBefore": "2026-11-09T06:17:25.404Z",
       "status": "posted",
       "safetyChecklistConfirmed": true,
       "checklistItems": [
@@ -116,7 +93,8 @@
         "lng": 77.5968
       },
       "claimedBy": null,
-      "createdAt": "2026-11-09T03:32:22.484Z"
+      "feedback": null,
+      "createdAt": "2026-11-09T04:17:25.404Z"
     },
     {
       "id": "lst-103",
@@ -127,9 +105,11 @@
       "foodType": "Veg",
       "quantityMeals": 90,
       "weightKg": 31.5,
-      "preparedAt": "2026-11-09T01:50:22.484Z",
-      "useBefore": "2026-11-09T07:20:22.484Z",
-      "status": "collected",
+      "aiFreshnessScore": 96,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-09T03:05:25.404Z",
+      "useBefore": "2026-11-09T08:05:25.404Z",
+      "status": "claimed",
       "safetyChecklistConfirmed": true,
       "checklistItems": [
         "temp_control",
@@ -144,12 +124,13 @@
       },
       "claimedBy": {
         "ngoName": "Robin Hood Army - Campus Chapter",
-        "volunteerName": "Sneha Nair",
-        "volunteerPhone": "+91 99001 22334",
-        "claimedAt": "2026-11-09T04:02:22.484Z",
-        "collectedAt": "2026-11-09T04:21:38.505Z"
+        "volunteerName": "Harsha S",
+        "volunteerPhone": "+91 99001 44556",
+        "claimedAt": "2026-11-09T04:47:25.404Z",
+        "collectedAt": null
       },
-      "createdAt": "2026-11-09T03:08:22.484Z"
+      "feedback": null,
+      "createdAt": "2026-11-09T03:53:25.404Z"
     },
     {
       "id": "lst-104",
@@ -160,8 +141,10 @@
       "foodType": "Veg",
       "quantityMeals": 80,
       "weightKg": 28,
-      "preparedAt": "2026-11-08T22:20:22.484Z",
-      "useBefore": "2026-11-09T03:20:22.484Z",
+      "aiFreshnessScore": 94,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-08T23:05:25.404Z",
+      "useBefore": "2026-11-09T04:05:25.404Z",
       "status": "collected",
       "safetyChecklistConfirmed": true,
       "checklistItems": [
@@ -179,75 +162,35 @@
         "ngoName": "Akshaya Seva Trust & Shelter",
         "volunteerName": "Mohammed Irfan",
         "volunteerPhone": "+91 99001 55667",
-        "claimedAt": "2026-11-09T00:50:22.484Z",
-        "collectedAt": "2026-11-09T01:32:22.484Z"
+        "claimedAt": "2026-11-09T01:35:25.404Z",
+        "collectedAt": "2026-11-09T02:17:25.404Z"
       },
-      "createdAt": "2026-11-08T23:20:22.484Z"
-    },
-    {
-      "id": "lst-105",
-      "donorId": "donor-2",
-      "donorName": "MBA Seminar Hall Refreshments",
-      "donorPhone": "+91 98450 33441",
-      "foodTitle": "Chicken Curry & Ghee Rice Tray",
-      "foodType": "Non-Veg",
-      "quantityMeals": 55,
-      "weightKg": 19.2,
-      "preparedAt": "2026-11-08T20:20:22.484Z",
-      "useBefore": "2026-11-09T01:20:22.484Z",
-      "status": "collected",
-      "safetyChecklistConfirmed": true,
-      "checklistItems": [
-        "temp_control",
-        "hygienic_containers",
-        "no_spoilage",
-        "allergen_labeled"
-      ],
-      "location": {
-        "address": "Management Block Ground Floor",
-        "lat": 12.9765,
-        "lng": 77.591
+      "feedback": {
+        "rating": 5,
+        "comment": "Hygienically packed and still warm upon pickup.",
+        "ratedBy": "Akshaya Seva Trust & Shelter"
       },
-      "claimedBy": {
-        "ngoName": "Robin Hood Army - Campus Chapter",
-        "volunteerName": "Karthik Raj",
-        "volunteerPhone": "+91 99001 88776",
-        "claimedAt": "2026-11-08T22:50:22.484Z",
-        "collectedAt": "2026-11-08T23:38:22.484Z"
-      },
-      "createdAt": "2026-11-08T21:20:22.484Z"
+      "createdAt": "2026-11-09T00:05:25.404Z"
     }
   ],
-  "claims": [
+  "claims": [],
+  "notifications": [
     {
-      "id": "clm-201",
-      "listingId": "lst-103",
-      "ngoName": "Robin Hood Army - Campus Chapter",
-      "volunteerName": "Sneha Nair",
-      "volunteerPhone": "+91 99001 22334",
-      "status": "collected",
-      "claimedAt": "2026-11-09T04:02:22.484Z",
-      "collectedAt": "2026-11-09T04:21:38.505Z"
+      "id": "ntf-1",
+      "type": "NEW_LISTING",
+      "title": "Surplus Alert Broadcasted",
+      "message": "Block-A Boys Hostel Mess posted 65 Veg meals.",
+      "channel": "In-App + SMS/Telegram Alert",
+      "createdAt": "2026-11-09T04:11:25.404Z"
     },
     {
-      "id": "clm-202",
-      "listingId": "lst-104",
-      "ngoName": "Akshaya Seva Trust & Shelter",
-      "volunteerName": "Mohammed Irfan",
-      "volunteerPhone": "+91 99001 55667",
-      "status": "collected",
-      "claimedAt": "2026-11-09T00:50:22.484Z",
-      "collectedAt": "2026-11-09T01:32:22.484Z"
-    },
-    {
-      "id": "clm-203",
-      "listingId": "lst-105",
-      "ngoName": "Robin Hood Army - Campus Chapter",
-      "volunteerName": "Karthik Raj",
-      "volunteerPhone": "+91 99001 88776",
-      "status": "collected",
-      "claimedAt": "2026-11-08T22:50:22.484Z",
-      "collectedAt": "2026-11-08T23:38:22.484Z"
+      "id": "ntf-2",
+      "type": "CLAIMED",
+      "title": "NGO Claimed Listing #lst-103",
+      "message": "Robin Hood Army (Volunteer: Harsha S) claimed 90 meals.",
+      "channel": "In-App + SMS/Telegram Alert",
+      "createdAt": "2026-11-09T04:47:25.404Z"
     }
-  ]
+  ],
+  "feedbacks": []
 }
