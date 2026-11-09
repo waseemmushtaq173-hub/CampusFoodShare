@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CampusFoodShare | Surplus Food Rescue & NGO Matching Platform</title>
+  <!-- Leaflet.js CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Top Navigation & Project Identity Header -->
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <div class="brand">
+        <span class="brand-badge">SDG 2 • 11 • 12</span>
+        <h1>CampusFoodShare</h1>
+        <p>Connecting Campus Surplus Food Donors with Nearby NGOs & Volunteers in Real Time</p>
+      </div>
+      <div class="topbar-actions">
+        <div class="ngo-coords-pill">
+          <span>Your NGO / Volunteer GPS:</span>
+          <strong id="currentCoordsLabel">12.9716, 77.5946</strong>
+          <button id="useMyLocationBtn" class="btn btn-outline btn-sm">Use My GPS</button>
+        </div>
+        <button id="resetDemoBtn" class="btn btn-secondary btn-sm">Reset Demo Data</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- SDG Impact Dashboard (Objective 5) -->
+  <section class="container impact-section">
+    <div class="section-header">
+      <h2>Live Social & Environmental Impact Dashboard</h2>
+      <span class="subtitle">Real-time rescue metrics supporting UN Sustainable Development Goals 2, 11 & 12</span>
+    </div>
+    <div class="impact-cards">
+      <div class="impact-card sdg2">
+        <span class="sdg-tag">SDG 2 • Zero Hunger</span>
+        <h3 id="statMealsSaved">0</h3>
+        <p>Meals Saved & Distributed</p>
+        <small id="statMealsInTransit">0 meals currently in pickup transit</small>
+      </div>
+      <div class="impact-card sdg12">
+        <span class="sdg-tag">SDG 12 • Responsible Consumption</span>
+        <h3 id="statFoodRescuedKg">0 kg</h3>
+        <p>Surplus Food Rescued</p>
+        <small id="statCo2Saved">0 kg CO₂e landfill emissions prevented</small>
+      </div>
+      <div class="impact-card sdg11">
+        <span class="sdg-tag">SDG 11 • Sustainable Communities</span>
+        <h3 id="statActiveCount">0</h3>
+        <p>Active Nearby Listings</p>
+        <small id="statLifecycleSummary">0 Claimed • 0 Collected</small>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Interactive Workspace: Map + NGO Ranked Queue + Donor Form -->
+  <main class="container workspace-grid">
+    <!-- Left Column: Leaflet.js Map & Priority-Ranked NGO Feed -->
+    <div class="left-panel">
+      <div class="card map-card">
+        <div class="card-header">
+          <div>
+            <h2>Live Campus & NGO Food Rescue Map (Leaflet.js)</h2>
+            <p>Click anywhere on the map to set pickup or NGO location. Green = Available, Amber = Claimed, Blue = Collected.</p>
+          </div>
+          <div class="filter-group">
+            <select id="statusFilter">
+              <option value="">All Non-Expired Listings</option>
+              <option value="posted">Available (Posted)</option>
+              <option value="claimed">Claimed (In Transit)</option>
+              <option value="collected">Collected (Completed)</option>
+            </select>
+          </div>
+        </div>
+        <div id="rescueMap"></div>
+      </div>
+
+      <!-- Priority Queue Ranked Feed (Objective 2 & 3) -->
+      <div class="card feed-card">
+        <div class="card-header">
+          <div>
+            <h2>NGO & Volunteer Priority Rescue Feed</h2>
+            <p>Ranked automatically via Priority Queue (Soonest "Use Before" Expiry + Haversine Distance)</p>
+          </div>
+        </div>
+        <div id="listingsContainer" class="listings-list"></div>
+      </div>
+    </div>
+
+    <!-- Right Column: Donor Post Form + Mandatory Food Safety Checklist (Objective 1 & 4) -->
+    <aside class="right-panel">
+      <div class="card donor-card">
+        <h2>Post Surplus Food (Donor Portal)</h2>
+        <p class="card-desc">For Campus Hostels, Canteens, Messes & Event Organizers</p>
+
+        <form id="donorForm">
+          <div class="form-group">
+            <label for="donorName">Donor / Mess / Canteen Name *</label>
+            <input type="text" id="donorName" required placeholder="e.g., Block-B Hostel Mess" />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="donorPhone">Contact Phone *</label>
+              <input type="text" id="donorPhone" required placeholder="+91 98450 12345" />
+            </div>
+            <div class="form-group">
+              <label for="foodType">Dietary Category *</label>
+              <select id="foodType" required>
+                <option value="Veg">Vegetarian (Veg)</option>
+                <option value="Non-Veg">Non-Vegetarian</option>
+                <option value="Vegan">Vegan</option>
+                <option value="Bakery">Bakery / Packaged</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="foodTitle">Surplus Food Items Description *</label>
+            <input type="text" id="foodTitle" required placeholder="e.g., 60 Chapatis, Dal Fry & Jeera Rice" />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="quantityMeals">Estimated Meals (Servings) *</label>
+              <input type="number" id="quantityMeals" min="5" max="2000" value="50" required />
+            </div>
+            <div class="form-group">
+              <label for="hoursValid">Safe "Use Before" Window *</label>
+              <select id="hoursValid" required>
+                <option value="1.5">Within 1.5 Hours (High Urgency)</option>
+                <option value="2.5" selected>Within 2.5 Hours (Standard)</option>
+                <option value="4">Within 4 Hours</option>
+                <option value="6">Within 6 Hours</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="pickupAddress">Pickup Location / Landmark *</label>
+            <input type="text" id="pickupAddress" required placeholder="e.g., North Campus Mess Service Gate" />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="pickupLat">Pickup Latitude *</label>
+              <input type="number" step="any" id="pickupLat" value="12.9732" required />
+            </div>
+            <div class="form-group">
+              <label for="pickupLng">Pickup Longitude *</label>
+              <input type="number" step="any" id="pickupLng" value="77.5955" required />
+            </div>
+          </div>
+          <small class="hint-text">Tip: Click on the map to auto-fill Pickup Latitude & Longitude.</small>
+
+          <!-- Mandatory Donor Food-Safety Checklist (Objective 4) -->
+          <div class="checklist-box">
+            <h4>Mandatory Donor Food-Safety Checklist</h4>
+            <div id="safetyChecklistContainer"></div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block">
+            Publish Surplus Food Alert
+          </button>
+          <div id="formFeedback" class="form-feedback"></div>
+        </form>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <span><strong>CampusFoodShare</strong> — Department of Computer Science & Engineering</span>
+      <span>Team: Waseem Mushtaq Mir (1BG25CS184) & Harsha S (11BN26CS401) | Guide: Prof. AT Sangeeta</span>
+    </div>
+  </footer>
+
+  <!-- Leaflet.js Script -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

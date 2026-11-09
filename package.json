@@ -1,0 +1,36 @@
+{
+  "name": "campus-food-share",
+  "version": "1.0.0",
+  "description": "CampusFoodShare: A Web Platform to Reduce Food Waste by Connecting Surplus Food Donors with NGOs (SDG 2, 11, 12)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "seed": "node src/seed/seedFaker.js"
+  },
+  "keywords": [
+    "food-waste",
+    "sdg2",
+    "sdg11",
+    "sdg12",
+    "campus",
+    "ngo",
+    "leaflet",
+    "haversine",
+    "priority-queue"
+  ],
+  "authors": [
+    "Waseem Mushtaq Mir (1BG25CS184)",
+    "Harsha S (11BN26CS401)"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mongoose": "^8.4.0"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^8.4.1"
+  }
+}
