@@ -56,7 +56,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('donorForm').addEventListener('submit', handleDonorSubmit);
   document.getElementById('runAiScanBtn').addEventListener('click', handleAiScan);
-  document.getElementById('exportCsvBtn').addEventListener('click', exportCsvReport);
 
   // Rating modal
   document.getElementById('cancelRatingBtn').addEventListener('click', () => {
@@ -412,27 +411,4 @@ async function loadNotifications() {
   }
 }
 
-function exportCsvReport() {
-  fetch('/api/listings?includeExpired=true')
-    .then((r) => r.json())
-    .then((data) => {
-      const rows = data.listings.map((l) => [
-        l.id, l.donorName, l.foodTitle, l.foodType, l.quantityMeals, l.weightKg,
-        l.aiFreshnessScore, l.status, l.location.address, l.location.lat, l.location.lng,
-        l.useBefore, l.createdAt,
-      ]);
-      const csv = [
-        ['id', 'donorName', 'foodTitle', 'foodType', 'quantityMeals', 'weightKg', 'aiFreshnessScore', 'status', 'address', 'lat', 'lng', 'useBefore', 'createdAt'],
-        ...rows,
-      ]
-        .map((r) => r.map((v) => `"${v}"`).join(','))
-        .join('\n');
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'campus-food-share-report.csv';
-      a.click();
-      URL.revokeObjectURL(url);
-    });
-}
+
