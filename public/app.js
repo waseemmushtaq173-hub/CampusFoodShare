@@ -27,6 +27,7 @@ let currentUser = null, authToken = null, selectedRole = '';
 let latestAiScan = { freshnessScore: 95, freshnessStatus: 'Excellent Freshness (Grade A)' };
 let searchTimer = null, pickupDirty = false, lastOwnAction = 0, refreshTimer = null;
 let watchId = null, firstFix = true, lastFetchPos = null, lastFetchAt = 0, lastNotifs = [];
+let gpsBlocked = false, gpsAcc = null, volLayer = null, lastShare = { t: 0, lat: 0, lng: 0 };
 const CLAIM_ROLES = ['ngo', 'volunteer', 'admin'];
 
 /* ── Role menus ── */
@@ -203,7 +204,7 @@ function renderRoute() {
 function loadRoute(route) {
   loadNotifications(route === 'overview');
   ({
-    overview: () => {}, dashboard: loadDashboard, explore: loadListings, mylistings: loadMyListings, pickups: loadPickups,
+    overview: () => {}, dashboard: loadDashboard, explore: () => { loadListings(); loadLocations(); }, mylistings: loadMyListings, pickups: loadPickups,
     moderation: loadModeration, users: loadUsers, insights: loadInsights, roadmap: renderRoadmap, post: () => {},
   }[route] || (() => {}))();
 }
@@ -215,21 +216,38 @@ function closeSidebar() { $('sidebar').classList.remove('open'); $('scrim').clas
 
 /* ── Live GPS ── */
 function setLiveUI(on) {
-  $('useMyLocationBtn').classList.toggle('live', on);
+  const btn = $('useMyLocationBtn');
+  btn.classList.toggle('live', on);
+  btn.classList.toggle('blocked', gpsBlocked && !on);
   $('gpsIcon').innerHTML = ic('pin');
-  $('useMyLocationBtn').title = on ? 'Live GPS on - click to stop' : 'Start live GPS tracking';
-  $('currentCoordsLabel').textContent = `${on ? 'LIVE · ' : ''}${ngoLocation.lat}, ${ngoLocation.lng}`;
+  const acc = on && gpsAcc ? ` ±${Math.round(gpsAcc)}m` : '';
+  $('currentCoordsLabel').textContent = gpsBlocked && !on ? 'GPS blocked · click to retry' : `${on ? 'LIVE · ' : ''}${ngoLocation.lat}, ${ngoLocation.lng}${acc}`;
+  btn.title = on ? 'Live GPS on - click to stop' : 'Start live GPS tracking';
+  const b = $('gpsBanner');
+  if (!b) return;
+  b.className = `gps-banner ${on ? (gpsAcc ? 'on' : 'wait') : gpsBlocked ? 'blocked' : ''}`;
+  b.innerHTML = `<i></i><span>${on
+    ? (gpsAcc ? `Live GPS locked (±${Math.round(gpsAcc)} m). Distances, ranking and routes update as you move.` : 'Searching for your location…')
+    : gpsBlocked ? 'Location is blocked. Allow Location in your browser address bar (lock icon), then click here to retry.' : 'Live GPS is off. Click here to turn it on.'}</span>`;
 }
 
-function startLiveGps() {
+function startLiveGps(highAccuracy = true) {
   if (!navigator.geolocation) return showToast('Geolocation is not supported in this browser');
   if (watchId !== null) return;
   firstFix = true;
-  showToast('Requesting your live location…');
+  if (highAccuracy) showToast('Requesting your live location…');
+  gpsBlocked = false;
   watchId = navigator.geolocation.watchPosition(onPosition, (err) => {
-    stopLiveGps(true);
-    showToast(err.code === 1 ? 'Location permission denied. Allow it in the browser address bar.' : 'Could not get a GPS fix. Using the default campus location.');
-  }, { enableHighAccuracy: true, maximumAge: 4000, timeout: 20000 });
+    navigator.geolocation.clearWatch(watchId); watchId = null;
+    if (err.code === 1) {
+      gpsBlocked = true; setLiveUI(false);
+      showToast('Location permission denied. Allow Location in the browser address bar, then click the GPS chip.');
+    } else if (highAccuracy) {
+      startLiveGps(false); // fall back to network / Wi-Fi positioning
+    } else {
+      setLiveUI(false); showToast('Could not get a GPS fix. Using the default campus location.');
+    }
+  }, { enableHighAccuracy: highAccuracy, maximumAge: 4000, timeout: highAccuracy ? 12000 : 25000 });
   try { localStorage.setItem('cf_live', '1'); } catch (e) { /* ignore */ }
   setLiveUI(true);
 }
@@ -237,7 +255,8 @@ function startLiveGps() {
 function stopLiveGps(silent) {
   if (watchId !== null) navigator.geolocation.clearWatch(watchId);
   watchId = null;
-  try { localStorage.removeItem('cf_live'); } catch (e) { /* ignore */ }
+  if (!silent) { try { localStorage.setItem('cf_live', '0'); } catch (e) { /* ignore */ } }
+  gpsAcc = null;
   setLiveUI(false);
   if (!silent) showToast('Live GPS stopped');
 }
@@ -245,8 +264,9 @@ function stopLiveGps(silent) {
 function onPosition(pos) {
   const { latitude, longitude, accuracy } = pos.coords;
   ngoLocation = { lat: Number(latitude.toFixed(5)), lng: Number(longitude.toFixed(5)) };
+  gpsAcc = accuracy; gpsBlocked = false;
   updateNgoCoordsUI(accuracy);
-  setLiveUI(true);
+  shareLocation();
   if (firstFix) {
     firstFix = false; map.setView([ngoLocation.lat, ngoLocation.lng], 15);
     showToast(`Live GPS locked (±${Math.round(accuracy)} m). Distances now update as you move.`);
@@ -260,7 +280,7 @@ function onPosition(pos) {
 }
 
 function updateNgoCoordsUI(accuracy) {
-  $('currentCoordsLabel').textContent = `${watchId !== null ? 'LIVE · ' : ''}${ngoLocation.lat}, ${ngoLocation.lng}`;
+  setLiveUI(watchId !== null);
   if (!map) return;
   if (ngoMarker) map.removeLayer(ngoMarker);
   if (accuracyCircle) map.removeLayer(accuracyCircle);
@@ -273,12 +293,39 @@ function applyPickupDefaults() {
   if (!pickupDirty) { $('pickupLat').value = ngoLocation.lat; $('pickupLng').value = ngoLocation.lng; }
 }
 
+/* ── Share & watch live volunteer locations ── */
+function shareLocation() {
+  if (!currentUser || !CLAIM_ROLES.includes(currentUser.role)) return;
+  const now = Date.now();
+  const moved = lastShare.lat ? distKm(lastShare, ngoLocation) * 1000 : Infinity;
+  if (now - lastShare.t < 5000 || (now - lastShare.t < 20000 && moved < 15)) return;
+  lastShare = { t: now, lat: ngoLocation.lat, lng: ngoLocation.lng };
+  api('/api/location', { method: 'POST', body: { lat: ngoLocation.lat, lng: ngoLocation.lng, accuracy: gpsAcc } });
+}
+
+async function loadLocations() {
+  if (!currentUser || !volLayer) return;
+  const r = await api('/api/locations');
+  if (!r.ok) return;
+  volLayer.clearLayers();
+  document.querySelectorAll('[data-track]').forEach((el) => { el.textContent = ''; });
+  (r.data.locations || []).forEach((l) => {
+    const secs = Math.max(0, Math.round((Date.now() - l.at) / 1000));
+    const ago = secs < 60 ? `${secs}s ago` : `${Math.round(secs / 60)} min ago`;
+    L.polyline([[l.lat, l.lng], [l.pickup.lat, l.pickup.lng]], { color: '#8b5cf6', weight: 3, dashArray: '6 8' }).addTo(volLayer);
+    L.marker([l.lat, l.lng], { icon: L.divIcon({ className: '', html: '<div class="vol-dot"></div>', iconSize: [22, 22] }) })
+      .bindPopup(`<strong>${esc(l.name)}</strong><br/>On the way to ${esc(l.title)}<br/>${l.distanceKm.toFixed(2)} km from pickup · updated ${ago}`).addTo(volLayer);
+    document.querySelectorAll(`[data-track="${l.listingId}"]`).forEach((el) => { el.textContent = `On the way: ${l.name} is ${l.distanceKm.toFixed(2)} km from pickup · ${ago}`; });
+  });
+}
+
 /* ── Live updates (Server-Sent Events) ── */
 function connectStream() {
   const badge = $('liveBadge');
   const es = new EventSource('/api/stream');
   es.onopen = () => { badge.classList.add('on'); badge.title = 'Real-time updates connected'; };
   es.onerror = () => { badge.classList.remove('on'); badge.title = 'Reconnecting…'; };
+  es.addEventListener('location', () => { if (['explore', 'dashboard'].includes(currentRoute())) loadLocations(); });
   es.addEventListener('update', (ev) => {
     let d = {}; try { d = JSON.parse(ev.data); } catch (e) { /* ignore */ }
     if (d.title && Date.now() - lastOwnAction > 1800) showToast(`${d.title}: ${d.message}`);
@@ -320,7 +367,7 @@ function cardHtml(item, idx) {
     else actions = `<span class="hint">Only NGOs and volunteers can claim</span>`;
     if (role === 'admin' || (role === 'donor' && ownPost)) actions += ` <button class="btn btn-ghost btn-sm" data-act="delete" data-id="${id}">Withdraw</button>`;
   } else if (item.status === 'claimed') {
-    actions = `<span class="hint warn">${esc(item.claimedBy ? item.claimedBy.volunteerName : '')} · ${esc(item.claimedBy ? item.claimedBy.ngoName : '')}</span>`;
+    actions = `<span class="hint warn">${esc(item.claimedBy ? item.claimedBy.volunteerName : '')} · ${esc(item.claimedBy ? item.claimedBy.ngoName : '')}</span><span class="hint track" data-track="${id}"></span>`;
     if (pin) actions += ` <span class="pin-chip" title="Handover PIN">PIN ${esc(pin)}</span>`;
     if (CLAIM_ROLES.includes(role)) {
       actions += ` <button class="btn btn-ok btn-sm" data-act="collect" data-id="${id}">Mark collected</button>`;
@@ -576,6 +623,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   map = L.map('rescueMap').setView([ngoLocation.lat, ngoLocation.lng], 14);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap | CampusFoodShare' }).addTo(map);
   markersLayer = L.layerGroup().addTo(map);
+  volLayer = L.layerGroup().addTo(map);
   map.on('click', (e) => {
     pickupDirty = true;
     $('pickupLat').value = Number(e.latlng.lat.toFixed(5)); $('pickupLng').value = Number(e.latlng.lng.toFixed(5));
@@ -654,15 +702,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   setInterval(tickCountdowns, 1000);
   setInterval(refreshCurrent, 60000); // safety net if the live stream drops
+  setInterval(() => { if (currentRoute() === 'explore') loadLocations(); }, 15000);
+  $('gpsBanner').addEventListener('click', toggleLiveGps);
 
-  // resume live GPS if the user had it on and permission was already granted
-  try {
-    if (localStorage.getItem('cf_live') === '1' && navigator.permissions) {
-      const p = await navigator.permissions.query({ name: 'geolocation' });
-      if (p.state === 'granted') startLiveGps();
-    }
-  } catch (e) { /* ignore */ }
-  setLiveUI(watchId !== null);
+  // live GPS is on by default; it stays off only if the user switched it off themselves
+  let pref = null;
+  try { pref = localStorage.getItem('cf_live'); } catch (e) { /* ignore */ }
+  setLiveUI(false);
+  if (pref !== '0') startLiveGps();
   renderRoute();
 });
 

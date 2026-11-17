@@ -61,8 +61,8 @@ function requireRole(...roles) {
 const streamClients = new Set();
 let lastNotificationId = ((readDb().notifications || [])[0] || {}).id;
 
-function broadcast(payload) {
-  const msg = `event: update\ndata: ${JSON.stringify(payload)}\n\n`;
+function broadcast(payload, event = 'update') {
+  const msg = `event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`;
   for (const client of streamClients) client.write(msg);
 }
 
@@ -89,7 +89,7 @@ app.get('/api/stream', (req, res) => {
 
 // any successful write to the API notifies every connected browser
 app.use('/api', (req, res, next) => {
-  if (req.method !== 'GET' && req.method !== 'OPTIONS') {
+  if (req.method !== 'GET' && req.method !== 'OPTIONS' && !req.originalUrl.startsWith('/api/location')) {
     res.on('finish', () => { if (res.statusCode < 400) broadcastChange(); });
   }
   next();
@@ -398,6 +398,38 @@ app.get('/api/leaderboard', (req, res) => {
   }
   const top = (o) => Object.entries(o).map(([name, meals]) => ({ name, meals })).sort((a, b) => b.meals - a.meals).slice(0, 5);
   res.json({ donors: top(donors), ngos: top(ngos) });
+});
+
+// ---------- live volunteer / NGO locations ----------
+const liveLocations = new Map(); // userId -> { userId, name, lat, lng, accuracy, at }
+
+app.post('/api/location', requireRole(USER_ROLES.NGO, USER_ROLES.VOLUNTEER, USER_ROLES.ADMIN), (req, res) => {
+  const lat = Number(req.body && req.body.lat), lng = Number(req.body && req.body.lng);
+  if (!isFinite(lat) || !isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return res.status(400).json({ error: 'Valid lat/lng required' });
+  liveLocations.set(req.user.id, { userId: req.user.id, name: req.user.name, lat, lng, accuracy: Number(req.body.accuracy) || null, at: Date.now() });
+  broadcast({ at: Date.now() }, 'location');
+  res.json({ ok: true });
+});
+
+/** Live positions of volunteers on claimed pickups. Only the donor, the claimant and admins can see them. */
+app.get('/api/locations', requireRole(USER_ROLES.ADMIN, USER_ROLES.DONOR, USER_ROLES.NGO, USER_ROLES.VOLUNTEER), (req, res) => {
+  const db = readDb();
+  const fresh = Date.now() - 10 * 60000;
+  const out = [];
+  for (const l of db.listings) {
+    if (l.status !== LISTING_STATUS.CLAIMED || !l.claimedBy) continue;
+    if (!(req.user.role === USER_ROLES.ADMIN || l.donorId === req.user.id || isMine(l, req.user))) continue;
+    const p = [...liveLocations.values()]
+      .filter((x) => x.at >= fresh && (x.userId === l.claimedBy.userId || baseName(x.name) === baseName(l.claimedBy.volunteerName)))
+      .sort((a, b) => b.at - a.at)[0];
+    if (!p) continue;
+    out.push({
+      listingId: l.id, title: l.foodTitle, name: String(p.name).replace(/\s*\(.*\)\s*$/, ''), lat: p.lat, lng: p.lng, at: p.at,
+      pickup: { lat: l.location.lat, lng: l.location.lng },
+      distanceKm: calculateHaversineDistance(p.lat, p.lng, Number(l.location.lat), Number(l.location.lng)),
+    });
+  }
+  res.json({ locations: out });
 });
 
 // ---------- admin ----------
