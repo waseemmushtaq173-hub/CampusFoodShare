@@ -13,7 +13,7 @@ function generateSeedData() {
   ];
   const listings = [
     {
-      id: 'lst-101', donorId: 'donor-1', donorName: 'Block-A Boys Hostel Mess', donorPhone: '+91 98450 11223',
+      id: 'lst-101', donorId: 'usr-donor-1', donorName: 'Block-A Boys Hostel Mess', donorPhone: '+91 98450 11223',
       foodTitle: 'Steamed Rice, Dal Tadka & Mixed Veg Curry', foodType: 'Veg', quantityMeals: 65, weightKg: 22.5,
       aiFreshnessScore: 95, aiFreshnessStatus: 'Excellent Freshness (Grade A)',
       preparedAt: new Date(now - 1.2 * hourMs).toISOString(), useBefore: new Date(now + 2.3 * hourMs).toISOString(),
@@ -40,18 +40,18 @@ function generateSeedData() {
       status: 'claimed', safetyChecklistConfirmed: true,
       checklistItems: ['temp_control', 'hygienic_containers', 'no_spoilage', 'allergen_labeled'],
       location: { address: 'Main Auditorium VIP Gate', lat: 12.9752, lng: 77.5991 },
-      claimedBy: { ngoName: 'Robin Hood Army - Campus Chapter', volunteerName: 'Harsha S', volunteerPhone: '+91 99001 44556', claimedAt: new Date(now - 0.3 * hourMs).toISOString(), collectedAt: null },
+      claimedBy: { userId: 'usr-ngo-1', handoverCode: '4821', ngoName: 'Robin Hood Army - Campus Chapter', volunteerName: 'Harsha S', volunteerPhone: '+91 99001 44556', claimedAt: new Date(now - 0.3 * hourMs).toISOString(), collectedAt: null },
       feedback: null, createdAt: new Date(now - 1.2 * hourMs).toISOString()
     },
     {
-      id: 'lst-104', donorId: 'donor-1', donorName: 'Girls Hostel Mess Block-C', donorPhone: '+91 98450 99001',
+      id: 'lst-104', donorId: 'usr-donor-1', donorName: 'Girls Hostel Mess Block-C', donorPhone: '+91 98450 99001',
       foodTitle: 'Idli, Vada & Sambar Containers', foodType: 'Veg', quantityMeals: 80, weightKg: 28.0,
       aiFreshnessScore: 94, aiFreshnessStatus: 'Excellent Freshness (Grade A)',
       preparedAt: new Date(now - 6.0 * hourMs).toISOString(), useBefore: new Date(now - 1.0 * hourMs).toISOString(),
       status: 'collected', safetyChecklistConfirmed: true,
       checklistItems: ['temp_control', 'hygienic_containers', 'no_spoilage', 'allergen_labeled'],
       location: { address: 'Girls Hostel Block-C Gate', lat: 12.9682, lng: 77.5918 },
-      claimedBy: { ngoName: 'Akshaya Seva Trust & Shelter', volunteerName: 'Mohammed Irfan', volunteerPhone: '+91 99001 55667', claimedAt: new Date(now - 3.5 * hourMs).toISOString(), collectedAt: new Date(now - 2.8 * hourMs).toISOString() },
+      claimedBy: { userId: 'usr-ngo-1', ngoName: 'Akshaya Seva Trust & Shelter', volunteerName: 'Mohammed Irfan', volunteerPhone: '+91 99001 55667', claimedAt: new Date(now - 3.5 * hourMs).toISOString(), collectedAt: new Date(now - 2.8 * hourMs).toISOString() },
       feedback: { rating: 5, comment: 'Hygienically packed and still warm upon pickup.', ratedBy: 'Akshaya Seva Trust & Shelter' },
       createdAt: new Date(now - 5.0 * hourMs).toISOString()
     }

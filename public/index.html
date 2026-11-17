@@ -1,414 +1,276 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CampusFoodShare | Campus Surplus Food Rescue Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- Floating Toast Container for Smooth GUI Feedback -->
   <div id="toastContainer" class="toast-container"></div>
 
-  <!-- Top Floating GUI Navigation & Sign-In Bar -->
-  <nav class="auth-bar">
-    <div class="container auth-bar-inner">
-      <div class="logo-area">
-        <span class="live-pulse"></span>
-        <strong>CampusFoodShare</strong>
-        <span class="gui-pill">SDG 2 · 11 · 12</span>
-      </div>
-
-      <!-- Quick Visual Navigation Tabs -->
-      <div class="gui-nav-tabs">
-        <button class="gui-tab active" data-target="all">🌐 Full Dashboard</button>
-        <button class="gui-tab" data-target="rescueSection">🗺️ Find & Claim Food</button>
-        <button class="gui-tab" data-target="donorSection">🍲 Donate Surplus Food</button>
-        <button class="gui-tab" data-target="insightsSection">📊 Insights & Leaderboard</button>
-      </div>
-
-      <div class="user-auth-status">
-        <span id="loggedInUserBadge">👤 Guest Viewer</span>
-        <button id="openAuthModalBtn" class="btn btn-primary btn-sm">🔐 Sign In / Sign Up</button>
-        <button id="signOutBtn" class="btn btn-danger btn-sm" style="display:none;">🚪 Sign Out</button>
-        <button id="resetDemoBtn" class="btn btn-glass btn-sm" style="display:none;" title="Admin only: reset demo database">🔄 Reset Demo</button>
-      </div>
-    </div>
-  </nav>
-
-  <!-- 3D Hero Header with Visual Quick-Start Guide -->
-  <header class="hero-header">
-    <div class="container hero-inner">
-      <div class="hero-text">
-        <span class="badge-3d">SDG 2 • SDG 11 • SDG 12</span>
-        <h1>Easy Campus Food Rescue & NGO Matching</h1>
-        <p>A real-time platform connecting hostel messes and canteens with nearby NGOs and volunteers in real time.</p>
-        <div class="how-it-works-pills">
-          <div class="step-pill"><span>1</span> 🍲 Donor Posts Surplus</div>
-          <div class="step-pill"><span>2</span> 📍 Haversine + Heap Ranks</div>
-          <div class="step-pill"><span>3</span> 🤝 NGO Claims Pickup</div>
-          <div class="step-pill"><span>4</span> ✅ Volunteer Collects</div>
-        </div>
-      </div>
-      <div class="hero-actions">
-        <div class="coords-card glass-3d">
-          <div>
-            <small style="display:block;color:#94a3b8;font-size:0.74rem;">YOUR ACTIVE GPS LOCATION</small>
-            <strong id="currentCoordsLabel">12.9716, 77.5946</strong>
-          </div>
-          <button id="useMyLocationBtn" class="btn btn-primary btn-sm">📍 Auto-Detect GPS</button>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <!-- 3D Visualized Impact Dashboard (Objective 5) -->
-  <section class="container impact-section">
-    <div class="impact-grid-3d">
-      <div class="card-3d sdg2">
-        <div class="card-glow"></div>
-        <span class="tag">🍽️ SDG 2 • Zero Hunger</span>
-        <h3 id="statMealsSaved">0</h3>
-        <p>Meals Saved & Distributed</p>
-        <small id="statMealsInTransit">0 meals currently in pickup transit</small>
-      </div>
-      <div class="card-3d sdg12">
-        <div class="card-glow"></div>
-        <span class="tag">♻️ SDG 12 • Responsible Consumption</span>
-        <h3 id="statFoodRescuedKg">0 kg</h3>
-        <p>Surplus Food Rescued</p>
-        <small id="statCo2Saved">0 kg CO₂e emissions prevented</small>
-      </div>
-      <div class="card-3d sdg11">
-        <div class="card-glow"></div>
-        <span class="tag">🏙️ SDG 11 • Sustainable Cities</span>
-        <h3 id="statActiveCount">0</h3>
-        <p>Active Nearby Listings</p>
-        <small id="statLifecycleSummary">Ranked by Soonest Expiry & Distance</small>
-      </div>
-      <div class="card-3d trust">
-        <div class="card-glow"></div>
-        <span class="tag">🛡️ AI Freshness & Hygiene</span>
-        <h3 id="statAvgRating">5.0 ★</h3>
-        <p>Average NGO Trust Rating</p>
-        <small id="statRatingCount">Every listing AI scanned & checklist verified</small>
-      </div>
-    </div>
-  </section>
-
-  <!-- Main 3D Graphical Workspace -->
-  <main class="container workspace-3d">
-    <!-- Left Column: Interactive Map + Visual Priority Rescue Feed -->
-    <div class="left-col" id="rescueSection">
-      <div class="glass-panel map-panel">
-        <div class="panel-header">
-          <div>
-            <h2>🗺️ Interactive Campus Rescue Map (Click Map to Set Pickup Point)</h2>
-            <p>🟢 Available to Claim &nbsp;|&nbsp; 🟠 Claimed (In Transit) &nbsp;|&nbsp; 🔵 Collected & Rescued</p>
-          </div>
-          <div class="filter-controls">
-            <select id="typeFilter" class="glass-select">
-              <option value="">All Diets</option>
-              <option value="Veg">🟢 Veg</option>
-              <option value="Non-Veg">🔴 Non-Veg</option>
-              <option value="Vegan">🌱 Vegan</option>
-              <option value="Bakery">🥐 Bakery</option>
-            </select>
-            <select id="statusFilter" class="glass-select">
-              <option value="">All Active & Rescued Listings</option>
-              <option value="posted">🟢 Available Now (Posted)</option>
-              <option value="claimed">🟠 Claimed (In Transit)</option>
-              <option value="collected">🔵 Collected (Completed)</option>
-            </select>
-          </div>
-        </div>
-        <div id="rescueMap"></div>
-      </div>
-
-      <div class="glass-panel feed-panel">
-        <div class="panel-header">
-          <div>
-            <h2>⚡ Priority Rescue Queue (Nearest & Soonest Expiring First)</h2>
-            <p>Use the one-click action buttons on any card below to Claim, Collect, or Rate food batches</p>
-          </div>
-          <div class="search-box">
-            <input type="text" id="searchInput" class="glass-input" placeholder="🔍 Search dish, mess, or landmark..." />
-          </div>
-        </div>
-        <div id="listingsContainer" class="listings-grid-3d"></div>
-      </div>
-    </div>
-
-    <!-- Right Column: Easy 1-Click Donor GUI Portal + Live Notification Center -->
-    <aside class="right-col" id="donorSection">
-      <div class="glass-panel donor-panel">
-        <h2>🍲 Post Surplus Food (Easy Donor GUI)</h2>
-        <p class="panel-sub">Tap a quick preset below or fill in the details to alert nearby NGOs</p>
-
-        <!-- 1-Click Visual Food Presets for Comfort & Speed -->
-        <div class="preset-bar">
-          <span class="preset-label">⚡ 1-Click Dish Presets:</span>
-          <div class="preset-chips">
-            <button type="button" class="chip-btn" data-title="Steamed Rice, Dal Tadka & Veg Curry" data-type="Veg" data-meals="60">🍛 Rice & Dal (60)</button>
-            <button type="button" class="chip-btn" data-title="Chapati Packs, Paneer Sabzi & Jeera Rice" data-type="Veg" data-meals="45">🫓 Chapati & Sabzi (45)</button>
-            <button type="button" class="chip-btn" data-title="Chicken Biryani & Raita Trays" data-type="Non-Veg" data-meals="75">🥘 Biryani Tray (75)</button>
-            <button type="button" class="chip-btn" data-title="Assorted Sandwiches, Buns & Bakery Packs" data-type="Bakery" data-meals="40">🥪 Bakery Packs (40)</button>
-          </div>
-        </div>
-
-        <!-- AI Food Scanner Widget -->
-        <div class="ai-scanner-widget">
-          <div class="ai-title">
-            <span class="ai-pill">AI MODULE</span>
-            <strong>🤖 1-Click AI Freshness & Category Scanner</strong>
-          </div>
-          <p class="ai-desc">Optionally upload a food photo or click Scan to auto-verify freshness score (%).</p>
-          <div class="ai-row">
-            <input type="file" id="foodImageInput" accept="image/*" class="glass-file" />
-            <button type="button" id="runAiScanBtn" class="btn btn-accent btn-sm">✨ Run AI Scan</button>
-          </div>
-          <div id="aiScanResult" class="ai-banner">✅ AI Status: Ready to scan food batch (Default: 95% Grade A)</div>
-        </div>
-
-        <form id="donorForm">
-          <div class="form-group">
-            <label for="donorName">🏫 Donor / Hostel Mess / Canteen Name *</label>
-            <input type="text" id="donorName" class="glass-input" required value="Block-A Boys Hostel Mess" placeholder="e.g., Block-A Hostel Mess" />
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="donorPhone">📞 Contact Phone *</label>
-              <input type="text" id="donorPhone" class="glass-input" required value="+91 98450 11223" placeholder="+91 98450 12345" />
-            </div>
-            <div class="form-group">
-              <label for="foodType">🥗 Dietary Category *</label>
-              <select id="foodType" class="glass-select" required>
-                <option value="Veg">🟢 Vegetarian (Veg)</option>
-                <option value="Non-Veg">🔴 Non-Vegetarian</option>
-                <option value="Vegan">🌱 Vegan</option>
-                <option value="Bakery">🥐 Bakery / Packaged</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="foodTitle">🍛 Surplus Food Description *</label>
-            <input type="text" id="foodTitle" class="glass-input" required placeholder="Click a preset above or type dish name..." />
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="quantityMeals">🍽️ Quantity (Meals) *</label>
-              <input type="number" id="quantityMeals" class="glass-input" min="5" max="2000" value="50" required />
-            </div>
-            <div class="form-group">
-              <label for="hoursValid">⏳ Safe "Use Before" Window *</label>
-              <select id="hoursValid" class="glass-select" required>
-                <option value="1.5">🔥 1.5 Hours (High Urgency)</option>
-                <option value="2.5" selected>⏱️ 2.5 Hours (Standard)</option>
-                <option value="4">🛡️ 4.0 Hours (Extended)</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="pickupAddress">📍 Pickup Location / Campus Landmark *</label>
-            <input type="text" id="pickupAddress" class="glass-input" required value="North Campus Mess Loading Bay" placeholder="e.g., North Campus Mess Gate" />
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="pickupLat">Latitude (Click Map)</label>
-              <input type="number" step="any" id="pickupLat" class="glass-input" value="12.9732" required />
-            </div>
-            <div class="form-group">
-              <label for="pickupLng">Longitude (Click Map)</label>
-              <input type="number" step="any" id="pickupLng" class="glass-input" value="77.5955" required />
-            </div>
-          </div>
-
-          <div class="checklist-glass">
-            <h4>☑️ Mandatory 4-Point Food-Safety Checklist</h4>
-            <div id="safetyChecklistContainer"></div>
-          </div>
-
-          <button type="submit" class="btn btn-primary btn-3d btn-block">
-            🚀 Broadcast Surplus Food Alert Now
-          </button>
-          <div id="formFeedback" class="form-feedback"></div>
-        </form>
-      </div>
-
-      <div class="glass-panel ntf-panel">
-        <h2>🔔 Live Activity & Notification Feed</h2>
-        <p class="panel-sub">Real-time updates for Donors, NGOs, and Volunteers</p>
-        <div id="notificationsList" class="ntf-list-3d"></div>
-      </div>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#/" id="brandLink">
+        <span class="brand-mark" id="brandMark"></span>
+        <span><strong>CampusFoodShare</strong><small>Zero waste · Zero hunger</small></span>
+      </a>
+      <div class="nav-label" id="navLabel">Menu</div>
+      <nav id="navMenu" class="nav-menu" aria-label="Main menu"></nav>
+      <div class="side-foot"><div id="userCard" class="user-card"></div></div>
     </aside>
-  </main>
+    <div class="scrim" id="scrim"></div>
 
-  <!-- Insights: analytics, leaderboard, admin -->
-  <section class="container insights-section" id="insightsSection">
-    <div class="insights-grid">
-      <div class="glass-panel">
-        <h2>📈 Meals Posted vs Rescued (Last 7 Days)</h2>
-        <p class="panel-sub" id="rescueRateLabel">Rescue rate: —</p>
-        <div id="dailyChart" class="bar-chart"></div>
-      </div>
-      <div class="glass-panel">
-        <h2>🥗 Rescued Meals by Diet</h2>
-        <p class="panel-sub">Share of collected meals</p>
-        <div class="donut-wrap"><div id="typeDonut" class="donut"></div><div id="typeLegend" class="donut-legend"></div></div>
-      </div>
-      <div class="glass-panel">
-        <h2>🏆 Top Donors</h2>
-        <ol id="donorBoard" class="board"></ol>
-      </div>
-      <div class="glass-panel">
-        <h2>🤝 Top NGOs</h2>
-        <ol id="ngoBoard" class="board"></ol>
-      </div>
-    </div>
-    <div class="glass-panel" id="adminPanel" style="display:none;">
-      <h2>🛡️ Admin Console - Registered Users</h2>
-      <div class="table-wrap"><table class="user-table"><thead><tr><th>Name</th><th>Role</th><th>Email</th><th>Organization</th></tr></thead><tbody id="userTableBody"></tbody></table></div>
-    </div>
-  </section>
-
-  <!-- GUI MODAL 1: Full Sign-In / Sign-Up Authentication Screen -->
-  <div id="authModal" class="modal-overlay">
-    <div class="modal-glass-3d auth-modal">
-      <div class="modal-header">
-        <h3 id="authModalTitle">🔐 Welcome Back</h3>
-        <button id="closeAuthModalBtn" class="btn-close">&times;</button>
-      </div>
-      <div class="modal-body">
-        <!-- Auth Tabs: Sign In / Sign Up -->
-        <div class="auth-tabs">
-          <button class="auth-tab active" data-mode="signin">🔑 Sign In</button>
-          <button class="auth-tab" data-mode="signup">📝 Create Account</button>
+    <div class="main">
+      <header class="topbar">
+        <button id="menuBtn" class="icon-btn mobile-only" aria-label="Open menu"></button>
+        <div class="page-heading">
+          <h1 id="pageTitle">Home</h1>
+          <p id="pageSub"></p>
         </div>
+        <div class="top-actions">
+          <button id="cmdBtn" class="cmd-btn" title="Jump to anything"><span id="cmdIcon"></span><span class="cmd-text">Jump to…</span><kbd>Ctrl K</kbd></button>
+          <button id="useMyLocationBtn" class="chip-pill" title="Use my GPS"><span id="gpsIcon"></span><span id="currentCoordsLabel">12.9716, 77.5946</span></button>
+          <button id="themeBtn" class="icon-btn" aria-label="Toggle theme"></button>
+          <button id="bellBtn" class="icon-btn bell" aria-label="Notifications"><span id="bellIcon"></span><i id="bellDot" class="dot" style="display:none"></i></button>
+          <button id="authChip" class="btn btn-primary btn-sm">Sign in</button>
+        </div>
+      </header>
 
-        <!-- Sign In Form -->
-        <form id="signinForm" class="auth-form active" novalidate>
-                    <div class="form-group">
-            <label for="siEmail">📧 Email Address</label>
-            <input type="email" id="siEmail" class="glass-input" required placeholder="admin@campusfoodshare.org" />
-          </div>
-          <div class="form-group">
-            <label for="siPassword">🔒 Password</label>
-            <div class="password-input">
-              <input type="password" id="siPassword" class="glass-input" required placeholder="••••••••" />
-              <button type="button" id="siTogglePwd" class="btn-toggle">👁️</button>
-            </div>
-          </div>
-          <button type="submit" class="btn btn-primary btn-block auth-submit-btn">🔐 Sign In</button>
-          <div class="auth-footer">
-            <span class="auth-footer-text">One-click demo login:</span>
-            <span class="demo-hint" data-demo="admin@campusfoodshare.org|admin123">🛡️ Admin</span>
-            <span class="demo-hint" data-demo="donor@campusfoodshare.org|donor123">🏫 Donor</span>
-            <span class="demo-hint" data-demo="ngo@campusfoodshare.org|ngo123">🤝 NGO</span>
-            <span class="demo-hint" data-demo="volunteer@campusfoodshare.org|vol123">🛵 Volunteer</span>
-          </div>
-        </form>
+      <main id="views" class="views">
 
-        <!-- Sign Up Form -->
-        <form id="signupForm" class="auth-form" novalidate>
-          <input type="hidden" id="suRole" value="" />
-          <div class="form-group">
-            <label for="suName">👤 Full Name / Organization</label>
-            <input type="text" id="suName" class="glass-input" required placeholder="e.g., Ramesh Kulkarni" />
-          </div>
-          <div class="form-group">
-            <label for="suEmail">📧 Email Address</label>
-            <input type="email" id="suEmail" class="glass-input" required placeholder="donor@campusfoodshare.org" />
-          </div>
-          <div class="form-group">
-            <label for="suPassword">🔒 Password</label>
-            <div class="password-input">
-              <input type="password" id="suPassword" class="glass-input" required placeholder="Min. 6 characters" />
-              <button type="button" id="suTogglePwd" class="btn-toggle">👁️</button>
+        <section class="view" id="view-overview">
+          <div class="hero">
+            <div class="hero-copy">
+              <span class="eyebrow">Browsing as guest · read-only</span>
+              <h2>Rescue surplus campus food <em>before it spoils.</em></h2>
+              <p>CampusFoodShare connects hostel messes, canteens and events with nearby NGOs and volunteers in real time, ranked by distance and time-to-expiry, with a food-safety checklist and a verified handover PIN on every pickup.</p>
+              <div class="hero-cta">
+                <button class="btn btn-primary" data-open-auth="signin">Sign in to take action</button>
+                <button class="btn btn-ghost" data-go="explore">Browse the live map</button>
+              </div>
+              <div class="steps">
+                <div><b>1</b>Donor posts surplus</div><div><b>2</b>Haversine + heap ranks it</div><div><b>3</b>NGO claims pickup</div><div><b>4</b>PIN-verified collection</div>
+              </div>
+            </div>
+            <div class="hero-card glass">
+              <h3>Live platform pulse</h3>
+              <div id="publicKpis" class="mini-kpis"></div>
             </div>
           </div>
-          <div class="form-group">
-            <label for="suOrg">🏫 Organization (mess / NGO / chapter)</label>
-            <input type="text" id="suOrg" class="glass-input" placeholder="e.g., Block-A Hostel Mess" />
+          <h3 class="section-title">Pick a role to explore the platform</h3>
+          <p class="muted">Each role gets its own menu and dashboard. Tap a card to sign in instantly with a demo account.</p>
+          <div id="roleCards" class="role-grid"></div>
+        </section>
+
+        <section class="view" id="view-dashboard"><div id="dashboardBody"></div></section>
+
+        <section class="view" id="view-explore">
+          <div class="glass panel">
+            <div class="panel-head">
+              <div><h2>Live rescue map</h2><p class="muted"><span class="legend g"></span>Available <span class="legend o"></span>Claimed <span class="legend b"></span>Collected · click the map to set a pickup pin</p></div>
+              <div class="filters">
+                <select id="typeFilter" class="input">
+                  <option value="">All diets</option><option value="Veg">Veg</option><option value="Non-Veg">Non-Veg</option><option value="Vegan">Vegan</option><option value="Bakery">Bakery</option>
+                </select>
+                <select id="statusFilter" class="input">
+                  <option value="">All statuses</option><option value="posted">Available</option><option value="claimed">Claimed</option><option value="collected">Collected</option>
+                </select>
+              </div>
+            </div>
+            <div id="rescueMap"></div>
           </div>
-          <div class="form-group">
-            <label for="suPhone">📞 Phone Number</label>
-            <input type="text" id="suPhone" class="glass-input" placeholder="+91 98450 12345" />
+          <div class="glass panel">
+            <div class="panel-head">
+              <div><h2>Priority rescue queue</h2><p class="muted">Nearest and soonest-expiring first (Haversine + min-heap)</p></div>
+              <input type="text" id="searchInput" class="input search" placeholder="Search dish, mess or landmark…" />
+            </div>
+            <div id="listingsContainer" class="card-list"></div>
           </div>
-          <div class="form-row quick-roles">
-            <label style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.4rem;display:block;">Select your role:</label>
-            <div class="role-chips">
-              <button type="button" class="role-chip" data-role="donor">🏫 Donor / Mess</button>
-              <button type="button" class="role-chip" data-role="ngo">🤝 NGO / Receiver</button>
-              <button type="button" class="role-chip" data-role="volunteer">🛵 Volunteer</button>
+        </section>
+
+        <section class="view" id="view-post">
+          <div class="two-col">
+            <div class="glass panel">
+              <h2>Post surplus food</h2>
+              <p class="muted">Tap a preset or fill in the details to alert nearby NGOs.</p>
+              <div class="preset-chips">
+                <button type="button" class="chip-btn" data-title="Steamed Rice, Dal Tadka & Veg Curry" data-type="Veg" data-meals="60">Rice & Dal · 60</button>
+                <button type="button" class="chip-btn" data-title="Chapati Packs, Paneer Sabzi & Jeera Rice" data-type="Veg" data-meals="45">Chapati & Sabzi · 45</button>
+                <button type="button" class="chip-btn" data-title="Chicken Biryani & Raita Trays" data-type="Non-Veg" data-meals="75">Biryani Tray · 75</button>
+                <button type="button" class="chip-btn" data-title="Assorted Sandwiches, Buns & Bakery Packs" data-type="Bakery" data-meals="40">Bakery Packs · 40</button>
+              </div>
+              <form id="donorForm">
+                <div class="form-group"><label for="donorName">Donor / mess / canteen *</label><input type="text" id="donorName" class="input" required value="Block-A Boys Hostel Mess" /></div>
+                <div class="form-row">
+                  <div class="form-group"><label for="donorPhone">Contact phone *</label><input type="text" id="donorPhone" class="input" required value="+91 98450 11223" /></div>
+                  <div class="form-group"><label for="foodType">Dietary category *</label>
+                    <select id="foodType" class="input" required><option value="Veg">Vegetarian</option><option value="Non-Veg">Non-Vegetarian</option><option value="Vegan">Vegan</option><option value="Bakery">Bakery / Packaged</option></select></div>
+                </div>
+                <div class="form-group"><label for="foodTitle">Food description *</label><input type="text" id="foodTitle" class="input" required maxlength="140" placeholder="Pick a preset or type the dish name…" /></div>
+                <div class="form-row">
+                  <div class="form-group"><label for="quantityMeals">Quantity (meals) *</label><input type="number" id="quantityMeals" class="input" min="1" max="5000" value="50" required /></div>
+                  <div class="form-group"><label for="hoursValid">Safe "use before" window *</label>
+                    <select id="hoursValid" class="input" required><option value="1.5">1.5 h · high urgency</option><option value="2.5" selected>2.5 h · standard</option><option value="4">4 h · extended</option></select></div>
+                </div>
+                <div class="form-group"><label for="pickupAddress">Pickup location / landmark *</label><input type="text" id="pickupAddress" class="input" required value="North Campus Mess Loading Bay" /></div>
+                <div class="form-row">
+                  <div class="form-group"><label for="pickupLat">Latitude</label><input type="number" step="any" id="pickupLat" class="input" value="12.9732" required /></div>
+                  <div class="form-group"><label for="pickupLng">Longitude</label><input type="number" step="any" id="pickupLng" class="input" value="77.5955" required /></div>
+                </div>
+                <button type="button" class="btn btn-ghost btn-sm" data-go="explore">Pick the pin on the map</button>
+                <div class="checklist"><h4>Mandatory 4-point food-safety checklist</h4><div id="safetyChecklistContainer"></div></div>
+                <button type="submit" class="btn btn-primary btn-block">Broadcast surplus alert</button>
+                <div id="formFeedback" class="form-feedback"></div>
+              </form>
+            </div>
+            <div>
+              <div class="glass panel ai">
+                <div class="ai-title"><span class="tag">AI module</span><strong>Freshness & category scanner</strong></div>
+                <p class="muted">Optionally attach a photo, then scan to auto-detect the diet and a freshness score.</p>
+                <div class="ai-row"><input type="file" id="foodImageInput" accept="image/*" class="input" /><button type="button" id="runAiScanBtn" class="btn btn-accent btn-sm">Run AI scan</button></div>
+                <div id="aiScanResult" class="ai-banner">Ready to scan (default 95% · Grade A)</div>
+              </div>
+              <div class="glass panel">
+                <h3>How a handover works</h3>
+                <ol class="how">
+                  <li>An NGO claims your listing and a <b>4-digit handover PIN</b> is generated.</li>
+                  <li>You see the PIN under <b>My Listings</b> and share it with the volunteer at pickup.</li>
+                  <li>The volunteer enters the PIN to confirm collection, so every rescue is verified.</li>
+                </ol>
+              </div>
             </div>
           </div>
-          <button type="submit" class="btn btn-primary btn-block auth-submit-btn">📝 Create Account</button>
-          <div class="auth-footer">
-            <span class="auth-footer-text">Already have an account?</span>
-            <span class="demo-hint switch-to-signin">Switch to Sign In</span>
+        </section>
+
+        <section class="view" id="view-mylistings">
+          <div class="glass panel"><div class="panel-head"><div><h2>My listings</h2><p class="muted">Everything you posted. Share the handover PIN when a volunteer arrives.</p></div><button class="btn btn-primary btn-sm" data-go="post">+ Post surplus</button></div>
+            <div id="myListings" class="card-list"></div></div>
+        </section>
+
+        <section class="view" id="view-pickups">
+          <div class="glass panel"><div class="panel-head"><div><h2>Active pickups</h2><p class="muted">Navigate, collect with the donor's PIN, or release if you cannot make it.</p></div></div><div id="pickupsActive" class="card-list"></div></div>
+          <div class="glass panel"><div class="panel-head"><div><h2>Completed rescues</h2><p class="muted">Rate hygiene for finished pickups.</p></div></div><div id="pickupsDone" class="card-list"></div></div>
+        </section>
+
+        <section class="view" id="view-moderation">
+          <div class="glass panel"><div class="panel-head"><div><h2>All listings</h2><p class="muted">Every listing in the system, including expired ones.</p></div></div>
+            <div class="table-wrap"><table class="table"><thead><tr><th>Dish</th><th>Donor</th><th>Status</th><th>Meals</th><th>Use before</th><th></th></tr></thead><tbody id="moderationBody"></tbody></table></div></div>
+        </section>
+
+        <section class="view" id="view-users">
+          <div class="glass panel"><div class="panel-head"><div><h2>User management</h2><p class="muted">Change roles or suspend accounts. Every change is written to the audit log.</p></div></div>
+            <div class="table-wrap"><table class="table"><thead><tr><th>Name</th><th>Email</th><th>Organization</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody id="userTableBody"></tbody></table></div></div>
+        </section>
+
+        <section class="view" id="view-insights">
+          <div class="insights-grid">
+            <div class="glass panel"><h2>Meals posted vs rescued</h2><p class="muted" id="rescueRateLabel">Rescue rate: …</p><div id="dailyChart" class="bar-chart"></div></div>
+            <div class="glass panel"><h2>Rescued meals by diet</h2><p class="muted">Share of collected meals</p><div class="donut-wrap"><div id="typeDonut" class="donut"></div><div id="typeLegend" class="donut-legend"></div></div></div>
+            <div class="glass panel"><h2>Top donors</h2><ol id="donorBoard" class="board"></ol></div>
+            <div class="glass panel"><h2>Top NGOs</h2><ol id="ngoBoard" class="board"></ol></div>
           </div>
-        </form>
-      </div>
+        </section>
+
+        <section class="view" id="view-roadmap">
+          <p class="muted">What is already shipped and where CampusFoodShare goes next.</p>
+          <div id="roadmapBody" class="road-grid"></div>
+        </section>
+      </main>
     </div>
   </div>
 
-  <!-- GUI MODAL 2: Visual Claim Pickup Modal (Replaces raw browser prompt) -->
-  <div id="claimModal" class="modal-overlay">
-    <div class="modal-glass-3d">
-      <div class="modal-header">
-        <h3>🤝 Claim Surplus Food Pickup</h3>
-        <button id="closeClaimModalBtn" class="btn-close">&times;</button>
+  <aside id="notifDrawer" class="drawer glass">
+    <div class="drawer-head"><h3>Activity</h3><button class="icon-btn" id="closeNotif" aria-label="Close"></button></div>
+    <div id="notificationsList" class="ntf-list"></div>
+  </aside>
+
+  <div id="cmdModal" class="modal-overlay">
+    <div class="modal cmd-modal">
+      <input id="cmdInput" class="input" placeholder="Jump to a page or run an action…" autocomplete="off" />
+      <ul id="cmdList" class="cmd-list"></ul>
+    </div>
+  </div>
+
+  <div id="authModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header"><h3 id="authModalTitle">Welcome back</h3><button id="closeAuthModalBtn" class="icon-btn" aria-label="Close"></button></div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-mode="signin">Sign in</button>
+        <button class="auth-tab" data-mode="signup">Create account</button>
       </div>
-      <form id="claimModalForm" class="modal-body">
-        <input type="hidden" id="claimListingIdInput" />
-        <div class="form-group">
-          <label for="claimNgoName">🏢 NGO / Receiver Organization *</label>
-          <input type="text" id="claimNgoName" class="glass-input" required value="Robin Hood Army - Campus Chapter" />
+      <form id="signinForm" class="auth-form active" novalidate>
+        <div class="form-group"><label for="siEmail">Email</label><input type="email" id="siEmail" class="input" required placeholder="you@campus.edu" /></div>
+        <div class="form-group"><label for="siPassword">Password</label>
+          <div class="password-input"><input type="password" id="siPassword" class="input" required placeholder="••••••••" /><button type="button" id="siTogglePwd" class="btn-toggle">Show</button></div></div>
+        <button type="submit" class="btn btn-primary btn-block">Sign in</button>
+        <div class="auth-footer"><span>One-click demo:</span>
+          <span class="demo-hint" data-demo="admin@campusfoodshare.org|admin123">Admin</span>
+          <span class="demo-hint" data-demo="donor@campusfoodshare.org|donor123">Donor</span>
+          <span class="demo-hint" data-demo="ngo@campusfoodshare.org|ngo123">NGO</span>
+          <span class="demo-hint" data-demo="volunteer@campusfoodshare.org|vol123">Volunteer</span></div>
+      </form>
+      <form id="signupForm" class="auth-form" novalidate>
+        <div class="form-group"><label for="suName">Full name</label><input type="text" id="suName" class="input" required placeholder="e.g., Ramesh Kulkarni" /></div>
+        <div class="form-row">
+          <div class="form-group"><label for="suEmail">Email</label><input type="email" id="suEmail" class="input" required /></div>
+          <div class="form-group"><label for="suPhone">Phone</label><input type="text" id="suPhone" class="input" placeholder="+91 98450 12345" /></div>
         </div>
-        <div class="form-group">
-          <label for="claimVolunteerName">🛵 Assigned Pickup Volunteer Name *</label>
-          <input type="text" id="claimVolunteerName" class="glass-input" required value="Harsha S" />
-        </div>
-        <div class="form-group">
-          <label for="claimVolunteerPhone">📞 Volunteer Contact Number *</label>
-          <input type="text" id="claimVolunteerPhone" class="glass-input" required value="+91 99001 44556" />
-        </div>
-        <button type="submit" class="btn btn-claim btn-block">✅ Confirm Claim & Lock Pickup</button>
+        <div class="form-group"><label for="suOrg">Organization (mess / NGO / chapter)</label><input type="text" id="suOrg" class="input" /></div>
+        <div class="form-group"><label for="suPassword">Password</label>
+          <div class="password-input"><input type="password" id="suPassword" class="input" required placeholder="Min. 6 characters" /><button type="button" id="suTogglePwd" class="btn-toggle">Show</button></div></div>
+        <div class="form-group"><label>I am a…</label>
+          <div class="role-chips">
+            <button type="button" class="role-chip" data-role="donor">Donor / Mess</button>
+            <button type="button" class="role-chip" data-role="ngo">NGO / Receiver</button>
+            <button type="button" class="role-chip" data-role="volunteer">Volunteer</button>
+          </div></div>
+        <button type="submit" class="btn btn-primary btn-block">Create account</button>
+        <div class="auth-footer"><span>Already registered?</span><span class="demo-hint switch-to-signin">Sign in</span></div>
       </form>
     </div>
   </div>
 
-  <!-- GUI MODAL 3: Visual 5-Star Hygiene Rating Modal (Replaces raw browser prompt) -->
+  <div id="claimModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header"><h3>Claim surplus pickup</h3><button id="closeClaimModalBtn" class="icon-btn" aria-label="Close"></button></div>
+      <form id="claimModalForm">
+        <input type="hidden" id="claimListingIdInput" />
+        <div class="form-group"><label for="claimNgoName">NGO / receiver organization *</label><input type="text" id="claimNgoName" class="input" required /></div>
+        <div class="form-group"><label for="claimVolunteerName">Pickup volunteer *</label><input type="text" id="claimVolunteerName" class="input" required /></div>
+        <div class="form-group"><label for="claimVolunteerPhone">Volunteer phone *</label><input type="text" id="claimVolunteerPhone" class="input" required value="+91 99001 44556" /></div>
+        <button type="submit" class="btn btn-primary btn-block">Confirm claim & lock pickup</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="collectModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header"><h3>Confirm collection</h3><button id="closeCollectModalBtn" class="icon-btn" aria-label="Close"></button></div>
+      <form id="collectModalForm">
+        <input type="hidden" id="collectListingIdInput" />
+        <p class="muted" id="collectHint">Ask the donor for the 4-digit handover PIN shown on their listing.</p>
+        <div class="form-group"><label for="collectPinInput">Handover PIN</label><input type="text" id="collectPinInput" class="input pin" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" /></div>
+        <button type="submit" class="btn btn-primary btn-block">Verify & mark collected</button>
+      </form>
+    </div>
+  </div>
+
   <div id="rateModal" class="modal-overlay">
-    <div class="modal-glass-3d">
-      <div class="modal-header">
-        <h3>⭐ Rate Food Hygiene & Packaging</h3>
-        <button id="closeRateModalBtn" class="btn-close">&times;</button>
-      </div>
-      <form id="rateModalForm" class="modal-body">
+    <div class="modal">
+      <div class="modal-header"><h3>Rate food hygiene & packaging</h3><button id="closeRateModalBtn" class="icon-btn" aria-label="Close"></button></div>
+      <form id="rateModalForm">
         <input type="hidden" id="rateListingIdInput" />
         <input type="hidden" id="rateStarValue" value="5" />
-        <div class="form-group">
-          <label>Select Star Rating:</label>
-          <div class="star-picker" id="starPicker">
-            <button type="button" class="star-btn active" data-val="1">★</button>
-            <button type="button" class="star-btn active" data-val="2">★</button>
-            <button type="button" class="star-btn active" data-val="3">★</button>
-            <button type="button" class="star-btn active" data-val="4">★</button>
-            <button type="button" class="star-btn active" data-val="5">★</button>
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="rateCommentInput">💬 Feedback Note for Donor</label>
-          <input type="text" id="rateCommentInput" class="glass-input" required value="Fresh, warm, and hygienically packed! Distributed safely." />
-        </div>
-        <button type="submit" class="btn btn-primary btn-block">🌟 Submit Hygiene Review</button>
+        <div class="form-group"><label>Star rating</label>
+          <div class="star-picker">
+            <button type="button" class="star-btn active" data-val="1">★</button><button type="button" class="star-btn active" data-val="2">★</button><button type="button" class="star-btn active" data-val="3">★</button><button type="button" class="star-btn active" data-val="4">★</button><button type="button" class="star-btn active" data-val="5">★</button>
+          </div></div>
+        <div class="form-group"><label for="rateCommentInput">Note for the donor</label><input type="text" id="rateCommentInput" class="input" required value="Fresh, warm and hygienically packed. Distributed safely." /></div>
+        <button type="submit" class="btn btn-primary btn-block">Submit review</button>
       </form>
     </div>
   </div>

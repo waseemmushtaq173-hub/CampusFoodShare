@@ -36,7 +36,7 @@ function attachUser(req, res, next) {
   const userId = token ? sessions.get(token) : null;
   if (userId) {
     const user = (readDb().users || []).find((u) => u.id === userId);
-    if (user) {
+    if (user && !user.suspended) {
       req.user = user;
       req.token = token;
     } else {
@@ -56,6 +56,50 @@ function requireRole(...roles) {
     next();
   };
 }
+
+// ---------- real-time updates (Server-Sent Events) ----------
+const streamClients = new Set();
+let lastNotificationId = ((readDb().notifications || [])[0] || {}).id;
+
+function broadcast(payload) {
+  const msg = `event: update\ndata: ${JSON.stringify(payload)}\n\n`;
+  for (const client of streamClients) client.write(msg);
+}
+
+function broadcastChange() {
+  const latest = (readDb().notifications || [])[0];
+  const payload = { at: Date.now() };
+  if (latest && latest.id !== lastNotificationId) {
+    lastNotificationId = latest.id;
+    payload.title = latest.title;
+    payload.message = latest.message;
+    payload.type = latest.type;
+  }
+  broadcast(payload);
+}
+
+app.get('/api/stream', (req, res) => {
+  res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
+  res.flushHeaders();
+  res.write('retry: 3000\n\n');
+  streamClients.add(res);
+  const ping = setInterval(() => res.write(': ping\n\n'), 25000);
+  req.on('close', () => { clearInterval(ping); streamClients.delete(res); });
+});
+
+// any successful write to the API notifies every connected browser
+app.use('/api', (req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'OPTIONS') {
+    res.on('finish', () => { if (res.statusCode < 400) broadcastChange(); });
+  }
+  next();
+});
+
+// auto-expiry sweep runs in the background so clients see expiries live
+setInterval(() => {
+  const { expiredSwept } = sweepExpiredListings();
+  if (expiredSwept > 0) broadcastChange();
+}, 30000).unref();
 
 // ---------- auth ----------
 app.get('/api/auth/me', (req, res) => {
@@ -98,6 +142,7 @@ app.post('/api/auth/signin', (req, res) => {
   const db = readDb();
   const user = db.users.find((u) => u.email === String(email).trim().toLowerCase());
   if (!user || !verifyPassword(password, user.password)) return res.status(401).json({ error: 'Invalid email or password' });
+  if (user.suspended) return res.status(403).json({ error: 'This account has been suspended by an admin' });
   const token = crypto.randomBytes(24).toString('hex');
   sessions.set(token, user.id);
   res.json({ message: 'Signed in', user: publicUser(user), token });
@@ -113,6 +158,25 @@ app.get('/api/checklist', (req, res) => res.json({ checklist: FOOD_SAFETY_CHECKL
 app.post('/api/ai-detect', (req, res) => res.json(analyzeFoodFreshness(req.body || {})));
 
 // ---------- listings ----------
+const baseName = (n) => String(n || '').replace(/\s*\(.*\)\s*$/, '').trim().toLowerCase();
+
+function isMine(l, user) {
+  if (user.role === USER_ROLES.DONOR) return l.donorId === user.id;
+  if (user.role === USER_ROLES.NGO) return !!(l.claimedBy && l.claimedBy.userId === user.id);
+  if (user.role === USER_ROLES.VOLUNTEER) {
+    return !!(l.claimedBy && (l.claimedBy.userId === user.id || baseName(l.claimedBy.volunteerName) === baseName(user.name)));
+  }
+  return user.role === USER_ROLES.ADMIN;
+}
+
+/** Handover PIN is only visible to the owning donor, the claimant, the assigned volunteer and admins. */
+function sanitizeListing(l, user) {
+  if (!l.claimedBy || !l.claimedBy.handoverCode) return l;
+  const canSee = user && (user.role === USER_ROLES.ADMIN || l.donorId === user.id || isMine(l, user));
+  if (canSee) return l;
+  const { handoverCode, ...claimedBy } = l.claimedBy;
+  return { ...l, claimedBy };
+}
 app.get('/api/listings', (req, res) => {
   const { lat, lng, status, foodType, search, includeExpired } = req.query;
   const { db, expiredSwept } = sweepExpiredListings();
@@ -128,7 +192,8 @@ app.get('/api/listings', (req, res) => {
     filtered = filtered.filter((i) =>
       i.foodTitle.toLowerCase().includes(q) || i.donorName.toLowerCase().includes(q) || (i.location.address || '').toLowerCase().includes(q));
   }
-  const listings = rankListingsForNGO(filtered, ngoLat, ngoLng, calculateHaversineDistance);
+  if (req.query.scope === 'mine' && req.user) filtered = filtered.filter((l) => isMine(l, req.user));
+  const listings = rankListingsForNGO(filtered, ngoLat, ngoLng, calculateHaversineDistance).map((l) => sanitizeListing(l, req.user));
   res.json({ expiredSwept, referencePoint: { lat: ngoLat, lng: ngoLng }, count: listings.length, listings });
 });
 
@@ -183,6 +248,7 @@ app.post('/api/listings/:id/claim', requireRole(USER_ROLES.NGO, USER_ROLES.VOLUN
   listing.status = LISTING_STATUS.CLAIMED;
   listing.claimedBy = {
     userId: req.user.id,
+    handoverCode: String(crypto.randomInt(1000, 10000)),
     ngoName: String(ngoName).trim(),
     volunteerName: String(volunteerName).trim(),
     volunteerPhone: volunteerPhone || req.user.phone || '',
@@ -191,7 +257,7 @@ app.post('/api/listings/:id/claim', requireRole(USER_ROLES.NGO, USER_ROLES.VOLUN
   };
   addNotification(db, { type: 'CLAIMED', title: 'Listing Claimed for Pickup', message: `${listing.claimedBy.ngoName} (Volunteer: ${listing.claimedBy.volunteerName}) claimed "${listing.foodTitle}".` });
   writeDb(db);
-  res.json({ message: 'Listing claimed', listing });
+  res.json({ message: 'Listing claimed', listing: sanitizeListing(listing, req.user) });
 });
 
 app.post('/api/listings/:id/release', requireRole(USER_ROLES.NGO, USER_ROLES.VOLUNTEER, USER_ROLES.ADMIN), (req, res) => {
@@ -216,6 +282,10 @@ app.post('/api/listings/:id/collect', requireRole(USER_ROLES.NGO, USER_ROLES.VOL
   const listing = findListing(db, req.params.id);
   if (!listing) return res.status(404).json({ error: 'Listing not found' });
   if (listing.status !== LISTING_STATUS.CLAIMED) return res.status(409).json({ error: 'Only claimed listings can be collected' });
+  const expected = listing.claimedBy && listing.claimedBy.handoverCode;
+  if (expected && req.user.role !== USER_ROLES.ADMIN && String((req.body || {}).code || '').trim() !== expected) {
+    return res.status(400).json({ error: 'Incorrect handover PIN. Ask the donor for the 4-digit code.' });
+  }
   listing.status = LISTING_STATUS.COLLECTED;
   if (listing.claimedBy) listing.claimedBy.collectedAt = new Date().toISOString();
   addNotification(db, { type: 'COLLECTED', title: 'Food Rescued & Collected!', message: `${listing.quantityMeals} meals ("${listing.foodTitle}") collected by ${listing.claimedBy ? listing.claimedBy.ngoName : 'NGO'}.` });
@@ -333,6 +403,84 @@ app.get('/api/leaderboard', (req, res) => {
 // ---------- admin ----------
 app.get('/api/admin/users', requireRole(USER_ROLES.ADMIN), (req, res) => {
   res.json({ users: (readDb().users || []).map(publicUser) });
+});
+
+app.patch('/api/admin/users/:id', requireRole(USER_ROLES.ADMIN), (req, res) => {
+  const db = readDb();
+  const target = db.users.find((u) => u.id === req.params.id);
+  if (!target) return res.status(404).json({ error: 'User not found' });
+  if (target.id === req.user.id) return res.status(400).json({ error: 'You cannot change your own account' });
+  const { role, suspended } = req.body || {};
+  if (role !== undefined) {
+    if (!Object.values(USER_ROLES).includes(role)) return res.status(400).json({ error: 'Invalid role' });
+    target.role = role;
+  }
+  if (suspended !== undefined) target.suspended = Boolean(suspended);
+  addNotification(db, { type: 'ADMIN_ACTION', title: 'Admin Action', message: `${req.user.name} updated ${target.name}: role=${target.role}, ${target.suspended ? 'suspended' : 'active'}.`, channel: 'Audit Log' });
+  writeDb(db);
+  if (target.suspended) for (const [t, uid] of sessions) if (uid === target.id) sessions.delete(t);
+  res.json({ user: publicUser(target) });
+});
+
+app.get('/api/dashboard', (req, res) => {
+  const { db } = sweepExpiredListings();
+  const L = db.listings;
+  const meals = (arr) => arr.reduce((s, i) => s + Number(i.quantityMeals || 0), 0);
+  const kg = (arr) => Number(arr.reduce((s, i) => s + Number(i.weightKg || 0), 0).toFixed(1));
+  const st = (arr, s) => arr.filter((l) => l.status === s);
+  const avg = (arr) => {
+    const r = arr.filter((l) => l.feedback);
+    return r.length ? Number((r.reduce((s, l) => s + l.feedback.rating, 0) / r.length).toFixed(1)) : null;
+  };
+  const lat = parseFloat(req.query.lat) || 12.9716;
+  const lng = parseFloat(req.query.lng) || 77.5946;
+  const user = req.user;
+  if (!user) return res.json({ role: 'guest' });
+
+  if (user.role === USER_ROLES.DONOR) {
+    const mine = L.filter((l) => isMine(l, user));
+    const done = st(mine, 'collected');
+    const finished = done.length + st(mine, 'expired').length;
+    return res.json({
+      role: 'donor',
+      stats: {
+        listings: mine.length, mealsPosted: meals(mine), mealsRescued: meals(done), kgRescued: kg(done),
+        active: st(mine, 'posted').length, inTransit: st(mine, 'claimed').length,
+        rescueRate: finished ? Math.round((done.length / finished) * 100) : null, avgRating: avg(mine),
+      },
+      recent: mine.slice(0, 4).map((l) => sanitizeListing(l, user)),
+    });
+  }
+  if (user.role === USER_ROLES.NGO || user.role === USER_ROLES.VOLUNTEER) {
+    const mine = L.filter((l) => isMine(l, user));
+    const done = st(mine, 'collected');
+    const urgent = rankListingsForNGO(st(L, 'posted'), lat, lng, calculateHaversineDistance).slice(0, 3);
+    return res.json({
+      role: user.role,
+      stats: {
+        activePickups: st(mine, 'claimed').length, completed: done.length, mealsCollected: meals(done), kgRescued: kg(done),
+        co2: Number((kg(done) * 2.5).toFixed(1)), availableNow: st(L, 'posted').length, rated: done.filter((l) => l.feedback).length,
+      },
+      active: st(mine, 'claimed').map((l) => sanitizeListing(l, user)),
+      urgent,
+    });
+  }
+  const now = Date.now();
+  const roles = {};
+  for (const u of db.users) roles[u.role] = (roles[u.role] || 0) + 1;
+  const finished = st(L, 'collected').length + st(L, 'expired').length;
+  return res.json({
+    role: 'admin',
+    stats: {
+      users: db.users.length, suspended: db.users.filter((u) => u.suspended).length, roles,
+      listings: L.length, posted: st(L, 'posted').length, claimed: st(L, 'claimed').length,
+      collected: st(L, 'collected').length, expired: st(L, 'expired').length,
+      expiringSoon: st(L, 'posted').filter((l) => new Date(l.useBefore) - now < 30 * 60000).length,
+      rescueRate: finished ? Math.round((st(L, 'collected').length / finished) * 100) : null,
+      mealsSaved: meals(st(L, 'collected')),
+    },
+    audit: (db.notifications || []).slice(0, 8),
+  });
 });
 
 app.post('/api/reset-demo', requireRole(USER_ROLES.ADMIN), (req, res) => {
