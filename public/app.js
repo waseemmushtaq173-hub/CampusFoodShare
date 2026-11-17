@@ -23,11 +23,11 @@ const ic = (n) => `<svg class="ic" viewBox="0 0 24 24"><path d="${ICONS[n] || ''
 /* ── State ── */
 let map, markersLayer, ngoMarker = null, accuracyCircle = null;
 let ngoLocation = { lat: 12.9716, lng: 77.5946 };
-let currentUser = null, authToken = null, selectedRole = '';
+let currentUser = null, authToken = null, selectedRole = '', selectedSiRole = '';
 let latestAiScan = { freshnessScore: 95, freshnessStatus: 'Excellent Freshness (Grade A)' };
 let searchTimer = null, pickupDirty = false, lastOwnAction = 0, refreshTimer = null;
 let watchId = null, firstFix = true, lastFetchPos = null, lastFetchAt = 0, lastNotifs = [];
-let gpsBlocked = false, gpsAcc = null, volLayer = null, lastShare = { t: 0, lat: 0, lng: 0 };
+let gpsWarned = false, gpsBlocked = false, gpsAcc = null, volLayer = null, lastShare = { t: 0, lat: 0, lng: 0 };
 const CLAIM_ROLES = ['ngo', 'volunteer', 'admin'];
 
 /* ── Role menus ── */
@@ -132,7 +132,12 @@ function updateAuthUI() {
   renderRoute();
 }
 
-function openAuth(mode = 'signin') { switchAuthTab(mode); $('authModal').classList.add('active'); }
+function setSiRole(role) {
+  selectedSiRole = role;
+  document.querySelectorAll('#siRoleChips .role-chip').forEach((c) => c.classList.toggle('active', c.dataset.role === role));
+}
+function openAuth(mode = 'signin', role) {
+  if (role) setSiRole(role); switchAuthTab(mode); $('authModal').classList.add('active'); }
 function switchAuthTab(mode) {
   document.querySelectorAll('.auth-tab').forEach((t) => t.classList.toggle('active', t.dataset.mode === mode));
   document.querySelectorAll('.auth-form').forEach((f) => f.classList.remove('active'));
@@ -144,8 +149,8 @@ function requireAuth(action) {
   showToast(`Please sign in to ${action}`); openAuth('signin'); return false;
 }
 
-async function doSignIn(email, password) {
-  const r = await api('/api/auth/signin', { method: 'POST', body: { email, password } });
+async function doSignIn(email, password, role) {
+  const r = await api('/api/auth/signin', { method: 'POST', body: { email, password, role } });
   if (!r.ok) { showToast(r.data.error || 'Sign in failed'); return false; }
   saveSession(r.data.user, r.data.token);
   $('authModal').classList.remove('active');
@@ -237,17 +242,23 @@ function startLiveGps(highAccuracy = true) {
   firstFix = true;
   if (highAccuracy) showToast('Requesting your live location…');
   gpsBlocked = false;
+  if (highAccuracy) gpsWarned = false;
   watchId = navigator.geolocation.watchPosition(onPosition, (err) => {
-    navigator.geolocation.clearWatch(watchId); watchId = null;
-    if (err.code === 1) {
+    if (err.code === 1) { // permission denied: the only fatal error
+      navigator.geolocation.clearWatch(watchId); watchId = null;
       gpsBlocked = true; setLiveUI(false);
       showToast('Location permission denied. Allow Location in the browser address bar, then click the GPS chip.');
-    } else if (highAccuracy) {
-      startLiveGps(false); // fall back to network / Wi-Fi positioning
-    } else {
-      setLiveUI(false); showToast('Could not get a GPS fix. Using the default campus location.');
+      return;
     }
-  }, { enableHighAccuracy: highAccuracy, maximumAge: 4000, timeout: highAccuracy ? 12000 : 25000 });
+    // Timeouts / unavailable are normal for a device that is standing still. Keep tracking.
+    if (gpsAcc != null) return;
+    if (highAccuracy) { // no fix yet: fall back to network / Wi-Fi positioning
+      navigator.geolocation.clearWatch(watchId); watchId = null;
+      startLiveGps(false);
+      return;
+    }
+    if (!gpsWarned) { gpsWarned = true; showToast('Still looking for your location. Using the campus default until it locks.'); }
+  }, { enableHighAccuracy: highAccuracy, maximumAge: 15000, timeout: highAccuracy ? 15000 : 60000 });
   try { localStorage.setItem('cf_live', '1'); } catch (e) { /* ignore */ }
   setLiveUI(true);
 }
@@ -639,8 +650,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     ['volunteer', 'Volunteer', 'truck', ['See assigned tasks', 'Turn-by-turn directions', 'PIN-verified collection'], 'volunteer@campusfoodshare.org|vol123'],
     ['admin', 'Admin', 'shield', ['Moderate all listings', 'Manage users and roles', 'Audit every action'], 'admin@campusfoodshare.org|admin123'],
   ];
-  $('roleCards').innerHTML = roleCards.map(([, name, icon, pts, demo]) => `<button class="role-card" data-demo-login="${demo}"><div class="ico">${ic(icon)}</div><h4>${name}</h4><ul>${pts.map((p) => `<li>${p}</li>`).join('')}</ul><span class="go">Try as ${name} →</span></button>`).join('');
-  $('roleCards').addEventListener('click', (e) => { const c = e.target.closest('[data-demo-login]'); if (c) { const [em, pw] = c.dataset.demoLogin.split('|'); doSignIn(em, pw); } });
+  $('roleCards').innerHTML = roleCards.map(([role, name, icon, pts]) => `<button class="role-card" data-role-login="${role}"><div class="ico">${ic(icon)}</div><h4>${name}</h4><ul>${pts.map((p) => `<li>${p}</li>`).join('')}</ul><span class="go">Sign in as ${name} →</span></button>`).join('');
+  $('roleCards').addEventListener('click', (e) => { const c = e.target.closest('[data-role-login]'); if (c) { openAuth('signin', c.dataset.roleLogin); setTimeout(() => $('siEmail').focus(), 120); } });
 
   loadSafetyChecklist();
   await checkAuth();
@@ -653,7 +664,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.querySelectorAll('#signupForm .role-chip').forEach((c) => c.addEventListener('click', () => { document.querySelectorAll('#signupForm .role-chip').forEach((x) => x.classList.remove('active')); c.classList.add('active'); selectedRole = c.dataset.role; }));
   document.querySelectorAll('[data-demo]').forEach((el) => el.addEventListener('click', () => { const [em, pw] = el.dataset.demo.split('|'); $('siEmail').value = em; $('siPassword').value = pw; }));
   [['siTogglePwd', 'siPassword'], ['suTogglePwd', 'suPassword']].forEach(([b, i]) => $(b).addEventListener('click', () => { $(i).type = $(i).type === 'password' ? 'text' : 'password'; $(b).textContent = $(i).type === 'password' ? 'Show' : 'Hide'; }));
-  $('signinForm').addEventListener('submit', async (e) => { e.preventDefault(); if (await doSignIn($('siEmail').value.trim(), $('siPassword').value)) $('signinForm').reset(); });
+  $('signinForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!$('siEmail').value.trim() || !$('siPassword').value) return showToast('Enter your email and password');
+    if (!selectedSiRole) return showToast('Choose the role you are signing in as');
+    if (await doSignIn($('siEmail').value.trim(), $('siPassword').value, selectedSiRole)) { $('signinForm').reset(); setSiRole(''); }
+  });
+  document.querySelectorAll('#siRoleChips .role-chip').forEach((c) => c.addEventListener('click', () => setSiRole(c.dataset.role)));
   $('signupForm').addEventListener('submit', handleSignUp);
   $('authChip').addEventListener('click', () => (currentUser ? go('dashboard') : openAuth('signin')));
   $('closeAuthModalBtn').addEventListener('click', () => $('authModal').classList.remove('active'));
@@ -703,6 +720,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   setInterval(tickCountdowns, 1000);
   setInterval(refreshCurrent, 60000); // safety net if the live stream drops
   setInterval(() => { if (currentRoute() === 'explore') loadLocations(); }, 15000);
+  // GPS heartbeat: stationary devices stop emitting updates, so poll a fresh reading and keep sharing alive
+  setInterval(() => {
+    if (watchId !== null && navigator.geolocation) navigator.geolocation.getCurrentPosition(onPosition, () => {}, { maximumAge: 10000, timeout: 15000 });
+  }, 20000);
+  // GPS watchdog: restart tracking if it ever dropped (unless the user turned it off or it is blocked)
+  const gpsWatchdog = () => {
+    let p = null; try { p = localStorage.getItem('cf_live'); } catch (e) { /* ignore */ }
+    if (watchId === null && !gpsBlocked && p !== '0' && !document.hidden) startLiveGps();
+  };
+  setInterval(gpsWatchdog, 30000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) gpsWatchdog(); });
   $('gpsBanner').addEventListener('click', toggleLiveGps);
 
   // live GPS is on by default; it stays off only if the user switched it off themselves

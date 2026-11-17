@@ -30,6 +30,8 @@ Colleges, hostels, canteens, and campus events often throw away good cooked food
 9. **Live GPS & real-time feed (extension):** `watchPosition` tracking re-ranks distances as you move, and server-sent events (`/api/stream`) refresh every open browser the moment a listing is posted, claimed, collected or expires.
 10. **Handover PIN (extension):** Claiming generates a 4-digit PIN that the donor shares; collection is only accepted with the right PIN.
 
+**Sign-in is role-based (RBAC):** choose your role, then type your own email and password. The server rejects the sign-in if the role does not match the account, locks an email for 10 minutes after 5 failed attempts, and the matching menu and dashboard open.
+
 **Demo logins:** `admin@campusfoodshare.org / admin123`, `donor@campusfoodshare.org / donor123`, `ngo@campusfoodshare.org / ngo123`, `volunteer@campusfoodshare.org / vol123` (set `DB_FILE_PATH` to use a different data file).
 
 ---

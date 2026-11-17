@@ -136,13 +136,28 @@ app.post('/api/auth/signup', (req, res) => {
   res.status(201).json({ message: 'Account created', user: publicUser(user), token });
 });
 
+const failedLogins = new Map(); // email -> { n, until }
+
 app.post('/api/auth/signin', (req, res) => {
-  const { email, password } = req.body || {};
+  const { email, password, role } = req.body || {};
   if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
+  const key = String(email).trim().toLowerCase();
+  const failed = failedLogins.get(key);
+  if (failed && failed.until > Date.now() && failed.n >= 5) {
+    return res.status(429).json({ error: 'Too many failed attempts. Please wait a few minutes and try again.' });
+  }
   const db = readDb();
-  const user = db.users.find((u) => u.email === String(email).trim().toLowerCase());
-  if (!user || !verifyPassword(password, user.password)) return res.status(401).json({ error: 'Invalid email or password' });
+  const user = db.users.find((u) => u.email === key);
+  if (!user || !verifyPassword(password, user.password)) {
+    const n = failed && failed.until > Date.now() ? failed.n + 1 : 1;
+    failedLogins.set(key, { n, until: Date.now() + 10 * 60000 });
+    return res.status(401).json({ error: 'Invalid email or password' });
+  }
   if (user.suspended) return res.status(403).json({ error: 'This account has been suspended by an admin' });
+  if (role && role !== user.role) {
+    return res.status(403).json({ error: `This account is registered as ${user.role.toUpperCase()}. Select "${user.role}" to sign in.` });
+  }
+  failedLogins.delete(key);
   const token = crypto.randomBytes(24).toString('hex');
   sessions.set(token, user.id);
   res.json({ message: 'Signed in', user: publicUser(user), token });

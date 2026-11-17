@@ -72,7 +72,7 @@
             <div><b>Every campus</b>has a mess, a canteen and someone nearby who is hungry</div>
           </div>
           <h3 class="section-title">Pick a role to explore the platform</h3>
-          <p class="muted">Each role gets its own menu and dashboard. Tap a card to sign in instantly with a demo account.</p>
+          <p class="muted">Each role gets its own menu and dashboard. Choose a role, then sign in with your email and password.</p>
           <div id="roleCards" class="role-grid"></div>
         </section>
 
@@ -217,12 +217,22 @@
         <div class="form-group"><label for="siEmail">Email</label><input type="email" id="siEmail" class="input" required placeholder="you@campus.edu" /></div>
         <div class="form-group"><label for="siPassword">Password</label>
           <div class="password-input"><input type="password" id="siPassword" class="input" required placeholder="••••••••" /><button type="button" id="siTogglePwd" class="btn-toggle">Show</button></div></div>
+        <div class="form-group"><label>Sign in as *</label>
+          <div class="role-chips" id="siRoleChips">
+            <button type="button" class="role-chip" data-role="admin">Admin</button>
+            <button type="button" class="role-chip" data-role="donor">Donor / Mess</button>
+            <button type="button" class="role-chip" data-role="ngo">NGO / Receiver</button>
+            <button type="button" class="role-chip" data-role="volunteer">Volunteer</button>
+          </div>
+          <p class="muted" style="margin-top:.4rem">Your role decides which menu and dashboard open. It must match your account.</p></div>
         <button type="submit" class="btn btn-primary btn-block">Sign in</button>
-        <div class="auth-footer"><span>One-click demo:</span>
-          <span class="demo-hint" data-demo="admin@campusfoodshare.org|admin123">Admin</span>
-          <span class="demo-hint" data-demo="donor@campusfoodshare.org|donor123">Donor</span>
-          <span class="demo-hint" data-demo="ngo@campusfoodshare.org|ngo123">NGO</span>
-          <span class="demo-hint" data-demo="volunteer@campusfoodshare.org|vol123">Volunteer</span></div>
+        <details class="cred-box"><summary>Demo accounts for evaluators</summary>
+          <table class="cred-table">
+            <tr><td>Admin</td><td>admin@campusfoodshare.org</td><td>admin123</td></tr>
+            <tr><td>Donor</td><td>donor@campusfoodshare.org</td><td>donor123</td></tr>
+            <tr><td>NGO</td><td>ngo@campusfoodshare.org</td><td>ngo123</td></tr>
+            <tr><td>Volunteer</td><td>volunteer@campusfoodshare.org</td><td>vol123</td></tr>
+          </table></details>
       </form>
       <form id="signupForm" class="auth-form" novalidate>
         <div class="form-group"><label for="suName">Full name</label><input type="text" id="suName" class="input" required placeholder="e.g., Ramesh Kulkarni" /></div>
