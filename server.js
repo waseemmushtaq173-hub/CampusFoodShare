@@ -436,6 +436,7 @@ app.get('/api/dashboard', (req, res) => {
   const lng = parseFloat(req.query.lng) || 77.5946;
   const user = req.user;
   if (!user) return res.json({ role: 'guest' });
+  const withDist = (l) => ({ ...sanitizeListing(l, user), distanceKm: calculateHaversineDistance(lat, lng, Number(l.location.lat), Number(l.location.lng)) });
 
   if (user.role === USER_ROLES.DONOR) {
     const mine = L.filter((l) => isMine(l, user));
@@ -448,7 +449,7 @@ app.get('/api/dashboard', (req, res) => {
         active: st(mine, 'posted').length, inTransit: st(mine, 'claimed').length,
         rescueRate: finished ? Math.round((done.length / finished) * 100) : null, avgRating: avg(mine),
       },
-      recent: mine.slice(0, 4).map((l) => sanitizeListing(l, user)),
+      recent: mine.slice(0, 4).map(withDist),
     });
   }
   if (user.role === USER_ROLES.NGO || user.role === USER_ROLES.VOLUNTEER) {
@@ -461,7 +462,7 @@ app.get('/api/dashboard', (req, res) => {
         activePickups: st(mine, 'claimed').length, completed: done.length, mealsCollected: meals(done), kgRescued: kg(done),
         co2: Number((kg(done) * 2.5).toFixed(1)), availableNow: st(L, 'posted').length, rated: done.filter((l) => l.feedback).length,
       },
-      active: st(mine, 'claimed').map((l) => sanitizeListing(l, user)),
+      active: st(mine, 'claimed').map(withDist),
       urgent,
     });
   }

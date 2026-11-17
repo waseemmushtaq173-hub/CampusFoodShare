@@ -26,6 +26,10 @@ Colleges, hostels, canteens, and campus events often throw away good cooked food
 6. **Roles & Security (extension):** Donor / NGO / Volunteer / Admin accounts with scrypt-hashed passwords, token sessions, and server-enforced role permissions (donors post & withdraw, NGOs/volunteers claim, release, collect & rate, admins manage everything).
 7. **Insights (extension):** 7-day posted-vs-rescued chart, rescued-by-diet donut, rescue rate, donor & NGO leaderboards, live expiry countdowns, one-tap Google Maps directions, and an admin user console.
 
+8. **Role dashboards (extension):** Every role gets its own sidebar menu and dashboard (guest, donor, NGO, volunteer, admin), a colourful light/dark theme, a Ctrl+K command palette and a notification drawer.
+9. **Live GPS & real-time feed (extension):** `watchPosition` tracking re-ranks distances as you move, and server-sent events (`/api/stream`) refresh every open browser the moment a listing is posted, claimed, collected or expires.
+10. **Handover PIN (extension):** Claiming generates a 4-digit PIN that the donor shares; collection is only accepted with the right PIN.
+
 **Demo logins:** `admin@campusfoodshare.org / admin123`, `donor@campusfoodshare.org / donor123`, `ngo@campusfoodshare.org / ngo123`, `volunteer@campusfoodshare.org / vol123` (set `DB_FILE_PATH` to use a different data file).
 
 ---

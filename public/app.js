@@ -165,7 +165,8 @@ async function handleSignUp(e) {
 
 async function signOut() {
   await api('/api/auth/signout', { method: 'POST' });
-  clearSession(); showToast('Signed out'); location.hash = '#/'; renderRoute();
+  history.replaceState(null, '', '#/overview');
+  clearSession(); showToast('Signed out');
 }
 
 async function checkAuth() {
@@ -298,6 +299,11 @@ async function loadNotifications(withMetrics) {
     const m = r.data.metrics;
     $('publicKpis').innerHTML = [[m.totalMealsSaved, 'Meals rescued'], [`${m.totalFoodRescuedKg} kg`, 'Food saved'], [m.activeListingsCount, 'Available now'], [`${m.co2PreventedKg} kg`, 'CO₂e prevented']]
       .map(([v, l]) => `<div class="mini-kpi"><b>${esc(v)}</b><span>${l}</span></div>`).join('');
+    const live = await api(`/api/listings?status=posted&${locQuery()}`);
+    if (live.ok) {
+      $('publicPreview').innerHTML = live.data.listings.slice(0, 3).map((l) => mini(l.foodTitle, `${esc(l.donorName)} · ${esc(l.quantityMeals)} meals · ${esc(l.distanceKm)} km`, `${timerBadge(l.useBefore)}<button class="btn btn-ghost btn-sm" data-open-auth="signin">Sign in to claim</button>`)).join('') || '<div class="empty">Nothing available right now. New listings appear here instantly.</div>';
+      tickCountdowns();
+    }
   }
 }
 
@@ -327,7 +333,7 @@ function cardHtml(item, idx) {
   if (role === 'admin' && item.status !== 'posted') actions += ` <button class="btn btn-danger btn-sm" data-act="delete" data-id="${id}">Remove</button>`;
   const directions = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(item.location.lat + ',' + item.location.lng)}&origin=${encodeURIComponent(ngoLocation.lat + ',' + ngoLocation.lng)}`;
   const done = (s) => (item.status === 'collected' || (s === 2 && item.status === 'claimed') ? 'done' : '');
-  return `<div class="listing-card">
+  return `<div class="listing-card st-${esc(item.status)}">
     <div class="listing-top">
       <div><span class="listing-title">#${idx + 1} · ${esc(item.foodTitle)}</span>
         <div class="sub">${esc(item.donorName)}${item.donorPhone ? ` · <a href="tel:${esc(item.donorPhone.replace(/\s/g, ''))}">${esc(item.donorPhone)}</a>` : ''}</div></div>
@@ -372,16 +378,29 @@ async function loadPickups() {
 }
 
 /* ── Dashboards ── */
-const kpi = (label, value, sub, icon, tone, alert) => `<div class="kpi ${alert ? 'alert' : ''}" style="--tone:${tone}"><div class="k-top"><span>${label}</span><span class="k-ico">${ic(icon)}</span></div><b>${value}</b><small>${sub}</small></div>`;
+const kpi = (label, value, sub, icon, tone, alert) => `<div class="kpi ${alert ? 'alert' : ''}" style="--tone:${tone}"><div class="k-top"><span>${label}</span><span class="k-ico">${ic(icon)}</span></div><b>${typeof value === 'number' ? num(value) : value}</b><small>${sub}</small></div>`;
 const mini = (title, sub, right) => `<div class="mini"><div><strong>${esc(title)}</strong><small>${sub}</small></div><div class="right">${right}</div></div>`;
 const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; };
 const first = () => esc(currentUser.name.replace(/\s*\(.*\)\s*$/, '').split(' ')[0]);
+function animateCounts(root = document) {
+  root.querySelectorAll('[data-count]').forEach((el) => {
+    const target = Number(el.dataset.count), suffix = el.dataset.suffix || '', start = performance.now();
+    if (!isFinite(target) || target === 0) { el.textContent = `0${suffix}`; return; }
+    const step = (t) => {
+      const k = Math.min(1, (t - start) / 700), v = target * (1 - Math.pow(1 - k, 3));
+      el.textContent = `${Number.isInteger(target) ? Math.round(v) : v.toFixed(1)}${suffix}`;
+      if (k < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+}
+const num = (v, suffix = '') => `<span data-count="${Number(v) || 0}" data-suffix="${suffix}">${v}${suffix}</span>`;
 const pct = (v) => (v == null ? '—' : `${v}%`);
 
 async function loadDashboard() {
   if (!currentUser) return;
   const r = await api(`/api/dashboard?${locQuery()}`);
-  if (!r.ok) return;
+  if (!r.ok || !r.data.stats) return;
   const d = r.data, s = d.stats, body = $('dashboardBody');
   const welcome = (sub, buttons) => `<div class="glass welcome"><div><h2>${greeting()}, ${first()}</h2><p class="muted">${sub}</p></div><div class="welcome-actions">${buttons}</div></div>`;
   if (d.role === 'donor') {
@@ -403,7 +422,7 @@ async function loadDashboard() {
       <div class="dash-grid"><div class="glass panel"><h2>Active pickups</h2><div class="mini-list" style="margin-top:.8rem">${d.active.map((l) => mini(l.foodTitle, `${esc(l.location.address)} · ${esc(l.distanceKm)} km`, `${l.claimedBy && l.claimedBy.handoverCode ? `<span class="pin-chip">PIN ${esc(l.claimedBy.handoverCode)}</span>` : ''}<a class="btn btn-ghost btn-sm" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${l.location.lat},${l.location.lng}">Directions</a><button class="btn btn-ok btn-sm" data-act="collect" data-id="${esc(l.id)}">Collect</button>`)).join('') || '<div class="empty">No active pickups right now.</div>'}</div></div>
       <div class="glass panel"><h2>Most urgent near you</h2><div class="mini-list" style="margin-top:.8rem">${d.urgent.map((l) => mini(l.foodTitle, `${esc(l.quantityMeals)} meals · ${esc(l.distanceKm)} km`, `${timerBadge(l.useBefore)}<button class="btn btn-primary btn-sm" data-act="claim" data-id="${esc(l.id)}">Claim</button>`)).join('') || '<div class="empty">Nothing available right now.</div>'}</div></div></div>`;
   }
-  tickCountdowns();
+  tickCountdowns(); animateCounts(body);
 }
 
 /* ── Admin pages ── */
