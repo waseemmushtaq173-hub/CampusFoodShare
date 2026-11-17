@@ -1,9 +1,15 @@
+const STATUS_RANK = { posted: 0, claimed: 1, collected: 2, expired: 3 };
+
 class ListingPriorityQueue {
   constructor(comparator) {
     this.heap = [];
     this.compare =
       comparator ||
       ((a, b) => {
+        // Actionable (posted) listings always surface before claimed / collected / expired ones.
+        const sa = STATUS_RANK[a.status] ?? 9;
+        const sb = STATUS_RANK[b.status] ?? 9;
+        if (sa !== sb) return sa - sb;
         if (a.urgencyScore !== b.urgencyScore) return a.urgencyScore - b.urgencyScore;
         return new Date(a.useBefore) - new Date(b.useBefore);
       });

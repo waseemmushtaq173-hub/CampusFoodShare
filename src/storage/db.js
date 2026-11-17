@@ -1,7 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 const { LISTING_STATUS } = require('../models/schemas');
-const DB_FILE_PATH = path.join(__dirname, '../../data/db.json');
+const DB_FILE_PATH = process.env.DB_FILE_PATH
+  ? path.resolve(process.env.DB_FILE_PATH)
+  : path.join(__dirname, '../../data/db.json');
 
 function ensureDbFile() {
   const dir = path.dirname(DB_FILE_PATH);

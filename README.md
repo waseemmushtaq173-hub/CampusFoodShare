@@ -21,7 +21,12 @@ Colleges, hostels, canteens, and campus events often throw away good cooked food
 2. **Nearest & Soonest-Expiring Ranking (Objective 2):** Combines the **Haversine Formula** (`src/utils/haversine.js`) and a **Min-Heap Priority Queue** (`src/utils/priorityQueue.js`) to rank listings for NGOs and volunteers.
 3. **NGO Claim & Pickup Lifecycle Tracking (Objective 3):** Full state machine (`posted` → `claimed` → `collected` → `expired`) with volunteer attribution and timestamps.
 4. **Automatic Expiry Cleanup & Food-Safety Checklist (Objective 4):** Expired listings are automatically swept on every query, and donors must verify a 4-point food-safety checklist before publishing.
-5. **SDG 2, 11 & 12 Impact Dashboard (Objective 5):** Real-time dashboard tracking total meals saved, kilograms of food rescued, and $	ext{CO}_2	ext{e}$ emissions prevented.
+5. **SDG 2, 11 & 12 Impact Dashboard (Objective 5):** Real-time dashboard tracking total meals saved, kilograms of food rescued, and CO₂e emissions prevented.
+
+6. **Roles & Security (extension):** Donor / NGO / Volunteer / Admin accounts with scrypt-hashed passwords, token sessions, and server-enforced role permissions (donors post & withdraw, NGOs/volunteers claim, release, collect & rate, admins manage everything).
+7. **Insights (extension):** 7-day posted-vs-rescued chart, rescued-by-diet donut, rescue rate, donor & NGO leaderboards, live expiry countdowns, one-tap Google Maps directions, and an admin user console.
+
+**Demo logins:** `admin@campusfoodshare.org / admin123`, `donor@campusfoodshare.org / donor123`, `ngo@campusfoodshare.org / ngo123`, `volunteer@campusfoodshare.org / vol123` (set `DB_FILE_PATH` to use a different data file).
 
 ---
 

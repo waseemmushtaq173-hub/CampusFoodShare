@@ -3,6 +3,8 @@
     {
       "id": "usr-admin-1",
       "name": "Waseem Mushtaq Mir (Admin)",
+      "email": "admin@campusfoodshare.org",
+      "password": "admin123",
       "role": "admin",
       "organization": "CampusFoodShare CSE Control Center",
       "phone": "+91 60065 61291",
@@ -11,6 +13,8 @@
     {
       "id": "usr-donor-1",
       "name": "Ramesh Kulkarni (Mess Warden)",
+      "email": "donor@campusfoodshare.org",
+      "password": "donor123",
       "role": "donor",
       "organization": "Block-A Boys Hostel Mess",
       "phone": "+91 98450 11223",
@@ -19,6 +23,8 @@
     {
       "id": "usr-ngo-1",
       "name": "Sneha Nair (NGO Coordinator)",
+      "email": "ngo@campusfoodshare.org",
+      "password": "ngo123",
       "role": "ngo",
       "organization": "Robin Hood Army - Campus Chapter",
       "phone": "+91 99001 22334",
@@ -27,6 +33,8 @@
     {
       "id": "usr-vol-1",
       "name": "Harsha S (Lead Volunteer)",
+      "email": "volunteer@campusfoodshare.org",
+      "password": "vol123",
       "role": "volunteer",
       "organization": "Campus NSS & Robin Hood Volunteer Wing",
       "phone": "+91 99001 44556",
@@ -47,8 +55,8 @@
       "weightKg": 22.5,
       "aiFreshnessScore": 95,
       "aiFreshnessStatus": "Excellent Freshness (Grade A)",
-      "preparedAt": "2026-11-09T03:53:25.404Z",
-      "useBefore": "2026-11-09T07:23:25.404Z",
+      "preparedAt": "2026-11-09T05:57:34.864Z",
+      "useBefore": "2026-11-09T09:27:34.864Z",
       "status": "posted",
       "safetyChecklistConfirmed": true,
       "checklistItems": [
@@ -64,7 +72,7 @@
       },
       "claimedBy": null,
       "feedback": null,
-      "createdAt": "2026-11-09T04:05:25.404Z"
+      "createdAt": "2026-11-09T06:09:34.864Z"
     },
     {
       "id": "lst-102",
@@ -77,8 +85,8 @@
       "weightKg": 15.8,
       "aiFreshnessScore": 92,
       "aiFreshnessStatus": "Excellent Freshness (Grade A)",
-      "preparedAt": "2026-11-09T03:17:25.404Z",
-      "useBefore": "2026-11-09T06:17:25.404Z",
+      "preparedAt": "2026-11-09T05:21:34.864Z",
+      "useBefore": "2026-11-09T08:21:34.864Z",
       "status": "posted",
       "safetyChecklistConfirmed": true,
       "checklistItems": [
@@ -94,7 +102,7 @@
       },
       "claimedBy": null,
       "feedback": null,
-      "createdAt": "2026-11-09T04:17:25.404Z"
+      "createdAt": "2026-11-09T06:21:34.864Z"
     },
     {
       "id": "lst-103",
@@ -107,8 +115,8 @@
       "weightKg": 31.5,
       "aiFreshnessScore": 96,
       "aiFreshnessStatus": "Excellent Freshness (Grade A)",
-      "preparedAt": "2026-11-09T03:05:25.404Z",
-      "useBefore": "2026-11-09T08:05:25.404Z",
+      "preparedAt": "2026-11-09T05:09:34.864Z",
+      "useBefore": "2026-11-09T10:09:34.864Z",
       "status": "claimed",
       "safetyChecklistConfirmed": true,
       "checklistItems": [
@@ -126,11 +134,11 @@
         "ngoName": "Robin Hood Army - Campus Chapter",
         "volunteerName": "Harsha S",
         "volunteerPhone": "+91 99001 44556",
-        "claimedAt": "2026-11-09T04:47:25.404Z",
+        "claimedAt": "2026-11-09T06:51:34.864Z",
         "collectedAt": null
       },
       "feedback": null,
-      "createdAt": "2026-11-09T03:53:25.404Z"
+      "createdAt": "2026-11-09T05:57:34.864Z"
     },
     {
       "id": "lst-104",
@@ -143,8 +151,8 @@
       "weightKg": 28,
       "aiFreshnessScore": 94,
       "aiFreshnessStatus": "Excellent Freshness (Grade A)",
-      "preparedAt": "2026-11-08T23:05:25.404Z",
-      "useBefore": "2026-11-09T04:05:25.404Z",
+      "preparedAt": "2026-11-09T01:09:34.864Z",
+      "useBefore": "2026-11-09T06:09:34.864Z",
       "status": "collected",
       "safetyChecklistConfirmed": true,
       "checklistItems": [
@@ -162,15 +170,15 @@
         "ngoName": "Akshaya Seva Trust & Shelter",
         "volunteerName": "Mohammed Irfan",
         "volunteerPhone": "+91 99001 55667",
-        "claimedAt": "2026-11-09T01:35:25.404Z",
-        "collectedAt": "2026-11-09T02:17:25.404Z"
+        "claimedAt": "2026-11-09T03:39:34.864Z",
+        "collectedAt": "2026-11-09T04:21:34.864Z"
       },
       "feedback": {
         "rating": 5,
         "comment": "Hygienically packed and still warm upon pickup.",
         "ratedBy": "Akshaya Seva Trust & Shelter"
       },
-      "createdAt": "2026-11-09T00:05:25.404Z"
+      "createdAt": "2026-11-09T02:09:34.864Z"
     }
   ],
   "claims": [],
@@ -181,7 +189,7 @@
       "title": "Surplus Alert Broadcasted",
       "message": "Block-A Boys Hostel Mess posted 65 Veg meals.",
       "channel": "In-App + SMS/Telegram Alert",
-      "createdAt": "2026-11-09T04:11:25.404Z"
+      "createdAt": "2026-11-09T06:15:34.864Z"
     },
     {
       "id": "ntf-2",
@@ -189,7 +197,7 @@
       "title": "NGO Claimed Listing #lst-103",
       "message": "Robin Hood Army (Volunteer: Harsha S) claimed 90 meals.",
       "channel": "In-App + SMS/Telegram Alert",
-      "createdAt": "2026-11-09T04:47:25.404Z"
+      "createdAt": "2026-11-09T06:51:34.864Z"
     }
   ],
   "feedbacks": []

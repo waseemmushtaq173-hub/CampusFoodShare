@@ -6,10 +6,10 @@ function generateSeedData() {
   const now = Date.now();
   const hourMs = 3600 * 1000;
   const users = [
-    { id: 'usr-admin-1', name: 'Waseem Mushtaq Mir (Admin)', role: 'admin', organization: 'CampusFoodShare CSE Control Center', phone: '+91 60065 61291', verified: true },
-    { id: 'usr-donor-1', name: 'Ramesh Kulkarni (Mess Warden)', role: 'donor', organization: 'Block-A Boys Hostel Mess', phone: '+91 98450 11223', verified: true },
-    { id: 'usr-ngo-1', name: 'Sneha Nair (NGO Coordinator)', role: 'ngo', organization: 'Robin Hood Army - Campus Chapter', phone: '+91 99001 22334', verified: true },
-    { id: 'usr-vol-1', name: 'Harsha S (Lead Volunteer)', role: 'volunteer', organization: 'Campus NSS & Robin Hood Volunteer Wing', phone: '+91 99001 44556', verified: true }
+    { id: 'usr-admin-1', name: 'Waseem Mushtaq Mir (Admin)', email: 'admin@campusfoodshare.org', password: 'admin123', role: 'admin', organization: 'CampusFoodShare CSE Control Center', phone: '+91 60065 61291', verified: true },
+    { id: 'usr-donor-1', name: 'Ramesh Kulkarni (Mess Warden)', email: 'donor@campusfoodshare.org', password: 'donor123', role: 'donor', organization: 'Block-A Boys Hostel Mess', phone: '+91 98450 11223', verified: true },
+    { id: 'usr-ngo-1', name: 'Sneha Nair (NGO Coordinator)', email: 'ngo@campusfoodshare.org', password: 'ngo123', role: 'ngo', organization: 'Robin Hood Army - Campus Chapter', phone: '+91 99001 22334', verified: true },
+    { id: 'usr-vol-1', name: 'Harsha S (Lead Volunteer)', email: 'volunteer@campusfoodshare.org', password: 'vol123', role: 'volunteer', organization: 'Campus NSS & Robin Hood Volunteer Wing', phone: '+91 99001 44556', verified: true }
   ];
   const listings = [
     {
