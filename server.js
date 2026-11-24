@@ -16,7 +16,12 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json({ limit: '100kb' }));
+app.disable('x-powered-by');
+app.set('trust proxy', 1);
+app.use((req, res, next) => { res.set('Referrer-Policy', 'strict-origin-when-cross-origin'); next(); });
 app.use(express.static(path.join(__dirname, 'public')));
+// Leaflet is served locally so the map works even when public CDNs are blocked
+app.use('/vendor/leaflet', express.static(path.join(__dirname, 'node_modules', 'leaflet', 'dist')));
 
 // ---------- bootstrap: seed if empty, hash any plaintext passwords ----------
 {
@@ -447,6 +452,62 @@ app.get('/api/locations', requireRole(USER_ROLES.ADMIN, USER_ROLES.DONOR, USER_R
   res.json({ locations: out });
 });
 
+// ---------- "I need food" requests from people in need (public, rate limited) ----------
+const requestHits = new Map(); // ip -> timestamps of recent requests
+
+app.post('/api/requests', (req, res) => {
+  const now = Date.now();
+  const ip = req.ip || 'unknown';
+  const hits = (requestHits.get(ip) || []).filter((t) => now - t < 3600000);
+  if (hits.length >= 5) return res.status(429).json({ error: 'Too many requests from this device. Please try again later.' });
+  const b = req.body || {};
+  const people = Math.round(Number(b.people));
+  const lat = Number(b.lat), lng = Number(b.lng);
+  if (!(people >= 1 && people <= 50)) return res.status(400).json({ error: 'people must be between 1 and 50' });
+  if (b.lat === undefined || b.lng === undefined || !isFinite(lat) || !isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+    return res.status(400).json({ error: 'A valid location is required' });
+  }
+  const db = readDb();
+  db.requests = db.requests || [];
+  const request = {
+    id: newId('req'), people, lat, lng, status: 'open', createdAt: new Date().toISOString(),
+    phone: b.phone ? String(b.phone).replace(/[^\d+ ]/g, '').slice(0, 20) : '',
+    name: b.name ? String(b.name).trim().slice(0, 60) : '',
+    note: b.note ? String(b.note).trim().slice(0, 140) : '',
+  };
+  db.requests.unshift(request);
+  db.requests = db.requests.slice(0, 200);
+  addNotification(db, { type: 'FOOD_REQUEST', title: 'Someone needs food', message: `${people} ${people === 1 ? 'person needs' : 'people need'} food near ${lat.toFixed(3)}, ${lng.toFixed(3)}.` });
+  writeDb(db);
+  hits.push(now);
+  requestHits.set(ip, hits);
+  res.status(201).json({ message: 'Request received', id: request.id });
+});
+
+app.get('/api/requests', requireRole(USER_ROLES.NGO, USER_ROLES.VOLUNTEER, USER_ROLES.ADMIN), (req, res) => {
+  const lat = parseFloat(req.query.lat) || 12.9716;
+  const lng = parseFloat(req.query.lng) || 77.5946;
+  const fresh = Date.now() - 6 * 3600000;
+  const open = (readDb().requests || [])
+    .filter((r) => r.status === 'open' && new Date(r.createdAt).getTime() >= fresh)
+    .map((r) => ({ ...r, distanceKm: calculateHaversineDistance(lat, lng, r.lat, r.lng) }))
+    .sort((a, b) => a.distanceKm - b.distanceKm);
+  res.json({ requests: open, peopleWaiting: open.reduce((sum, r) => sum + r.people, 0) });
+});
+
+app.post('/api/requests/:id/help', requireRole(USER_ROLES.NGO, USER_ROLES.VOLUNTEER, USER_ROLES.ADMIN), (req, res) => {
+  const db = readDb();
+  const request = (db.requests || []).find((r) => r.id === req.params.id);
+  if (!request) return res.status(404).json({ error: 'Request not found' });
+  if (request.status !== 'open') return res.status(409).json({ error: 'This request was already handled' });
+  request.status = 'helped';
+  request.helpedBy = req.user.name;
+  request.helpedAt = new Date().toISOString();
+  addNotification(db, { type: 'REQUEST_HELPED', title: 'Request fulfilled', message: `${req.user.name} helped ${request.people} ${request.people === 1 ? 'person' : 'people'} get food.` });
+  writeDb(db);
+  res.json({ message: 'Marked as helped' });
+});
+
 // ---------- admin ----------
 app.get('/api/admin/users', requireRole(USER_ROLES.ADMIN), (req, res) => {
   res.json({ users: (readDb().users || []).map(publicUser) });
@@ -539,6 +600,14 @@ app.post('/api/reset-demo', requireRole(USER_ROLES.ADMIN), (req, res) => {
 });
 
 app.use('/api', (req, res) => res.status(404).json({ error: 'Unknown API route' }));
+
+// JSON error handler (malformed request bodies, unexpected failures)
+app.use((err, req, res, next) => {
+  if (err && err.type === 'entity.parse.failed') return res.status(400).json({ error: 'Invalid JSON body' });
+  if (err && err.type === 'entity.too.large') return res.status(413).json({ error: 'Request body too large' });
+  console.error(err);
+  res.status(500).json({ error: 'Something went wrong on the server' });
+});
 
 if (require.main === module) {
   app.listen(PORT, () => console.log(`CampusFoodShare running on http://localhost:${PORT}`));

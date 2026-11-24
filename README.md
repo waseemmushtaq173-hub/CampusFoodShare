@@ -32,6 +32,11 @@ Colleges, hostels, canteens, and campus events often throw away good cooked food
 
 **Sign-in is role-based (RBAC):** choose your role, then type your own email and password. The server rejects the sign-in if the role does not match the account, locks an email for 10 minutes after 5 failed attempts, and the matching menu and dashboard open.
 
+11. **Easy mode for everyone (extension):** A picture-first start screen with three giant buttons (*I need food / I have food to give / I want to help*), free-food cards with one-tap walking directions and calling, a tap-only 5-step "give food" flow, an "ask for food" request that alerts NGOs and volunteers, English / Hindi / Kannada, and a read-aloud 🔊 button on every screen. No reading or typing skills are required to find food.
+12. **Map tiles:** Esri street tiles (no API key, no Referer needed) with OpenStreetMap mirrors as fallback; Leaflet is self-hosted so the map survives blocked CDNs.
+
+**Run the automated tests:** `npm test` (boots the real server on a throwaway database and checks auth, RBAC, the PIN lifecycle, live tracking privacy, admin controls, help requests and the live event stream).
+
 **Demo logins:** `admin@campusfoodshare.org / admin123`, `donor@campusfoodshare.org / donor123`, `ngo@campusfoodshare.org / ngo123`, `volunteer@campusfoodshare.org / vol123` (set `DB_FILE_PATH` to use a different data file).
 
 ---

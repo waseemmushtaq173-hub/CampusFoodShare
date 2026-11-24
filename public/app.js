@@ -32,20 +32,21 @@ const CLAIM_ROLES = ['ngo', 'volunteer', 'admin'];
 
 /* ── Role menus ── */
 const NAV = {
-  guest: [['overview', 'Home', 'home'], ['explore', 'Live Map & Feed', 'map'], ['insights', 'Insights', 'chart'], ['roadmap', 'Roadmap', 'rocket']],
-  donor: [['dashboard', 'Dashboard', 'grid'], ['post', 'Post Surplus', 'plus'], ['mylistings', 'My Listings', 'list'], ['explore', 'Live Map', 'map'], ['insights', 'Insights', 'chart'], ['roadmap', 'Roadmap', 'rocket']],
-  ngo: [['dashboard', 'Dashboard', 'grid'], ['explore', 'Find & Claim', 'map'], ['pickups', 'My Pickups', 'truck'], ['insights', 'Insights', 'chart'], ['roadmap', 'Roadmap', 'rocket']],
-  volunteer: [['dashboard', 'Dashboard', 'grid'], ['explore', 'Available Pickups', 'map'], ['pickups', 'My Tasks', 'truck'], ['insights', 'Insights', 'chart'], ['roadmap', 'Roadmap', 'rocket']],
-  admin: [['dashboard', 'Control Center', 'shield'], ['moderation', 'All Listings', 'list'], ['users', 'Users & Roles', 'users'], ['explore', 'Live Map', 'map'], ['post', 'Post Surplus', 'plus'], ['insights', 'Insights', 'chart'], ['roadmap', 'Roadmap', 'rocket']],
+  guest: [['start', 'Start Here', 'heart'], ['need', 'Find Food', 'utensils'], ['overview', 'About', 'home'], ['explore', 'Live Map & Feed', 'map'], ['insights', 'Insights', 'chart'], ['roadmap', 'Roadmap', 'rocket']],
+  donor: [['dashboard', 'Dashboard', 'grid'], ['give', 'Give Food (Easy)', 'heart'], ['post', 'Detailed Form', 'plus'], ['mylistings', 'My Listings', 'list'], ['explore', 'Live Map', 'map'], ['insights', 'Insights', 'chart'], ['roadmap', 'Roadmap', 'rocket']],
+  ngo: [['dashboard', 'Dashboard', 'grid'], ['requests', 'People Needing Food', 'heart'], ['explore', 'Find & Claim', 'map'], ['pickups', 'My Pickups', 'truck'], ['insights', 'Insights', 'chart'], ['roadmap', 'Roadmap', 'rocket']],
+  volunteer: [['dashboard', 'Dashboard', 'grid'], ['requests', 'People Needing Food', 'heart'], ['explore', 'Available Pickups', 'map'], ['pickups', 'My Tasks', 'truck'], ['insights', 'Insights', 'chart'], ['roadmap', 'Roadmap', 'rocket']],
+  admin: [['dashboard', 'Control Center', 'shield'], ['requests', 'People Needing Food', 'heart'], ['moderation', 'All Listings', 'list'], ['users', 'Users & Roles', 'users'], ['explore', 'Live Map', 'map'], ['give', 'Give Food (Easy)', 'heart'], ['post', 'Detailed Form', 'plus'], ['insights', 'Insights', 'chart'], ['roadmap', 'Roadmap', 'rocket']],
 };
 const ROLE_LABEL = { guest: 'Guest', donor: 'Donor', ngo: 'NGO', volunteer: 'Volunteer', admin: 'Admin' };
 const PAGE_SUB = {
   overview: 'Public, read-only view of the platform', explore: 'Real-time listings ranked by distance and expiry', post: 'Alert nearby NGOs in under a minute',
   mylistings: 'Track every listing you have posted', pickups: 'Your claimed and completed rescues', moderation: 'Review and moderate every listing',
   users: 'Manage roles and access', insights: 'Impact analytics and leaderboards', roadmap: 'Shipped features and what is next',
+  start: 'Pick one big button to begin', need: 'Free food close to you', give: 'Give food in a few taps', requests: 'People asking for food near you',
 };
 const roleOf = () => (currentUser ? currentUser.role : 'guest');
-const titleFor = (r) => (r === 'dashboard' ? `${ROLE_LABEL[roleOf()]} ${roleOf() === 'admin' ? 'Control Center' : 'Dashboard'}` : (NAV[roleOf()].find((n) => n[0] === r) || [, 'Home'])[1]);
+const titleFor = (r) => (r === 'dashboard' ? `${ROLE_LABEL[roleOf()]} ${roleOf() === 'admin' ? 'Control Center' : 'Dashboard'}` : navLabel(r, (NAV[roleOf()].find((n) => n[0] === r) || [, 'Home'])[1]));
 
 /* ── Helpers ── */
 function showToast(message) {
@@ -111,7 +112,7 @@ function clearSession() {
 
 function updateAuthUI() {
   const role = roleOf();
-  $('navMenu').innerHTML = NAV[role].map(([id, label, icon]) => `<button class="nav-item" data-route="${id}">${ic(icon)}<span>${esc(label)}</span></button>`).join('');
+  $('navMenu').innerHTML = NAV[role].map(([id, label, icon]) => `<button class="nav-item" data-route="${id}">${ic(icon)}<span>${esc(navLabel(id, label))}</span></button>`).join('');
   $('navLabel').textContent = `${ROLE_LABEL[role]} menu`;
   if (currentUser) {
     const initial = esc((currentUser.name || '?').trim()[0].toUpperCase());
@@ -155,7 +156,7 @@ async function doSignIn(email, password, role) {
   saveSession(r.data.user, r.data.token);
   $('authModal').classList.remove('active');
   showToast(`Signed in as ${r.data.user.name} (${ROLE_LABEL[r.data.user.role]})`);
-  location.hash = '#/dashboard'; renderRoute();
+  location.hash = '#/' + landingAfterLogin(r.data.user.role); renderRoute();
   return true;
 }
 
@@ -171,7 +172,7 @@ async function handleSignUp(e) {
 
 async function signOut() {
   await api('/api/auth/signout', { method: 'POST' });
-  history.replaceState(null, '', '#/overview');
+  history.replaceState(null, '', '#/start');
   clearSession(); showToast('Signed out');
 }
 
@@ -209,7 +210,7 @@ function renderRoute() {
 function loadRoute(route) {
   loadNotifications(route === 'overview');
   ({
-    overview: () => {}, dashboard: loadDashboard, explore: () => { loadListings(); loadLocations(); }, mylistings: loadMyListings, pickups: loadPickups,
+    overview: () => {}, start: loadStart, need: loadNeed, give: renderGive, requests: loadRequests, dashboard: loadDashboard, explore: () => { loadListings(); loadLocations(); }, mylistings: loadMyListings, pickups: loadPickups,
     moderation: loadModeration, users: loadUsers, insights: loadInsights, roadmap: renderRoadmap, post: () => {},
   }[route] || (() => {}))();
 }
@@ -279,14 +280,14 @@ function onPosition(pos) {
   updateNgoCoordsUI(accuracy);
   shareLocation();
   if (firstFix) {
-    firstFix = false; map.setView([ngoLocation.lat, ngoLocation.lng], 15);
+    firstFix = false; if (map) map.setView([ngoLocation.lat, ngoLocation.lng], 15);
     showToast(`Live GPS locked (±${Math.round(accuracy)} m). Distances now update as you move.`);
   }
   if (!pickupDirty) { $('pickupLat').value = ngoLocation.lat; $('pickupLng').value = ngoLocation.lng; }
   const moved = lastFetchPos ? distKm(lastFetchPos, ngoLocation) * 1000 : Infinity;
   if (moved > 25 || Date.now() - lastFetchAt > 20000) {
     lastFetchPos = { ...ngoLocation }; lastFetchAt = Date.now();
-    if (['explore', 'dashboard', 'pickups'].includes(currentRoute())) refreshCurrent();
+    if (['explore', 'dashboard', 'pickups', 'need', 'requests'].includes(currentRoute())) refreshCurrent();
   }
 }
 
@@ -416,8 +417,8 @@ async function loadListings() {
   if ($('searchInput').value) p.set('search', $('searchInput').value);
   const r = await api(`/api/listings?${p}`);
   if (!r.ok) return;
-  markersLayer.clearLayers();
-  r.data.listings.forEach((i) => {
+  if (markersLayer) markersLayer.clearLayers();
+  if (markersLayer) r.data.listings.forEach((i) => {
     const color = { posted: '#22c55e', claimed: '#f59e0b', collected: '#0ea5e9' }[i.status] || '#64748b';
     L.circleMarker([i.location.lat, i.location.lng], { radius: 10, fillColor: color, color: '#fff', weight: 2, fillOpacity: 0.9 })
       .bindPopup(`<strong>${esc(i.foodTitle)}</strong><br/>${esc(i.donorName)}<br/>${esc(i.quantityMeals)} meals · <b>${esc(i.distanceKm)} km</b>`).addTo(markersLayer);
@@ -481,6 +482,7 @@ async function loadDashboard() {
       <div class="glass panel"><h2>Most urgent near you</h2><div class="mini-list" style="margin-top:.8rem">${d.urgent.map((l) => mini(l.foodTitle, `${esc(l.quantityMeals)} meals · ${esc(l.distanceKm)} km`, `${timerBadge(l.useBefore)}<button class="btn btn-primary btn-sm" data-act="claim" data-id="${esc(l.id)}">Claim</button>`)).join('') || '<div class="empty">Nothing available right now.</div>'}</div></div></div>`;
   }
   tickCountdowns(); animateCounts(body);
+  if (['ngo', 'volunteer', 'admin'].includes(d.role)) loadNeedsPanel();
 }
 
 /* ── Admin pages ── */
@@ -600,7 +602,7 @@ function openCmd() {
   cmdItems = [
     ...NAV[role].map(([id, label, icon]) => ({ label: `Go to ${label}`, icon, run: () => go(id) })),
     { label: watchId !== null ? 'Stop live GPS' : 'Start live GPS', icon: 'pin', run: toggleLiveGps },
-    { label: 'Toggle light / dark theme', icon: 'sun', run: toggleTheme },
+    { label: 'Switch theme (dark / light / lavender)', icon: 'sun', run: toggleTheme },
     currentUser ? { label: 'Sign out', icon: 'logout', run: signOut } : { label: 'Sign in / Sign up', icon: 'users', run: () => openAuth('signin') },
   ];
   $('cmdModal').classList.add('active'); $('cmdInput').value = ''; renderCmd(); setTimeout(() => $('cmdInput').focus(), 50);
@@ -614,12 +616,48 @@ function renderCmd() {
 function runCmd(i) { $('cmdModal').classList.remove('active'); if (cmdItems[i]) cmdItems[i].run(); }
 
 /* ── Theme ── */
+const THEMES = ['dark', 'light', 'lavender'];
+const THEME_ICON = { dark: 'sun', light: 'heart', lavender: 'moon' }; // icon hints at the NEXT theme
 function applyTheme(t) {
+  if (!THEMES.includes(t)) t = 'dark';
   document.documentElement.dataset.theme = t;
-  $('themeBtn').innerHTML = ic(t === 'dark' ? 'sun' : 'moon');
+  $('themeBtn').innerHTML = ic(THEME_ICON[t]);
+  $('themeBtn').title = `Theme: ${t} (click to switch)`;
   try { localStorage.setItem('cf_theme', t); } catch (e) { /* ignore */ }
+  setBaseMap();
 }
-const toggleTheme = () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+const toggleTheme = () => applyTheme(THEMES[(THEMES.indexOf(document.documentElement.dataset.theme) + 1) % THEMES.length]);
+
+/* ── Map: keyless Esri tiles first, OSM mirrors as automatic fallback ── */
+const TILE_PROVIDERS = [
+  // Esri World Street Map: no API key and no Referer requirement
+  () => ({ url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', opts: { maxZoom: 19, maxNativeZoom: 19, attribution: 'Tiles &copy; Esri, HERE, Garmin, OpenStreetMap contributors' } }),
+  () => ({ url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', opts: { subdomains: 'abc', maxZoom: 19, attribution: '&copy; OpenStreetMap contributors, HOT' } }),
+  () => ({ url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', opts: { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' } }),
+];
+let tileLayer = null, tileProvider = 0, tileLoads = 0, tileErrors = 0;
+function setBaseMap() {
+  if (!map) return;
+  if (tileLayer) map.removeLayer(tileLayer);
+  const p = TILE_PROVIDERS[tileProvider](document.documentElement.dataset.theme === 'dark');
+  tileLayer = L.tileLayer(p.url, p.opts).addTo(map);
+  tileLoads = 0; tileErrors = 0;
+  tileLayer.on('tileload', () => { tileLoads += 1; });
+  tileLayer.on('tileerror', () => {
+    tileErrors += 1;
+    if (tileLoads === 0 && tileErrors >= 4 && tileProvider < TILE_PROVIDERS.length - 1) { tileProvider += 1; setBaseMap(); }
+  });
+}
+function initMap() {
+  if (typeof L === 'undefined') {
+    $('rescueMap').innerHTML = '<div class="empty" style="margin:1rem">The map library could not load. Listings and everything else still work below.</div>';
+    return;
+  }
+  map = L.map('rescueMap').setView([ngoLocation.lat, ngoLocation.lng], 14);
+  markersLayer = L.layerGroup().addTo(map);
+  volLayer = L.layerGroup().addTo(map);
+  setBaseMap();
+}
 const toggleLiveGps = () => (watchId !== null ? stopLiveGps() : startLiveGps());
 
 /* ── Boot ── */
@@ -631,11 +669,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const live = document.createElement('span'); live.id = 'liveBadge'; live.className = 'live-badge'; live.innerHTML = '<i></i>Live';
   document.querySelector('.top-actions').prepend(live);
 
-  map = L.map('rescueMap').setView([ngoLocation.lat, ngoLocation.lng], 14);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap | CampusFoodShare' }).addTo(map);
-  markersLayer = L.layerGroup().addTo(map);
-  volLayer = L.layerGroup().addTo(map);
-  map.on('click', (e) => {
+  initMap();
+  if (map) map.on('click', (e) => {
     pickupDirty = true;
     $('pickupLat').value = Number(e.latlng.lat.toFixed(5)); $('pickupLng').value = Number(e.latlng.lng.toFixed(5));
     showToast(`Pickup pin set to ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`);

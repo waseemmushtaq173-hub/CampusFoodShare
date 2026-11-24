@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
   <title>CampusFoodShare | Campus Surplus Food Rescue Platform</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -32,6 +33,8 @@
           <p id="pageSub"></p>
         </div>
         <div class="top-actions">
+          <select id="langSelect" class="input lang-select" aria-label="Language"><option value="en">English</option><option value="hi">हिन्दी</option><option value="kn">ಕನ್ನಡ</option></select>
+          <button id="easyBtn" class="btn btn-ghost btn-sm" aria-pressed="true" title="Big buttons and pictures">Easy mode</button>
           <button id="cmdBtn" class="cmd-btn" title="Jump to anything"><span id="cmdIcon"></span><span class="cmd-text">Jump to…</span><kbd>Ctrl K</kbd></button>
           <button id="useMyLocationBtn" class="chip-pill" title="Use my GPS"><span id="gpsIcon"></span><span id="currentCoordsLabel">12.9716, 77.5946</span></button>
           <button id="themeBtn" class="icon-btn" aria-label="Toggle theme"></button>
@@ -74,6 +77,31 @@
           <h3 class="section-title">Pick a role to explore the platform</h3>
           <p class="muted">Each role gets its own menu and dashboard. Choose a role, then sign in with your email and password.</p>
           <div id="roleCards" class="role-grid"></div>
+        </section>
+
+        <section class="view" id="view-start">
+          <div class="start-head"><h2 data-i18n="startTitle">What do you want to do?</h2><span class="speak" role="button" tabindex="0" data-speak="startTitle" title="Listen">🔊</span></div>
+          <div class="big-tiles">
+            <button class="big-tile t-need" data-tile="need"><span class="speak" role="button" tabindex="0" data-speak="needFood" title="Listen">🔊</span><span class="emo">🍽️</span><b data-i18n="needFood">I NEED FOOD</b><small data-i18n="needFoodSub">See free food near you</small></button>
+            <button class="big-tile t-give" data-tile="give"><span class="speak" role="button" tabindex="0" data-speak="giveFood" title="Listen">🔊</span><span class="emo">🎁</span><b data-i18n="giveFood">I HAVE FOOD TO GIVE</b><small data-i18n="giveFoodSub">Tell hungry people now</small></button>
+            <button class="big-tile t-help" data-tile="help"><span class="speak" role="button" tabindex="0" data-speak="helpOut" title="Listen">🔊</span><span class="emo">🤝</span><b data-i18n="helpOut">I WANT TO HELP</b><small data-i18n="helpOutSub">Volunteer or NGO</small></button>
+          </div>
+          <div id="startLive" class="start-live"></div>
+          <div class="lang-row"><button class="lang-chip" data-lang="en">English</button><button class="lang-chip" data-lang="hi">हिन्दी</button><button class="lang-chip" data-lang="kn">ಕನ್ನಡ</button></div>
+        </section>
+
+        <section class="view" id="view-need">
+          <div id="needLoc" class="big-note"></div>
+          <div class="start-head"><h2 data-i18n="freeFood">Free food near you</h2><span class="speak" role="button" tabindex="0" data-speak="freeFood" title="Listen">🔊</span></div>
+          <div id="needList" class="need-list"></div>
+          <button id="askBtn" class="big-cta cta-red" data-ask="1"><span class="emo">🙋</span><b data-i18n="askFood">Nobody near me? Ask for food</b></button>
+        </section>
+
+        <section class="view" id="view-give"><div id="giveBody"></div></section>
+
+        <section class="view" id="view-requests">
+          <div class="start-head"><h2 data-i18n="reqTitle">People who need food</h2></div>
+          <div id="requestsList" class="need-list"></div>
         </section>
 
         <section class="view" id="view-dashboard"><div id="dashboardBody"></div></section>
@@ -255,6 +283,22 @@
     </div>
   </div>
 
+  <div id="reqModal" class="modal-overlay">
+    <div class="modal big-modal">
+      <div class="modal-header"><h3 data-i18n="howMany">How many people need food?</h3><button id="closeReqBtn" class="icon-btn" aria-label="Close"></button></div>
+      <div id="reqForm">
+        <div class="num-row" id="reqPeople">
+          <button type="button" class="num-btn active" data-people="1">1</button><button type="button" class="num-btn" data-people="2">2</button><button type="button" class="num-btn" data-people="3">3</button>
+          <button type="button" class="num-btn" data-people="4">4</button><button type="button" class="num-btn" data-people="5">5</button><button type="button" class="num-btn" data-people="10">10+</button>
+        </div>
+        <label for="reqPhone" data-i18n="phoneOpt">Your phone number (optional)</label>
+        <input id="reqPhone" class="input big" inputmode="tel" autocomplete="tel" placeholder="+91 ..." />
+        <button id="reqSend" class="big-cta cta-green" type="button"><span class="emo">✅</span><b data-i18n="sendReq">SEND</b></button>
+      </div>
+      <div id="reqDone" class="req-done" style="display:none"><div class="emo">✅</div><h3 data-i18n="thanks">Thank you! Help is on the way.</h3><p data-i18n="thanksSub">NGOs and volunteers near you have been told.</p></div>
+    </div>
+  </div>
+
   <div id="claimModal" class="modal-overlay">
     <div class="modal">
       <div class="modal-header"><h3>Claim surplus pickup</h3><button id="closeClaimModalBtn" class="icon-btn" aria-label="Close"></button></div>
@@ -296,7 +340,8 @@
     </div>
   </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/vendor/leaflet/leaflet.js"></script>
   <script src="app.js"></script>
+  <script src="easy.js"></script>
 </body>
 </html>

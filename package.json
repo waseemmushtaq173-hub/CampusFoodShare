@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "seed": "node src/seed/seedFaker.js"
+    "seed": "node src/seed/seedFaker.js",
+    "test": "node --test \"test/**/*.test.js\""
   },
   "authors": [
     "Waseem Mushtaq Mir (1BG25CS184)",
@@ -17,6 +18,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "leaflet": "^1.9.4",
     "mongoose": "^8.4.0"
   }
 }
