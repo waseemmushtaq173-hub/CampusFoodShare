@@ -2,61 +2,273 @@
   "users": [
     {
       "id": "usr-admin-1",
-      "name": "Waseem Mushtaq Mir (Admin)",
+      "name": "Waseem Mushtaq Mir",
       "email": "admin@campusfoodshare.org",
-      "password": "scrypt$8ce062d5d1e3f429967213d1e5d1e678$df4fef4131a1417fd1a23694b0892f58d774747cf4dfc447a5ee9536e33fb830",
+      "password": "admin123",
       "role": "admin",
-      "organization": "CampusFoodShare CSE Control Center",
+      "organization": "CampusFoodShare Operations",
       "phone": "+91 60065 61291",
-      "verified": true
+      "verified": true,
+      "createdAt": "2026-10-26T12:26:25.967Z"
     },
     {
       "id": "usr-donor-1",
-      "name": "Ramesh Kulkarni (Mess Warden)",
+      "name": "Ramesh Kulkarni",
       "email": "donor@campusfoodshare.org",
-      "password": "scrypt$abb7fd2cd377e3aec61d40d50378b63d$b6910de4eb6e74a7b1a5fe1760c2237709510970271ab298f2172ea774eee697",
+      "password": "donor123",
       "role": "donor",
       "organization": "Block-A Boys Hostel Mess",
       "phone": "+91 98450 11223",
-      "verified": true
+      "verified": true,
+      "createdAt": "2026-10-27T12:26:25.967Z"
+    },
+    {
+      "id": "usr-donor-2",
+      "name": "Meera Iyer",
+      "email": "meera@campusfoodshare.org",
+      "password": "donor123",
+      "role": "donor",
+      "organization": "Central Engineering Canteen",
+      "phone": "+91 98450 44556",
+      "verified": true,
+      "createdAt": "2026-10-28T12:26:25.967Z"
+    },
+    {
+      "id": "usr-donor-3",
+      "name": "Arjun Rao",
+      "email": "arjun@campusfoodshare.org",
+      "password": "donor123",
+      "role": "donor",
+      "organization": "Girls Hostel Mess, Block-C",
+      "phone": "+91 98450 99001",
+      "verified": true,
+      "createdAt": "2026-10-29T12:26:25.967Z"
+    },
+    {
+      "id": "usr-donor-4",
+      "name": "Farah Khan",
+      "email": "farah@campusfoodshare.org",
+      "password": "donor123",
+      "role": "donor",
+      "organization": "South Campus Food Court",
+      "phone": "+91 98450 77889",
+      "verified": true,
+      "createdAt": "2026-10-30T12:26:25.967Z"
+    },
+    {
+      "id": "usr-donor-5",
+      "name": "Naveen Prasad",
+      "email": "naveen@campusfoodshare.org",
+      "password": "donor123",
+      "role": "donor",
+      "organization": "Tech Symposium Catering Committee",
+      "phone": "+91 98450 22110",
+      "verified": true,
+      "createdAt": "2026-10-31T12:26:25.967Z"
     },
     {
       "id": "usr-ngo-1",
-      "name": "Sneha Nair (NGO Coordinator)",
+      "name": "Sneha Nair",
       "email": "ngo@campusfoodshare.org",
-      "password": "scrypt$4c88dc77d2c124b66fcc901082dab092$9314ec180a24ff5ec7f5be9e267b7c47669ee86022abe42760b49d1ce6a2d9ec",
+      "password": "ngo123",
       "role": "ngo",
-      "organization": "Robin Hood Army - Campus Chapter",
+      "organization": "Robin Hood Army, Campus Chapter",
       "phone": "+91 99001 22334",
-      "verified": true
+      "verified": true,
+      "createdAt": "2026-11-01T12:26:25.967Z"
+    },
+    {
+      "id": "usr-ngo-2",
+      "name": "Imran Sheikh",
+      "email": "imran@campusfoodshare.org",
+      "password": "ngo123",
+      "role": "ngo",
+      "organization": "Akshaya Seva Trust & Shelter",
+      "phone": "+91 99001 55667",
+      "verified": true,
+      "createdAt": "2026-11-02T12:26:25.967Z"
+    },
+    {
+      "id": "usr-ngo-3",
+      "name": "Lakshmi Devi",
+      "email": "lakshmi@campusfoodshare.org",
+      "password": "ngo123",
+      "role": "ngo",
+      "organization": "Annapurna Community Kitchen",
+      "phone": "+91 99001 88990",
+      "verified": true,
+      "createdAt": "2026-11-03T12:26:25.967Z"
     },
     {
       "id": "usr-vol-1",
-      "name": "Harsha S (Lead Volunteer)",
+      "name": "Harsha S",
       "email": "volunteer@campusfoodshare.org",
-      "password": "scrypt$12730ffd5ff2ccfa93d7c74b646cf2fe$9052593adeb8e99975752c1656433f8c2cc38e42ce97ed3aa372f0df3d7fa20f",
+      "password": "vol123",
       "role": "volunteer",
-      "organization": "Campus NSS & Robin Hood Volunteer Wing",
+      "organization": "Campus NSS Volunteer Wing",
       "phone": "+91 99001 44556",
-      "verified": true
+      "verified": true,
+      "createdAt": "2026-11-04T12:26:25.967Z"
+    },
+    {
+      "id": "usr-vol-2",
+      "name": "Mohammed Irfan",
+      "email": "irfan@campusfoodshare.org",
+      "password": "vol123",
+      "role": "volunteer",
+      "organization": "Akshaya Seva Trust & Shelter",
+      "phone": "+91 99001 66778",
+      "verified": true,
+      "createdAt": "2026-11-05T12:26:25.967Z"
+    },
+    {
+      "id": "usr-vol-3",
+      "name": "Priya Menon",
+      "email": "priya@campusfoodshare.org",
+      "password": "vol123",
+      "role": "volunteer",
+      "organization": "Annapurna Community Kitchen",
+      "phone": "+91 99001 33445",
+      "verified": true,
+      "createdAt": "2026-11-06T12:26:25.967Z"
     }
   ],
   "donors": [],
   "ngos": [],
   "listings": [
     {
-      "id": "lst-101",
+      "id": "lst-103",
+      "donorId": "usr-donor-3",
+      "donorName": "Girls Hostel Mess, Block-C",
+      "donorPhone": "+91 98450 99001",
+      "foodTitle": "Poha, Upma & Filter Coffee Flasks",
+      "foodType": "Veg",
+      "quantityMeals": 42,
+      "weightKg": 14.7,
+      "aiFreshnessScore": 97,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-25T11:38:25.967Z",
+      "useBefore": "2026-11-25T16:14:25.967Z",
+      "status": "posted",
+      "safetyChecklistConfirmed": true,
+      "checklistItems": [
+        "temp_control",
+        "hygienic_containers",
+        "no_spoilage",
+        "allergen_labeled"
+      ],
+      "location": {
+        "address": "Girls Hostel Mess, side gate",
+        "lat": 12.9747,
+        "lng": 77.5973
+      },
+      "claimedBy": null,
+      "feedback": null,
+      "createdAt": "2026-11-25T12:08:25.967Z"
+    },
+    {
+      "id": "lst-105",
+      "donorId": "usr-donor-4",
+      "donorName": "South Campus Food Court",
+      "donorPhone": "+91 98450 77889",
+      "foodTitle": "Veg Sandwich & Fruit Salad Boxes",
+      "foodType": "Vegan",
+      "quantityMeals": 30,
+      "weightKg": 10.5,
+      "aiFreshnessScore": 96,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-25T11:32:25.967Z",
+      "useBefore": "2026-11-25T15:38:25.967Z",
+      "status": "posted",
+      "safetyChecklistConfirmed": true,
+      "checklistItems": [
+        "temp_control",
+        "hygienic_containers",
+        "no_spoilage",
+        "allergen_labeled"
+      ],
+      "location": {
+        "address": "South Campus Food Court, counter 4",
+        "lat": 12.9107,
+        "lng": 77.5602
+      },
+      "claimedBy": null,
+      "feedback": null,
+      "createdAt": "2026-11-25T12:02:25.967Z"
+    },
+    {
+      "id": "lst-108",
+      "donorId": "usr-donor-2",
+      "donorName": "Central Engineering Canteen",
+      "donorPhone": "+91 98450 44556",
+      "foodTitle": "Bread Loaves, Buns & Veg Puff Packs",
+      "foodType": "Bakery",
+      "quantityMeals": 36,
+      "weightKg": 12.6,
+      "aiFreshnessScore": 91,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-25T11:26:25.967Z",
+      "useBefore": "2026-11-25T17:26:25.967Z",
+      "status": "posted",
+      "safetyChecklistConfirmed": true,
+      "checklistItems": [
+        "temp_control",
+        "hygienic_containers",
+        "no_spoilage",
+        "allergen_labeled"
+      ],
+      "location": {
+        "address": "Canteen Annexe, east campus",
+        "lat": 12.9794,
+        "lng": 77.6394
+      },
+      "claimedBy": null,
+      "feedback": null,
+      "createdAt": "2026-11-25T11:56:25.967Z"
+    },
+    {
+      "id": "lst-104",
+      "donorId": "usr-donor-4",
+      "donorName": "South Campus Food Court",
+      "donorPhone": "+91 98450 77889",
+      "foodTitle": "Lemon Rice, Curd Rice & Pickle Packets",
+      "foodType": "Veg",
+      "quantityMeals": 40,
+      "weightKg": 14,
+      "aiFreshnessScore": 95,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-25T11:20:25.967Z",
+      "useBefore": "2026-11-25T15:02:25.967Z",
+      "status": "posted",
+      "safetyChecklistConfirmed": true,
+      "checklistItems": [
+        "temp_control",
+        "hygienic_containers",
+        "no_spoilage",
+        "allergen_labeled"
+      ],
+      "location": {
+        "address": "South Campus Food Court, Gate 2",
+        "lat": 12.9142,
+        "lng": 77.5627
+      },
+      "claimedBy": null,
+      "feedback": null,
+      "createdAt": "2026-11-25T11:50:25.967Z"
+    },
+    {
+      "id": "lst-109",
       "donorId": "usr-donor-1",
       "donorName": "Block-A Boys Hostel Mess",
       "donorPhone": "+91 98450 11223",
-      "foodTitle": "Steamed Rice, Dal Tadka & Mixed Veg Curry",
+      "foodTitle": "Chapati, Paneer Sabzi & Jeera Rice",
       "foodType": "Veg",
-      "quantityMeals": 65,
-      "weightKg": 22.5,
+      "quantityMeals": 48,
+      "weightKg": 16.8,
       "aiFreshnessScore": 95,
       "aiFreshnessStatus": "Excellent Freshness (Grade A)",
-      "preparedAt": "2026-11-17T13:09:15.922Z",
-      "useBefore": "2026-11-17T16:39:15.922Z",
+      "preparedAt": "2026-11-25T11:14:25.967Z",
+      "useBefore": "2026-11-25T14:26:25.967Z",
       "status": "posted",
       "safetyChecklistConfirmed": true,
       "checklistItems": [
@@ -66,57 +278,27 @@
         "allergen_labeled"
       ],
       "location": {
-        "address": "Block-A Hostel Mess Loading Bay",
-        "lat": 12.9738,
-        "lng": 77.5935
+        "address": "West Block Mess, main gate",
+        "lat": 12.934,
+        "lng": 77.5381
       },
       "claimedBy": null,
       "feedback": null,
-      "createdAt": "2026-11-17T13:21:15.922Z"
+      "createdAt": "2026-11-25T11:44:25.967Z"
     },
     {
-      "id": "lst-102",
-      "donorId": "donor-2",
-      "donorName": "Central Engineering Canteen",
-      "donorPhone": "+91 98450 44556",
-      "foodTitle": "Vegetable Pulao, Raita & Chapati Packs",
-      "foodType": "Veg",
-      "quantityMeals": 45,
-      "weightKg": 15.8,
-      "aiFreshnessScore": 92,
-      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
-      "preparedAt": "2026-11-17T12:33:15.922Z",
-      "useBefore": "2026-11-17T15:33:15.922Z",
-      "status": "posted",
-      "safetyChecklistConfirmed": true,
-      "checklistItems": [
-        "temp_control",
-        "hygienic_containers",
-        "no_spoilage",
-        "allergen_labeled"
-      ],
-      "location": {
-        "address": "Central Canteen Rear Entrance",
-        "lat": 12.9698,
-        "lng": 77.5968
-      },
-      "claimedBy": null,
-      "feedback": null,
-      "createdAt": "2026-11-17T13:33:15.922Z"
-    },
-    {
-      "id": "lst-103",
-      "donorId": "donor-3",
-      "donorName": "IEEE Annual Tech Symposium Catering",
+      "id": "lst-111",
+      "donorId": "usr-donor-4",
+      "donorName": "South Campus Food Court",
       "donorPhone": "+91 98450 77889",
-      "foodTitle": "Paneer Biryani & Assorted Sandwich Trays",
+      "foodTitle": "Rajma Chawal & Salad Boxes",
       "foodType": "Veg",
-      "quantityMeals": 90,
-      "weightKg": 31.5,
-      "aiFreshnessScore": 96,
+      "quantityMeals": 50,
+      "weightKg": 17.5,
+      "aiFreshnessScore": 95,
       "aiFreshnessStatus": "Excellent Freshness (Grade A)",
-      "preparedAt": "2026-11-17T12:21:15.922Z",
-      "useBefore": "2026-11-17T17:21:15.922Z",
+      "preparedAt": "2026-11-25T11:14:25.967Z",
+      "useBefore": "2026-11-25T15:14:25.967Z",
       "status": "claimed",
       "safetyChecklistConfirmed": true,
       "checklistItems": [
@@ -126,35 +308,195 @@
         "allergen_labeled"
       ],
       "location": {
-        "address": "Main Auditorium VIP Gate",
+        "address": "South Campus Food Court, Gate 1",
+        "lat": 12.9122,
+        "lng": 77.5642
+      },
+      "claimedBy": {
+        "userId": "usr-ngo-3",
+        "ngoName": "Annapurna Community Kitchen",
+        "volunteerName": "Priya Menon",
+        "volunteerPhone": "+91 99001 33445",
+        "claimedAt": "2026-11-25T12:14:25.967Z",
+        "collectedAt": null,
+        "handoverCode": "7305",
+        "sim": true
+      },
+      "feedback": null,
+      "createdAt": "2026-11-25T11:44:25.967Z"
+    },
+    {
+      "id": "lst-102",
+      "donorId": "usr-donor-2",
+      "donorName": "Central Engineering Canteen",
+      "donorPhone": "+91 98450 44556",
+      "foodTitle": "Vegetable Pulao, Raita & Chapati Packs",
+      "foodType": "Veg",
+      "quantityMeals": 45,
+      "weightKg": 15.7,
+      "aiFreshnessScore": 92,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-25T11:08:25.967Z",
+      "useBefore": "2026-11-25T13:44:25.967Z",
+      "status": "posted",
+      "safetyChecklistConfirmed": true,
+      "checklistItems": [
+        "temp_control",
+        "hygienic_containers",
+        "no_spoilage",
+        "allergen_labeled"
+      ],
+      "location": {
+        "address": "Central Canteen, rear entrance",
+        "lat": 12.9698,
+        "lng": 77.5968
+      },
+      "claimedBy": null,
+      "feedback": null,
+      "createdAt": "2026-11-25T11:38:25.967Z"
+    },
+    {
+      "id": "lst-106",
+      "donorId": "usr-donor-3",
+      "donorName": "Girls Hostel Mess, Block-C",
+      "donorPhone": "+91 98450 99001",
+      "foodTitle": "Idli, Sambar & Coconut Chutney",
+      "foodType": "Veg",
+      "quantityMeals": 55,
+      "weightKg": 19.3,
+      "aiFreshnessScore": 93,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-25T11:02:25.967Z",
+      "useBefore": "2026-11-25T14:14:25.967Z",
+      "status": "posted",
+      "safetyChecklistConfirmed": true,
+      "checklistItems": [
+        "temp_control",
+        "hygienic_containers",
+        "no_spoilage",
+        "allergen_labeled"
+      ],
+      "location": {
+        "address": "Hostel Block-C Mess, main gate",
+        "lat": 12.9163,
+        "lng": 77.5588
+      },
+      "claimedBy": null,
+      "feedback": null,
+      "createdAt": "2026-11-25T11:32:25.967Z"
+    },
+    {
+      "id": "lst-101",
+      "donorId": "usr-donor-1",
+      "donorName": "Block-A Boys Hostel Mess",
+      "donorPhone": "+91 98450 11223",
+      "foodTitle": "Steamed Rice, Dal Tadka & Mixed Veg Curry",
+      "foodType": "Veg",
+      "quantityMeals": 65,
+      "weightKg": 22.8,
+      "aiFreshnessScore": 96,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-25T10:56:25.967Z",
+      "useBefore": "2026-11-25T14:44:25.967Z",
+      "status": "posted",
+      "safetyChecklistConfirmed": true,
+      "checklistItems": [
+        "temp_control",
+        "hygienic_containers",
+        "no_spoilage",
+        "allergen_labeled"
+      ],
+      "location": {
+        "address": "Block-A Hostel Mess, loading bay",
+        "lat": 12.9738,
+        "lng": 77.5935
+      },
+      "claimedBy": null,
+      "feedback": null,
+      "createdAt": "2026-11-25T11:26:25.967Z"
+    },
+    {
+      "id": "lst-110",
+      "donorId": "usr-donor-5",
+      "donorName": "Tech Symposium Catering Committee",
+      "donorPhone": "+91 98450 22110",
+      "foodTitle": "Paneer Biryani & Assorted Sandwich Trays",
+      "foodType": "Veg",
+      "quantityMeals": 90,
+      "weightKg": 31.5,
+      "aiFreshnessScore": 96,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-25T10:50:25.967Z",
+      "useBefore": "2026-11-25T14:50:25.967Z",
+      "status": "claimed",
+      "safetyChecklistConfirmed": true,
+      "checklistItems": [
+        "temp_control",
+        "hygienic_containers",
+        "no_spoilage",
+        "allergen_labeled"
+      ],
+      "location": {
+        "address": "Main Auditorium, VIP gate",
         "lat": 12.9752,
         "lng": 77.5991
       },
       "claimedBy": {
         "userId": "usr-ngo-1",
-        "handoverCode": "4821",
-        "ngoName": "Robin Hood Army - Campus Chapter",
+        "ngoName": "Robin Hood Army, Campus Chapter",
         "volunteerName": "Harsha S",
         "volunteerPhone": "+91 99001 44556",
-        "claimedAt": "2026-11-17T14:03:15.922Z",
-        "collectedAt": null
+        "claimedAt": "2026-11-25T12:02:25.967Z",
+        "collectedAt": null,
+        "handoverCode": "4821",
+        "sim": true
       },
       "feedback": null,
-      "createdAt": "2026-11-17T13:09:15.922Z"
+      "createdAt": "2026-11-25T11:20:25.967Z"
     },
     {
-      "id": "lst-104",
+      "id": "lst-107",
+      "donorId": "usr-donor-5",
+      "donorName": "Tech Symposium Catering Committee",
+      "donorPhone": "+91 98450 22110",
+      "foodTitle": "Chicken Biryani & Raita Trays",
+      "foodType": "Non-Veg",
+      "quantityMeals": 70,
+      "weightKg": 24.5,
+      "aiFreshnessScore": 94,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-25T10:44:25.967Z",
+      "useBefore": "2026-11-25T14:20:25.967Z",
+      "status": "posted",
+      "safetyChecklistConfirmed": true,
+      "checklistItems": [
+        "temp_control",
+        "hygienic_containers",
+        "no_spoilage",
+        "allergen_labeled"
+      ],
+      "location": {
+        "address": "Seminar Hall, service entrance",
+        "lat": 13.0377,
+        "lng": 77.5982
+      },
+      "claimedBy": null,
+      "feedback": null,
+      "createdAt": "2026-11-25T11:14:25.967Z"
+    },
+    {
+      "id": "lst-112",
       "donorId": "usr-donor-1",
-      "donorName": "Girls Hostel Mess Block-C",
-      "donorPhone": "+91 98450 99001",
+      "donorName": "Block-A Boys Hostel Mess",
+      "donorPhone": "+91 98450 11223",
       "foodTitle": "Idli, Vada & Sambar Containers",
       "foodType": "Veg",
       "quantityMeals": 80,
       "weightKg": 28,
       "aiFreshnessScore": 94,
       "aiFreshnessStatus": "Excellent Freshness (Grade A)",
-      "preparedAt": "2026-11-17T08:21:15.922Z",
-      "useBefore": "2026-11-17T13:21:15.922Z",
+      "preparedAt": "2026-11-25T06:26:25.967Z",
+      "useBefore": "2026-11-25T09:56:25.967Z",
       "status": "collected",
       "safetyChecklistConfirmed": true,
       "checklistItems": [
@@ -164,44 +506,934 @@
         "allergen_labeled"
       ],
       "location": {
-        "address": "Girls Hostel Block-C Gate",
-        "lat": 12.9682,
-        "lng": 77.5918
+        "address": "Block-A Boys Hostel Mess, pickup point",
+        "lat": 12.9694,
+        "lng": 77.5932
+      },
+      "claimedBy": {
+        "userId": "usr-ngo-2",
+        "ngoName": "Akshaya Seva Trust & Shelter",
+        "volunteerName": "Mohammed Irfan",
+        "volunteerPhone": "+91 99001 66778",
+        "claimedAt": "2026-11-25T08:26:25.967Z",
+        "collectedAt": "2026-11-25T09:14:25.967Z"
+      },
+      "feedback": {
+        "id": "fb-112",
+        "rating": 5,
+        "comment": "Hygienically packed and still warm when we arrived.",
+        "ratedBy": "Akshaya Seva Trust & Shelter",
+        "createdAt": "2026-11-25T09:14:25.967Z"
+      },
+      "createdAt": "2026-11-25T06:56:25.967Z"
+    },
+    {
+      "id": "lst-113",
+      "donorId": "usr-donor-2",
+      "donorName": "Central Engineering Canteen",
+      "donorPhone": "+91 98450 44556",
+      "foodTitle": "Veg Fried Rice & Gobi Manchurian",
+      "foodType": "Veg",
+      "quantityMeals": 60,
+      "weightKg": 21,
+      "aiFreshnessScore": 94,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-25T03:08:25.967Z",
+      "useBefore": "2026-11-25T06:38:25.967Z",
+      "status": "collected",
+      "safetyChecklistConfirmed": true,
+      "checklistItems": [
+        "temp_control",
+        "hygienic_containers",
+        "no_spoilage",
+        "allergen_labeled"
+      ],
+      "location": {
+        "address": "Central Engineering Canteen, pickup point",
+        "lat": 12.9705,
+        "lng": 77.5946
       },
       "claimedBy": {
         "userId": "usr-ngo-1",
-        "ngoName": "Akshaya Seva Trust & Shelter",
-        "volunteerName": "Mohammed Irfan",
-        "volunteerPhone": "+91 99001 55667",
-        "claimedAt": "2026-11-17T10:51:15.922Z",
-        "collectedAt": "2026-11-17T11:33:15.922Z"
+        "ngoName": "Robin Hood Army, Campus Chapter",
+        "volunteerName": "Harsha S",
+        "volunteerPhone": "+91 99001 44556",
+        "claimedAt": "2026-11-25T05:08:25.967Z",
+        "collectedAt": "2026-11-25T05:56:25.967Z"
       },
       "feedback": {
-        "rating": 5,
-        "comment": "Hygienically packed and still warm upon pickup.",
-        "ratedBy": "Akshaya Seva Trust & Shelter"
+        "id": "fb-113",
+        "rating": 4,
+        "comment": "Good quantity, clearly labelled.",
+        "ratedBy": "Robin Hood Army, Campus Chapter",
+        "createdAt": "2026-11-25T05:56:25.967Z"
       },
-      "createdAt": "2026-11-17T09:21:15.922Z"
+      "createdAt": "2026-11-25T03:38:25.967Z"
+    },
+    {
+      "id": "lst-128",
+      "donorId": "usr-donor-2",
+      "donorName": "Central Engineering Canteen",
+      "donorPhone": "+91 98450 44556",
+      "foodTitle": "Leftover Chapati Packs",
+      "foodType": "Veg",
+      "quantityMeals": 30,
+      "weightKg": 10.5,
+      "aiFreshnessScore": 94,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-24T07:56:25.967Z",
+      "useBefore": "2026-11-24T11:26:25.967Z",
+      "status": "expired",
+      "safetyChecklistConfirmed": true,
+      "checklistItems": [
+        "temp_control",
+        "hygienic_containers",
+        "no_spoilage",
+        "allergen_labeled"
+      ],
+      "location": {
+        "address": "Central Engineering Canteen, pickup point",
+        "lat": 12.9794,
+        "lng": 77.6398
+      },
+      "claimedBy": null,
+      "feedback": null,
+      "createdAt": "2026-11-24T08:26:25.967Z"
+    },
+    {
+      "id": "lst-114",
+      "donorId": "usr-donor-3",
+      "donorName": "Girls Hostel Mess, Block-C",
+      "donorPhone": "+91 98450 99001",
+      "foodTitle": "Dosa, Sambar & Chutney",
+      "foodType": "Veg",
+      "quantityMeals": 70,
+      "weightKg": 24.5,
+      "aiFreshnessScore": 94,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-24T07:38:25.967Z",
+      "useBefore": "2026-11-24T11:08:25.967Z",
+      "status": "collected",
+      "safetyChecklistConfirmed": true,
+      "checklistItems": [
+        "temp_control",
+        "hygienic_containers",
+        "no_spoilage",
+        "allergen_labeled"
+      ],
+      "location": {
+        "address": "Girls Hostel Mess, Block-C, pickup point",
+        "lat": 12.9128,
+        "lng": 77.5632
+      },
+      "claimedBy": {
+        "userId": "usr-ngo-3",
+        "ngoName": "Annapurna Community Kitchen",
+        "volunteerName": "Priya Menon",
+        "volunteerPhone": "+91 99001 33445",
+        "claimedAt": "2026-11-24T09:38:25.967Z",
+        "collectedAt": "2026-11-24T10:26:25.967Z"
+      },
+      "feedback": {
+        "id": "fb-114",
+        "rating": 5,
+        "comment": "Fresh and well packed. Distributed within the hour.",
+        "ratedBy": "Annapurna Community Kitchen",
+        "createdAt": "2026-11-24T10:26:25.967Z"
+      },
+      "createdAt": "2026-11-24T08:08:25.967Z"
+    },
+    {
+      "id": "lst-115",
+      "donorId": "usr-donor-4",
+      "donorName": "South Campus Food Court",
+      "donorPhone": "+91 98450 77889",
+      "foodTitle": "Pasta & Garlic Bread Boxes",
+      "foodType": "Veg",
+      "quantityMeals": 45,
+      "weightKg": 15.7,
+      "aiFreshnessScore": 94,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-24T04:08:25.967Z",
+      "useBefore": "2026-11-24T07:38:25.967Z",
+      "status": "collected",
+      "safetyChecklistConfirmed": true,
+      "checklistItems": [
+        "temp_control",
+        "hygienic_containers",
+        "no_spoilage",
+        "allergen_labeled"
+      ],
+      "location": {
+        "address": "South Campus Food Court, pickup point",
+        "lat": 12.9139,
+        "lng": 77.5604
+      },
+      "claimedBy": {
+        "userId": "usr-ngo-3",
+        "ngoName": "Annapurna Community Kitchen",
+        "volunteerName": "Priya Menon",
+        "volunteerPhone": "+91 99001 33445",
+        "claimedAt": "2026-11-24T06:08:25.967Z",
+        "collectedAt": "2026-11-24T06:56:25.967Z"
+      },
+      "feedback": {
+        "id": "fb-115",
+        "rating": 4,
+        "comment": "Boxes were clean, a little cold but fine.",
+        "ratedBy": "Annapurna Community Kitchen",
+        "createdAt": "2026-11-24T06:56:25.967Z"
+      },
+      "createdAt": "2026-11-24T04:38:25.967Z"
+    },
+    {
+      "id": "lst-116",
+      "donorId": "usr-donor-5",
+      "donorName": "Tech Symposium Catering Committee",
+      "donorPhone": "+91 98450 22110",
+      "foodTitle": "Veg Biryani & Raita",
+      "foodType": "Veg",
+      "quantityMeals": 85,
+      "weightKg": 29.7,
+      "aiFreshnessScore": 94,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-23T08:08:25.967Z",
+      "useBefore": "2026-11-23T11:38:25.967Z",
+      "status": "collected",
+      "safetyChecklistConfirmed": true,
+      "checklistItems": [
+        "temp_control",
+        "hygienic_containers",
+        "no_spoilage",
+        "allergen_labeled"
+      ],
+      "location": {
+        "address": "Tech Symposium Catering Committee, pickup point",
+        "lat": 13.038,
+        "lng": 77.597
+      },
+      "claimedBy": {
+        "userId": "usr-ngo-2",
+        "ngoName": "Akshaya Seva Trust & Shelter",
+        "volunteerName": "Mohammed Irfan",
+        "volunteerPhone": "+91 99001 66778",
+        "claimedAt": "2026-11-23T10:08:25.967Z",
+        "collectedAt": "2026-11-23T10:56:25.967Z"
+      },
+      "feedback": {
+        "id": "fb-116",
+        "rating": 5,
+        "comment": "Excellent. Fed two shelters from this.",
+        "ratedBy": "Akshaya Seva Trust & Shelter",
+        "createdAt": "2026-11-23T10:56:25.967Z"
+      },
+      "createdAt": "2026-11-23T08:38:25.967Z"
+    },
+    {
+      "id": "lst-117",
+      "donorId": "usr-donor-1",
+      "donorName": "Block-A Boys Hostel Mess",
+      "donorPhone": "+91 98450 11223",
+      "foodTitle": "Roti, Dal & Aloo Gobi",
+      "foodType": "Veg",
+      "quantityMeals": 75,
+      "weightKg": 26.3,
+      "aiFreshnessScore": 94,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-23T02:38:25.967Z",
+      "useBefore": "2026-11-23T06:08:25.967Z",
+      "status": "collected",
+      "safetyChecklistConfirmed": true,
+      "checklistItems": [
+        "temp_control",
+        "hygienic_containers",
+        "no_spoilage",
+        "allergen_labeled"
+      ],
+      "location": {
+        "address": "Block-A Boys Hostel Mess, pickup point",
+        "lat": 12.9694,
+        "lng": 77.596
+      },
+      "claimedBy": {
+        "userId": "usr-ngo-1",
+        "ngoName": "Robin Hood Army, Campus Chapter",
+        "volunteerName": "Harsha S",
+        "volunteerPhone": "+91 99001 44556",
+        "claimedAt": "2026-11-23T04:38:25.967Z",
+        "collectedAt": "2026-11-23T05:26:25.967Z"
+      },
+      "feedback": {
+        "id": "fb-117",
+        "rating": 5,
+        "comment": "Smooth pickup, donor was ready on time.",
+        "ratedBy": "Robin Hood Army, Campus Chapter",
+        "createdAt": "2026-11-23T05:26:25.967Z"
+      },
+      "createdAt": "2026-11-23T03:08:25.967Z"
+    },
+    {
+      "id": "lst-118",
+      "donorId": "usr-donor-4",
+      "donorName": "South Campus Food Court",
+      "donorPhone": "+91 98450 77889",
+      "foodTitle": "Fruit Salad & Sandwiches",
+      "foodType": "Vegan",
+      "quantityMeals": 38,
+      "weightKg": 13.3,
+      "aiFreshnessScore": 94,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-23T00:38:25.967Z",
+      "useBefore": "2026-11-23T04:08:25.967Z",
+      "status": "collected",
+      "safetyChecklistConfirmed": true,
+      "checklistItems": [
+        "temp_control",
+        "hygienic_containers",
+        "no_spoilage",
+        "allergen_labeled"
+      ],
+      "location": {
+        "address": "South Campus Food Court, pickup point",
+        "lat": 12.9117,
+        "lng": 77.5604
+      },
+      "claimedBy": {
+        "userId": "usr-ngo-1",
+        "ngoName": "Robin Hood Army, Campus Chapter",
+        "volunteerName": "Harsha S",
+        "volunteerPhone": "+91 99001 44556",
+        "claimedAt": "2026-11-23T02:38:25.967Z",
+        "collectedAt": "2026-11-23T03:26:25.967Z"
+      },
+      "feedback": {
+        "id": "fb-118",
+        "rating": 5,
+        "comment": "Loved by the children.",
+        "ratedBy": "Robin Hood Army, Campus Chapter",
+        "createdAt": "2026-11-23T03:26:25.967Z"
+      },
+      "createdAt": "2026-11-23T01:08:25.967Z"
+    },
+    {
+      "id": "lst-129",
+      "donorId": "usr-donor-5",
+      "donorName": "Tech Symposium Catering Committee",
+      "donorPhone": "+91 98450 22110",
+      "foodTitle": "Samosa & Tea Snacks",
+      "foodType": "Bakery",
+      "quantityMeals": 25,
+      "weightKg": 8.8,
+      "aiFreshnessScore": 94,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-22T07:56:25.967Z",
+      "useBefore": "2026-11-22T11:26:25.967Z",
+      "status": "expired",
+      "safetyChecklistConfirmed": true,
+      "checklistItems": [
+        "temp_control",
+        "hygienic_containers",
+        "no_spoilage",
+        "allergen_labeled"
+      ],
+      "location": {
+        "address": "Tech Symposium Catering Committee, pickup point",
+        "lat": 13.0368,
+        "lng": 77.596
+      },
+      "claimedBy": null,
+      "feedback": null,
+      "createdAt": "2026-11-22T08:26:25.967Z"
+    },
+    {
+      "id": "lst-119",
+      "donorId": "usr-donor-2",
+      "donorName": "Central Engineering Canteen",
+      "donorPhone": "+91 98450 44556",
+      "foodTitle": "Egg Curry & Rice",
+      "foodType": "Non-Veg",
+      "quantityMeals": 40,
+      "weightKg": 14,
+      "aiFreshnessScore": 94,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-22T07:08:25.967Z",
+      "useBefore": "2026-11-22T10:38:25.967Z",
+      "status": "collected",
+      "safetyChecklistConfirmed": true,
+      "checklistItems": [
+        "temp_control",
+        "hygienic_containers",
+        "no_spoilage",
+        "allergen_labeled"
+      ],
+      "location": {
+        "address": "Central Engineering Canteen, pickup point",
+        "lat": 12.9784,
+        "lng": 77.6408
+      },
+      "claimedBy": {
+        "userId": "usr-ngo-2",
+        "ngoName": "Akshaya Seva Trust & Shelter",
+        "volunteerName": "Mohammed Irfan",
+        "volunteerPhone": "+91 99001 66778",
+        "claimedAt": "2026-11-22T09:08:25.967Z",
+        "collectedAt": "2026-11-22T09:56:25.967Z"
+      },
+      "feedback": {
+        "id": "fb-119",
+        "rating": 4,
+        "comment": "Hot and tasty.",
+        "ratedBy": "Akshaya Seva Trust & Shelter",
+        "createdAt": "2026-11-22T09:56:25.967Z"
+      },
+      "createdAt": "2026-11-22T07:38:25.967Z"
+    },
+    {
+      "id": "lst-120",
+      "donorId": "usr-donor-3",
+      "donorName": "Girls Hostel Mess, Block-C",
+      "donorPhone": "+91 98450 99001",
+      "foodTitle": "Upma & Banana",
+      "foodType": "Veg",
+      "quantityMeals": 50,
+      "weightKg": 17.5,
+      "aiFreshnessScore": 94,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-22T03:38:25.967Z",
+      "useBefore": "2026-11-22T07:08:25.967Z",
+      "status": "collected",
+      "safetyChecklistConfirmed": true,
+      "checklistItems": [
+        "temp_control",
+        "hygienic_containers",
+        "no_spoilage",
+        "allergen_labeled"
+      ],
+      "location": {
+        "address": "Girls Hostel Mess, Block-C, pickup point",
+        "lat": 12.9139,
+        "lng": 77.5632
+      },
+      "claimedBy": {
+        "userId": "usr-ngo-3",
+        "ngoName": "Annapurna Community Kitchen",
+        "volunteerName": "Priya Menon",
+        "volunteerPhone": "+91 99001 33445",
+        "claimedAt": "2026-11-22T05:38:25.967Z",
+        "collectedAt": "2026-11-22T06:26:25.967Z"
+      },
+      "feedback": {
+        "id": "fb-120",
+        "rating": 5,
+        "comment": "Great breakfast for the morning shelter.",
+        "ratedBy": "Annapurna Community Kitchen",
+        "createdAt": "2026-11-22T06:26:25.967Z"
+      },
+      "createdAt": "2026-11-22T04:08:25.967Z"
+    },
+    {
+      "id": "lst-121",
+      "donorId": "usr-donor-4",
+      "donorName": "South Campus Food Court",
+      "donorPhone": "+91 98450 77889",
+      "foodTitle": "Bakery Assortment Packs",
+      "foodType": "Bakery",
+      "quantityMeals": 60,
+      "weightKg": 21,
+      "aiFreshnessScore": 94,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-21T06:38:25.967Z",
+      "useBefore": "2026-11-21T10:08:25.967Z",
+      "status": "collected",
+      "safetyChecklistConfirmed": true,
+      "checklistItems": [
+        "temp_control",
+        "hygienic_containers",
+        "no_spoilage",
+        "allergen_labeled"
+      ],
+      "location": {
+        "address": "South Campus Food Court, pickup point",
+        "lat": 12.915,
+        "lng": 77.5604
+      },
+      "claimedBy": {
+        "userId": "usr-ngo-1",
+        "ngoName": "Robin Hood Army, Campus Chapter",
+        "volunteerName": "Harsha S",
+        "volunteerPhone": "+91 99001 44556",
+        "claimedAt": "2026-11-21T08:38:25.967Z",
+        "collectedAt": "2026-11-21T09:26:25.967Z"
+      },
+      "feedback": {
+        "id": "fb-121",
+        "rating": 4,
+        "comment": "Fresh bread, well wrapped.",
+        "ratedBy": "Robin Hood Army, Campus Chapter",
+        "createdAt": "2026-11-21T09:26:25.967Z"
+      },
+      "createdAt": "2026-11-21T07:08:25.967Z"
+    },
+    {
+      "id": "lst-122",
+      "donorId": "usr-donor-5",
+      "donorName": "Tech Symposium Catering Committee",
+      "donorPhone": "+91 98450 22110",
+      "foodTitle": "Fried Rice & Manchurian",
+      "foodType": "Veg",
+      "quantityMeals": 55,
+      "weightKg": 19.3,
+      "aiFreshnessScore": 94,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-21T02:08:25.967Z",
+      "useBefore": "2026-11-21T05:38:25.967Z",
+      "status": "collected",
+      "safetyChecklistConfirmed": true,
+      "checklistItems": [
+        "temp_control",
+        "hygienic_containers",
+        "no_spoilage",
+        "allergen_labeled"
+      ],
+      "location": {
+        "address": "Tech Symposium Catering Committee, pickup point",
+        "lat": 13.0336,
+        "lng": 77.597
+      },
+      "claimedBy": {
+        "userId": "usr-ngo-2",
+        "ngoName": "Akshaya Seva Trust & Shelter",
+        "volunteerName": "Mohammed Irfan",
+        "volunteerPhone": "+91 99001 66778",
+        "claimedAt": "2026-11-21T04:08:25.967Z",
+        "collectedAt": "2026-11-21T04:56:25.967Z"
+      },
+      "feedback": {
+        "id": "fb-122",
+        "rating": 5,
+        "comment": "On time and well packed.",
+        "ratedBy": "Akshaya Seva Trust & Shelter",
+        "createdAt": "2026-11-21T04:56:25.967Z"
+      },
+      "createdAt": "2026-11-21T02:38:25.967Z"
+    },
+    {
+      "id": "lst-130",
+      "donorId": "usr-donor-3",
+      "donorName": "Girls Hostel Mess, Block-C",
+      "donorPhone": "+91 98450 99001",
+      "foodTitle": "Pav Bhaji",
+      "foodType": "Veg",
+      "quantityMeals": 40,
+      "weightKg": 14,
+      "aiFreshnessScore": 94,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-20T07:56:25.967Z",
+      "useBefore": "2026-11-20T11:26:25.967Z",
+      "status": "expired",
+      "safetyChecklistConfirmed": true,
+      "checklistItems": [
+        "temp_control",
+        "hygienic_containers",
+        "no_spoilage",
+        "allergen_labeled"
+      ],
+      "location": {
+        "address": "Girls Hostel Mess, Block-C, pickup point",
+        "lat": 12.9362,
+        "lng": 77.5355
+      },
+      "claimedBy": null,
+      "feedback": null,
+      "createdAt": "2026-11-20T08:26:25.967Z"
+    },
+    {
+      "id": "lst-123",
+      "donorId": "usr-donor-1",
+      "donorName": "Block-A Boys Hostel Mess",
+      "donorPhone": "+91 98450 11223",
+      "foodTitle": "Sambar Rice & Papad",
+      "foodType": "Veg",
+      "quantityMeals": 65,
+      "weightKg": 22.8,
+      "aiFreshnessScore": 94,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-20T07:26:25.967Z",
+      "useBefore": "2026-11-20T10:56:25.967Z",
+      "status": "collected",
+      "safetyChecklistConfirmed": true,
+      "checklistItems": [
+        "temp_control",
+        "hygienic_containers",
+        "no_spoilage",
+        "allergen_labeled"
+      ],
+      "location": {
+        "address": "Block-A Boys Hostel Mess, pickup point",
+        "lat": 12.9705,
+        "lng": 77.596
+      },
+      "claimedBy": {
+        "userId": "usr-ngo-1",
+        "ngoName": "Robin Hood Army, Campus Chapter",
+        "volunteerName": "Harsha S",
+        "volunteerPhone": "+91 99001 44556",
+        "claimedAt": "2026-11-20T09:26:25.967Z",
+        "collectedAt": "2026-11-20T10:14:25.967Z"
+      },
+      "feedback": {
+        "id": "fb-123",
+        "rating": 5,
+        "comment": "Perfect portions.",
+        "ratedBy": "Robin Hood Army, Campus Chapter",
+        "createdAt": "2026-11-20T10:14:25.967Z"
+      },
+      "createdAt": "2026-11-20T07:56:25.967Z"
+    },
+    {
+      "id": "lst-124",
+      "donorId": "usr-donor-2",
+      "donorName": "Central Engineering Canteen",
+      "donorPhone": "+91 98450 44556",
+      "foodTitle": "Chicken Curry & Chapati",
+      "foodType": "Non-Veg",
+      "quantityMeals": 48,
+      "weightKg": 16.8,
+      "aiFreshnessScore": 94,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-20T02:50:25.967Z",
+      "useBefore": "2026-11-20T06:20:25.967Z",
+      "status": "collected",
+      "safetyChecklistConfirmed": true,
+      "checklistItems": [
+        "temp_control",
+        "hygienic_containers",
+        "no_spoilage",
+        "allergen_labeled"
+      ],
+      "location": {
+        "address": "Central Engineering Canteen, pickup point",
+        "lat": 12.9784,
+        "lng": 77.6394
+      },
+      "claimedBy": {
+        "userId": "usr-ngo-3",
+        "ngoName": "Annapurna Community Kitchen",
+        "volunteerName": "Priya Menon",
+        "volunteerPhone": "+91 99001 33445",
+        "claimedAt": "2026-11-20T04:50:25.967Z",
+        "collectedAt": "2026-11-20T05:38:25.967Z"
+      },
+      "feedback": {
+        "id": "fb-124",
+        "rating": 4,
+        "comment": "Good, container could be sturdier.",
+        "ratedBy": "Annapurna Community Kitchen",
+        "createdAt": "2026-11-20T05:38:25.967Z"
+      },
+      "createdAt": "2026-11-20T03:20:25.967Z"
+    },
+    {
+      "id": "lst-125",
+      "donorId": "usr-donor-3",
+      "donorName": "Girls Hostel Mess, Block-C",
+      "donorPhone": "+91 98450 99001",
+      "foodTitle": "Poori Bhaji",
+      "foodType": "Veg",
+      "quantityMeals": 58,
+      "weightKg": 20.3,
+      "aiFreshnessScore": 94,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-19T06:50:25.967Z",
+      "useBefore": "2026-11-19T10:20:25.967Z",
+      "status": "collected",
+      "safetyChecklistConfirmed": true,
+      "checklistItems": [
+        "temp_control",
+        "hygienic_containers",
+        "no_spoilage",
+        "allergen_labeled"
+      ],
+      "location": {
+        "address": "Girls Hostel Mess, Block-C, pickup point",
+        "lat": 12.9139,
+        "lng": 77.5618
+      },
+      "claimedBy": {
+        "userId": "usr-ngo-2",
+        "ngoName": "Akshaya Seva Trust & Shelter",
+        "volunteerName": "Mohammed Irfan",
+        "volunteerPhone": "+91 99001 66778",
+        "claimedAt": "2026-11-19T08:50:25.967Z",
+        "collectedAt": "2026-11-19T09:38:25.967Z"
+      },
+      "feedback": {
+        "id": "fb-125",
+        "rating": 5,
+        "comment": "Everyone enjoyed it.",
+        "ratedBy": "Akshaya Seva Trust & Shelter",
+        "createdAt": "2026-11-19T09:38:25.967Z"
+      },
+      "createdAt": "2026-11-19T07:20:25.967Z"
+    },
+    {
+      "id": "lst-126",
+      "donorId": "usr-donor-4",
+      "donorName": "South Campus Food Court",
+      "donorPhone": "+91 98450 77889",
+      "foodTitle": "Vegan Buddha Bowls",
+      "foodType": "Vegan",
+      "quantityMeals": 35,
+      "weightKg": 12.3,
+      "aiFreshnessScore": 94,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-19T04:26:25.967Z",
+      "useBefore": "2026-11-19T07:56:25.967Z",
+      "status": "collected",
+      "safetyChecklistConfirmed": true,
+      "checklistItems": [
+        "temp_control",
+        "hygienic_containers",
+        "no_spoilage",
+        "allergen_labeled"
+      ],
+      "location": {
+        "address": "South Campus Food Court, pickup point",
+        "lat": 12.915,
+        "lng": 77.5632
+      },
+      "claimedBy": {
+        "userId": "usr-ngo-3",
+        "ngoName": "Annapurna Community Kitchen",
+        "volunteerName": "Priya Menon",
+        "volunteerPhone": "+91 99001 33445",
+        "claimedAt": "2026-11-19T06:26:25.967Z",
+        "collectedAt": "2026-11-19T07:14:25.967Z"
+      },
+      "feedback": {
+        "id": "fb-126",
+        "rating": 5,
+        "comment": "Creative and healthy.",
+        "ratedBy": "Annapurna Community Kitchen",
+        "createdAt": "2026-11-19T07:14:25.967Z"
+      },
+      "createdAt": "2026-11-19T04:56:25.967Z"
+    },
+    {
+      "id": "lst-127",
+      "donorId": "usr-donor-1",
+      "donorName": "Block-A Boys Hostel Mess",
+      "donorPhone": "+91 98450 11223",
+      "foodTitle": "Curd Rice & Lemon Rice",
+      "foodType": "Veg",
+      "quantityMeals": 52,
+      "weightKg": 18.2,
+      "aiFreshnessScore": 94,
+      "aiFreshnessStatus": "Excellent Freshness (Grade A)",
+      "preparedAt": "2026-11-19T01:14:25.967Z",
+      "useBefore": "2026-11-19T04:44:25.967Z",
+      "status": "collected",
+      "safetyChecklistConfirmed": true,
+      "checklistItems": [
+        "temp_control",
+        "hygienic_containers",
+        "no_spoilage",
+        "allergen_labeled"
+      ],
+      "location": {
+        "address": "Block-A Boys Hostel Mess, pickup point",
+        "lat": 12.9694,
+        "lng": 77.5932
+      },
+      "claimedBy": {
+        "userId": "usr-ngo-1",
+        "ngoName": "Robin Hood Army, Campus Chapter",
+        "volunteerName": "Harsha S",
+        "volunteerPhone": "+91 99001 44556",
+        "claimedAt": "2026-11-19T03:14:25.967Z",
+        "collectedAt": "2026-11-19T04:02:25.967Z"
+      },
+      "feedback": {
+        "id": "fb-127",
+        "rating": 4,
+        "comment": "Good, picked up quickly.",
+        "ratedBy": "Robin Hood Army, Campus Chapter",
+        "createdAt": "2026-11-19T04:02:25.967Z"
+      },
+      "createdAt": "2026-11-19T01:44:25.967Z"
     }
   ],
   "claims": [],
   "notifications": [
     {
       "id": "ntf-1",
-      "type": "NEW_LISTING",
-      "title": "Surplus Alert Broadcasted",
-      "message": "Block-A Boys Hostel Mess posted 65 Veg meals.",
-      "channel": "In-App + SMS/Telegram Alert",
-      "createdAt": "2026-11-17T13:27:15.922Z"
+      "type": "CLAIMED",
+      "title": "Listing Claimed for Pickup",
+      "message": "Annapurna Community Kitchen (volunteer Priya Menon) claimed \"Rajma Chawal & Salad Boxes\".",
+      "channel": "In-app",
+      "createdAt": "2026-11-25T12:14:25.967Z"
     },
     {
       "id": "ntf-2",
       "type": "CLAIMED",
-      "title": "NGO Claimed Listing #lst-103",
-      "message": "Robin Hood Army (Volunteer: Harsha S) claimed 90 meals.",
-      "channel": "In-App + SMS/Telegram Alert",
-      "createdAt": "2026-11-17T14:03:15.922Z"
+      "title": "Listing Claimed for Pickup",
+      "message": "Robin Hood Army, Campus Chapter (volunteer Harsha S) claimed \"Paneer Biryani & Assorted Sandwich Trays\".",
+      "channel": "In-app",
+      "createdAt": "2026-11-25T12:02:25.967Z"
+    },
+    {
+      "id": "ntf-3",
+      "type": "NEW_LISTING",
+      "title": "New Surplus Food Posted",
+      "message": "Girls Hostel Mess, Block-C posted 42 Veg meals (\"Poha, Upma & Filter Coffee Flasks\").",
+      "channel": "In-app",
+      "createdAt": "2026-11-25T12:08:25.967Z"
+    },
+    {
+      "id": "ntf-4",
+      "type": "NEW_LISTING",
+      "title": "New Surplus Food Posted",
+      "message": "South Campus Food Court posted 30 Vegan meals (\"Veg Sandwich & Fruit Salad Boxes\").",
+      "channel": "In-app",
+      "createdAt": "2026-11-25T12:02:25.967Z"
+    },
+    {
+      "id": "ntf-5",
+      "type": "FOOD_REQUEST",
+      "title": "Someone needs food",
+      "message": "2 people need food near 12.970, 77.597.",
+      "channel": "In-app",
+      "createdAt": "2026-11-25T12:17:25.967Z"
+    },
+    {
+      "id": "ntf-6",
+      "type": "COLLECTED",
+      "title": "Food Rescued & Collected",
+      "message": "80 meals (\"Idli, Vada & Sambar Containers\") collected by Akshaya Seva Trust & Shelter.",
+      "channel": "In-app",
+      "createdAt": "2026-11-25T09:14:25.967Z"
+    },
+    {
+      "id": "ntf-7",
+      "type": "COLLECTED",
+      "title": "Food Rescued & Collected",
+      "message": "60 meals (\"Veg Fried Rice & Gobi Manchurian\") collected by Robin Hood Army, Campus Chapter.",
+      "channel": "In-app",
+      "createdAt": "2026-11-25T05:56:25.967Z"
+    },
+    {
+      "id": "ntf-8",
+      "type": "EXPIRY_AUTO_SWEEP",
+      "title": "Listing Auto-Expired",
+      "message": "\"Leftover Chapati Packs\" from Central Engineering Canteen passed its use-before time.",
+      "channel": "In-app",
+      "createdAt": "2026-11-24T14:26:25.967Z"
     }
   ],
-  "feedbacks": []
+  "feedbacks": [],
+  "requests": [
+    {
+      "id": "req-seed-1",
+      "people": 4,
+      "phone": "+91 90000 41234",
+      "name": "",
+      "note": "",
+      "lat": 12.9142,
+      "lng": 77.5601,
+      "status": "open",
+      "createdAt": "2026-11-25T12:04:25.967Z"
+    },
+    {
+      "id": "req-seed-2",
+      "people": 2,
+      "phone": "",
+      "name": "",
+      "note": "",
+      "lat": 12.9701,
+      "lng": 77.597,
+      "status": "open",
+      "createdAt": "2026-11-25T12:17:25.967Z"
+    },
+    {
+      "id": "req-seed-3",
+      "people": 3,
+      "phone": "+91 90000 77812",
+      "name": "",
+      "note": "",
+      "lat": 13.0349,
+      "lng": 77.5988,
+      "status": "accepted",
+      "createdAt": "2026-11-25T11:56:25.967Z",
+      "acceptedAt": "2026-11-25T12:11:25.967Z",
+      "acceptedBy": {
+        "name": "Mohammed Irfan",
+        "org": "Akshaya Seva Trust & Shelter",
+        "phone": "+91 99001 66778"
+      }
+    },
+    {
+      "id": "req-seed-4",
+      "people": 5,
+      "phone": "",
+      "name": "",
+      "note": "",
+      "lat": 12.9784,
+      "lng": 77.6401,
+      "status": "helped",
+      "createdAt": "2026-11-24T10:26:25.967Z",
+      "acceptedAt": "2026-11-24T10:50:25.967Z",
+      "helpedAt": "2026-11-24T11:26:25.967Z",
+      "helpedBy": "Priya Menon",
+      "acceptedBy": {
+        "name": "Priya Menon",
+        "org": "Annapurna Community Kitchen",
+        "phone": "+91 99001 33445"
+      }
+    },
+    {
+      "id": "req-seed-5",
+      "people": 2,
+      "phone": "",
+      "name": "",
+      "note": "",
+      "lat": 12.9352,
+      "lng": 77.5361,
+      "status": "helped",
+      "createdAt": "2026-11-23T10:26:25.967Z",
+      "acceptedAt": "2026-11-23T10:56:25.967Z",
+      "helpedAt": "2026-11-23T11:26:25.967Z",
+      "helpedBy": "Harsha S",
+      "acceptedBy": {
+        "name": "Harsha S",
+        "org": "Campus NSS Volunteer Wing",
+        "phone": "+91 99001 44556"
+      }
+    }
+  ],
+  "directory": [
+    {
+      "name": "Annapurna Community Kitchen",
+      "area": "Jayanagar",
+      "phone": "+91 80000 12001",
+      "hours": "Daily, 7 am to 9 pm"
+    },
+    {
+      "name": "Akshaya Seva Trust & Shelter",
+      "area": "Basavanagudi",
+      "phone": "+91 80000 12002",
+      "hours": "Daily, 6 am to 10 pm"
+    },
+    {
+      "name": "Robin Hood Army, Campus Chapter",
+      "area": "Central Campus",
+      "phone": "+91 80000 12003",
+      "hours": "Mon to Sat, 8 am to 8 pm"
+    },
+    {
+      "name": "City Hunger Helpline (demo)",
+      "area": "All areas",
+      "phone": "+91 80000 12004",
+      "hours": "24 hours"
+    }
+  ]
 }

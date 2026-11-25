@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
-  <title>CampusFoodShare | Campus Surplus Food Rescue Platform</title>
+  <meta name="description" content="CampusFoodShare connects campus kitchens and canteens with NGOs, volunteers and people who need a meal, in real time." />
+  <title>CampusFoodShare | Share surplus food with people nearby</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" />
   <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -17,7 +18,7 @@
     <aside class="sidebar" id="sidebar">
       <a class="brand" href="#/" id="brandLink">
         <span class="brand-mark" id="brandMark"></span>
-        <span><strong>CampusFoodShare</strong><small>Zero waste · Zero hunger</small></span>
+        <span><strong>CampusFoodShare</strong><small>Share food, not waste</small></span>
       </a>
       <div class="nav-label" id="navLabel">Menu</div>
       <nav id="navMenu" class="nav-menu" aria-label="Main menu"></nav>
@@ -34,10 +35,10 @@
         </div>
         <div class="top-actions">
           <select id="langSelect" class="input lang-select" aria-label="Language"><option value="en">English</option><option value="hi">हिन्दी</option><option value="kn">ಕನ್ನಡ</option></select>
-          <button id="easyBtn" class="btn btn-ghost btn-sm" aria-pressed="true" title="Big buttons and pictures">Easy mode</button>
-          <button id="cmdBtn" class="cmd-btn" title="Jump to anything"><span id="cmdIcon"></span><span class="cmd-text">Jump to…</span><kbd>Ctrl K</kbd></button>
-          <button id="useMyLocationBtn" class="chip-pill" title="Use my GPS"><span id="gpsIcon"></span><span id="currentCoordsLabel">12.9716, 77.5946</span></button>
-          <button id="themeBtn" class="icon-btn" aria-label="Toggle theme"></button>
+          <button id="easyBtn" class="icon-btn" aria-pressed="false" title="Larger text and buttons" aria-label="Larger text"></button>
+          <button id="cmdBtn" class="cmd-btn" title="Search and jump to a page"><span id="cmdIcon"></span><span class="cmd-text">Search</span><kbd>Ctrl K</kbd></button>
+          <button id="useMyLocationBtn" class="chip-pill" title="Use my location"><span id="gpsIcon"></span><span id="currentCoordsLabel">12.9716, 77.5946</span></button>
+          <button id="themeBtn" class="icon-btn" aria-label="Switch theme"></button>
           <button id="bellBtn" class="icon-btn bell" aria-label="Notifications"><span id="bellIcon"></span><i id="bellDot" class="dot" style="display:none"></i></button>
           <button id="authChip" class="btn btn-primary btn-sm">Sign in</button>
         </div>
@@ -45,57 +46,67 @@
 
       <main id="views" class="views">
 
-        <section class="view" id="view-overview">
-          <div class="hero">
-            <div class="hero-copy">
-              <span class="eyebrow">Browsing as guest · read-only</span>
-              <h2>Rescue surplus campus food <em>before it spoils.</em></h2>
-              <p>CampusFoodShare connects hostel messes, canteens and events with nearby NGOs and volunteers in real time, ranked by distance and time-to-expiry, with a food-safety checklist and a verified handover PIN on every pickup.</p>
-              <p class="hero-story"><b>About one-third of all food is wasted</b> while millions of people go to bed hungry. Every plate rescued on campus is a warm meal for a child, a mother or an elder who needs it tonight.</p>
-              <div class="hero-cta">
-                <button class="btn btn-primary" data-open-auth="signin">Sign in to take action</button>
-                <button class="btn btn-ghost" data-go="explore">Browse the live map</button>
-              </div>
-              <div class="steps">
-                <div><b>1</b>Donor posts surplus</div><div><b>2</b>Haversine + heap ranks it</div><div><b>3</b>NGO claims pickup</div><div><b>4</b>PIN-verified collection</div>
-              </div>
-            </div>
-            <div class="hero-card glass">
-              <h3>Live platform pulse</h3>
-              <div id="publicKpis" class="mini-kpis"></div>
-            </div>
-          </div>
-          <div class="glass panel" style="margin-top:1.4rem">
-            <div class="panel-head"><div><h2>Available right now <span class="live-badge on inline"><i></i>Live</span></h2><p class="muted">Nearest and soonest-expiring surplus. Updates the moment a donor posts.</p></div><button class="btn btn-ghost btn-sm" data-go="explore">Open live map</button></div>
-            <div id="publicPreview" class="mini-list"></div>
-          </div>
-          <div class="impact-band">
-            <div><b>1 in 3</b>plates of food produced worldwide is never eaten</div>
-            <div><b>Hours, not days</b>cooked surplus must reach hungry people before it spoils</div>
-            <div><b>Every campus</b>has a mess, a canteen and someone nearby who is hungry</div>
-          </div>
-          <h3 class="section-title">Pick a role to explore the platform</h3>
-          <p class="muted">Each role gets its own menu and dashboard. Choose a role, then sign in with your email and password.</p>
-          <div id="roleCards" class="role-grid"></div>
-        </section>
-
+        <!-- Landing -->
         <section class="view" id="view-start">
-          <div class="start-head"><h2 data-i18n="startTitle">What do you want to do?</h2><span class="speak" role="button" tabindex="0" data-speak="startTitle" title="Listen">🔊</span></div>
-          <div class="big-tiles">
-            <button class="big-tile t-need" data-tile="need"><span class="speak" role="button" tabindex="0" data-speak="needFood" title="Listen">🔊</span><span class="emo">🍽️</span><b data-i18n="needFood">I NEED FOOD</b><small data-i18n="needFoodSub">See free food near you</small></button>
-            <button class="big-tile t-give" data-tile="give"><span class="speak" role="button" tabindex="0" data-speak="giveFood" title="Listen">🔊</span><span class="emo">🎁</span><b data-i18n="giveFood">I HAVE FOOD TO GIVE</b><small data-i18n="giveFoodSub">Tell hungry people now</small></button>
-            <button class="big-tile t-help" data-tile="help"><span class="speak" role="button" tabindex="0" data-speak="helpOut" title="Listen">🔊</span><span class="emo">🤝</span><b data-i18n="helpOut">I WANT TO HELP</b><small data-i18n="helpOutSub">Volunteer or NGO</small></button>
+          <div class="landing">
+            <div>
+              <span class="kicker" data-i18n="kicker">Community food sharing</span>
+              <h2 data-i18n="heroTitle">Good food shouldn't go to waste.</h2>
+              <p class="lead" data-i18n="heroSub">Campus kitchens and canteens share their surplus meals with people nearby, in minutes, while it is still fresh.</p>
+              <div class="cta-row">
+                <button class="btn btn-primary btn-lg" data-tile="need" data-i18n="ctaFind">Find food near me</button>
+                <button class="btn btn-secondary btn-lg" data-tile="give" data-i18n="ctaGive">Donate surplus food</button>
+              </div>
+              <div class="trust-row" id="startStats"></div>
+            </div>
+            <div class="glass landing-card">
+              <h3><span data-i18n="availNow">Available now</span><button class="btn btn-ghost btn-sm" data-tile="need" data-i18n="seeAll">See all</button></h3>
+              <div id="startNow"></div>
+            </div>
           </div>
-          <div id="startLive" class="start-live"></div>
-          <div class="lang-row"><button class="lang-chip" data-lang="en">English</button><button class="lang-chip" data-lang="hi">हिन्दी</button><button class="lang-chip" data-lang="kn">ಕನ್ನಡ</button></div>
+
+          <div class="action-cards">
+            <button class="action-card" data-tile="need">
+              <span class="speak" role="button" tabindex="0" data-speak="needFood" data-icon="volume" title="Listen"></span>
+              <span class="ac-ico" data-icon="utensils"></span><b data-i18n="needFood">Find food</b><small data-i18n="needFoodSub">Free food near you, with directions</small>
+              <span class="ac-go"><span data-i18n="open">Open</span> <span data-icon="arrow"></span></span>
+            </button>
+            <button class="action-card" data-tile="give">
+              <span class="speak" role="button" tabindex="0" data-speak="giveFood" data-icon="volume" title="Listen"></span>
+              <span class="ac-ico" data-icon="gift"></span><b data-i18n="giveFood">Donate food</b><small data-i18n="giveFoodSub">Share leftovers in a few taps</small>
+              <span class="ac-go"><span data-i18n="open">Open</span> <span data-icon="arrow"></span></span>
+            </button>
+            <button class="action-card" data-tile="help">
+              <span class="speak" role="button" tabindex="0" data-speak="helpOut" data-icon="volume" title="Listen"></span>
+              <span class="ac-ico" data-icon="truck"></span><b data-i18n="helpOut">Volunteer</b><small data-i18n="helpOutSub">Pick up and deliver for NGOs</small>
+              <span class="ac-go"><span data-i18n="open">Open</span> <span data-icon="arrow"></span></span>
+            </button>
+          </div>
+
+          <h3 class="section-title" data-i18n="howTitle">How it works</h3>
+          <div class="how-row">
+            <div class="how-step"><span class="n">01</span><h4 data-i18n="how1t">Surplus is posted</h4><p data-i18n="how1d">A mess or canteen lists leftover food and how long it stays safe.</p></div>
+            <div class="how-step"><span class="n">02</span><h4 data-i18n="how2t">Matched nearby</h4><p data-i18n="how2d">The most urgent food closest to you shows first, ranked by distance and expiry.</p></div>
+            <div class="how-step"><span class="n">03</span><h4 data-i18n="how3t">Verified handover</h4><p data-i18n="how3d">An NGO claims it and a 4-digit PIN confirms the pickup.</p></div>
+          </div>
+          <div class="lang-row"><span data-i18n="langLabel">Language</span><button class="lang-chip" data-lang="en">English</button><button class="lang-chip" data-lang="hi">हिन्दी</button><button class="lang-chip" data-lang="kn">ಕನ್ನಡ</button></div>
         </section>
 
+        <!-- Find food -->
         <section class="view" id="view-need">
           <div id="needLoc" class="big-note"></div>
-          <div class="start-head"><h2 data-i18n="freeFood">Free food near you</h2><span class="speak" role="button" tabindex="0" data-speak="freeFood" title="Listen">🔊</span></div>
+          <div class="start-head"><h2 data-i18n="freeFood">Free food near you</h2><span class="speak" role="button" tabindex="0" data-speak="freeFood" data-icon="volume" title="Listen"></span></div>
           <div id="needList" class="need-list"></div>
-          <button id="askBtn" class="big-cta cta-red" data-ask="1"><span class="emo">🙋</span><b data-i18n="askFood">Nobody near me? Ask for food</b></button>
+          <button id="askBtn" class="big-cta cta-red" data-ask="1"><span data-icon="users"></span><b data-i18n="askFood">Nobody near me? Ask for food</b></button>
+          <div class="panel" style="margin-top:22px">
+            <h2 data-i18n="helplines">Helplines and community kitchens</h2>
+            <p class="muted" data-i18n="helplinesSub">Call these directly if you need a meal today.</p>
+            <div id="helplines" style="margin-top:8px"></div>
+          </div>
         </section>
+
+        <!-- Request tracker -->
+        <section class="view" id="view-track"><div id="trackBody"></div></section>
 
         <section class="view" id="view-give"><div id="giveBody"></div></section>
 
@@ -106,79 +117,97 @@
 
         <section class="view" id="view-dashboard"><div id="dashboardBody"></div></section>
 
+        <!-- About -->
+        <section class="view" id="view-overview">
+          <div class="panel">
+            <h2>About CampusFoodShare</h2>
+            <p class="muted" style="max-width:680px;margin-top:6px">Every day campus mess halls, canteens and events throw away good cooked food while people nearby go hungry. CampusFoodShare gives donors a fast way to list surplus, ranks it by distance and time left, and lets NGOs and volunteers claim and collect it before it spoils, with a food-safety checklist and a PIN-verified handover.</p>
+          </div>
+          <div id="publicKpis" class="mini-kpis"></div>
+          <h3 class="section-title">Sign in with your role</h3>
+          <p class="muted">Each role has its own menu and dashboard.</p>
+          <div id="roleCards" class="role-grid"></div>
+          <div class="panel" style="margin-top:20px">
+            <div class="panel-head"><div><h2>Available right now</h2><p class="muted">Nearest and soonest-expiring surplus. Updates the moment a donor posts.</p></div><button class="btn btn-ghost btn-sm" data-go="explore">Open map</button></div>
+            <div id="publicPreview" class="mini-list"></div>
+          </div>
+        </section>
+
+        <!-- Live map -->
         <section class="view" id="view-explore">
-          <div class="glass panel">
+          <div class="panel">
             <div class="panel-head">
-              <div><h2>Live rescue map</h2><p class="muted"><span class="legend g"></span>Available <span class="legend o"></span>Claimed <span class="legend b"></span>Collected · click the map to set a pickup pin</p></div>
+              <div><h2>Live map</h2><p class="muted"><span class="legend g"></span>Available <span class="legend o"></span>Claimed <span class="legend b"></span>Collected. Click the map to set a pickup pin.</p></div>
               <div class="filters">
-                <select id="typeFilter" class="input">
-                  <option value="">All diets</option><option value="Veg">Veg</option><option value="Non-Veg">Non-Veg</option><option value="Vegan">Vegan</option><option value="Bakery">Bakery</option>
-                </select>
-                <select id="statusFilter" class="input">
-                  <option value="">All statuses</option><option value="posted">Available</option><option value="claimed">Claimed</option><option value="collected">Collected</option>
-                </select>
+                <select id="typeFilter" class="input"><option value="">All diets</option><option value="Veg">Veg</option><option value="Non-Veg">Non-Veg</option><option value="Vegan">Vegan</option><option value="Bakery">Bakery</option></select>
+                <select id="statusFilter" class="input"><option value="">All statuses</option><option value="posted">Available</option><option value="claimed">Claimed</option><option value="collected">Collected</option></select>
               </div>
             </div>
             <div id="gpsBanner" class="gps-banner" role="button" tabindex="0"></div>
             <div id="rescueMap"></div>
           </div>
-          <div class="glass panel">
+          <div class="panel">
             <div class="panel-head">
-              <div><h2>Priority rescue queue</h2><p class="muted">Nearest and soonest-expiring first (Haversine + min-heap)</p></div>
-              <input type="text" id="searchInput" class="input search" placeholder="Search dish, mess or landmark…" />
+              <div><h2>Priority queue</h2><p class="muted">Nearest and soonest-expiring first</p></div>
+              <input type="text" id="searchInput" class="input search" placeholder="Search dish, mess or landmark" />
             </div>
             <div id="listingsContainer" class="card-list"></div>
           </div>
         </section>
 
+        <!-- Detailed post form -->
         <section class="view" id="view-post">
           <div class="two-col">
-            <div class="glass panel">
+            <div class="panel">
               <h2>Post surplus food</h2>
-              <p class="muted">Tap a preset or fill in the details to alert nearby NGOs.</p>
+              <p class="muted">Fill in the details so nearby NGOs can claim it.</p>
               <div class="preset-chips">
-                <button type="button" class="chip-btn" data-title="Steamed Rice, Dal Tadka & Veg Curry" data-type="Veg" data-meals="60">Rice & Dal · 60</button>
-                <button type="button" class="chip-btn" data-title="Chapati Packs, Paneer Sabzi & Jeera Rice" data-type="Veg" data-meals="45">Chapati & Sabzi · 45</button>
-                <button type="button" class="chip-btn" data-title="Chicken Biryani & Raita Trays" data-type="Non-Veg" data-meals="75">Biryani Tray · 75</button>
-                <button type="button" class="chip-btn" data-title="Assorted Sandwiches, Buns & Bakery Packs" data-type="Bakery" data-meals="40">Bakery Packs · 40</button>
+                <button type="button" class="chip-btn" data-title="Steamed Rice, Dal Tadka & Veg Curry" data-type="Veg" data-meals="60">Rice & Dal</button>
+                <button type="button" class="chip-btn" data-title="Chapati Packs, Paneer Sabzi & Jeera Rice" data-type="Veg" data-meals="45">Chapati & Sabzi</button>
+                <button type="button" class="chip-btn" data-title="Chicken Biryani & Raita Trays" data-type="Non-Veg" data-meals="75">Biryani</button>
+                <button type="button" class="chip-btn" data-title="Assorted Sandwiches, Buns & Bakery Packs" data-type="Bakery" data-meals="40">Bakery packs</button>
               </div>
               <form id="donorForm">
-                <div class="form-group"><label for="donorName">Donor / mess / canteen *</label><input type="text" id="donorName" class="input" required value="Block-A Boys Hostel Mess" /></div>
+                <div class="form-group"><label for="donorName">Donor / mess / canteen</label><input type="text" id="donorName" class="input" required value="Block-A Boys Hostel Mess" /></div>
                 <div class="form-row">
-                  <div class="form-group"><label for="donorPhone">Contact phone *</label><input type="text" id="donorPhone" class="input" required value="+91 98450 11223" /></div>
-                  <div class="form-group"><label for="foodType">Dietary category *</label>
-                    <select id="foodType" class="input" required><option value="Veg">Vegetarian</option><option value="Non-Veg">Non-Vegetarian</option><option value="Vegan">Vegan</option><option value="Bakery">Bakery / Packaged</option></select></div>
+                  <div class="form-group"><label for="donorPhone">Contact phone</label><input type="text" id="donorPhone" class="input" required value="+91 98450 11223" /></div>
+                  <div class="form-group"><label for="foodType">Dietary category</label>
+                    <select id="foodType" class="input" required><option value="Veg">Vegetarian</option><option value="Non-Veg">Non-vegetarian</option><option value="Vegan">Vegan</option><option value="Bakery">Bakery / packaged</option></select></div>
                 </div>
-                <div class="form-group"><label for="foodTitle">Food description *</label><input type="text" id="foodTitle" class="input" required maxlength="140" placeholder="Pick a preset or type the dish name…" /></div>
+                <div class="form-group"><label for="foodTitle">Food description</label><input type="text" id="foodTitle" class="input" required maxlength="140" placeholder="Pick a preset or type the dish name" /></div>
                 <div class="form-row">
-                  <div class="form-group"><label for="quantityMeals">Quantity (meals) *</label><input type="number" id="quantityMeals" class="input" min="1" max="5000" value="50" required /></div>
-                  <div class="form-group"><label for="hoursValid">Safe "use before" window *</label>
-                    <select id="hoursValid" class="input" required><option value="1.5">1.5 h · high urgency</option><option value="2.5" selected>2.5 h · standard</option><option value="4">4 h · extended</option></select></div>
+                  <div class="form-group"><label for="quantityMeals">Quantity (meals)</label><input type="number" id="quantityMeals" class="input" min="1" max="5000" value="50" required /></div>
+                  <div class="form-group"><label for="hoursValid">Safe to eat for</label>
+                    <select id="hoursValid" class="input" required><option value="1.5">1.5 hours</option><option value="2.5" selected>2.5 hours</option><option value="4">4 hours</option></select></div>
                 </div>
-                <div class="form-group"><label for="pickupAddress">Pickup location / landmark *</label><input type="text" id="pickupAddress" class="input" required value="North Campus Mess Loading Bay" /></div>
+                <div class="form-group"><label for="pickupAddress">Pickup location</label><input type="text" id="pickupAddress" class="input" required value="North Campus Mess Loading Bay" /></div>
                 <div class="form-row">
                   <div class="form-group"><label for="pickupLat">Latitude</label><input type="number" step="any" id="pickupLat" class="input" value="12.9732" required /></div>
                   <div class="form-group"><label for="pickupLng">Longitude</label><input type="number" step="any" id="pickupLng" class="input" value="77.5955" required /></div>
                 </div>
-                <button type="button" class="btn btn-ghost btn-sm" data-go="explore">Pick the pin on the map</button>
-                <div class="checklist"><h4>Mandatory 4-point food-safety checklist</h4><div id="safetyChecklistContainer"></div></div>
-                <button type="submit" class="btn btn-primary btn-block">Broadcast surplus alert</button>
+                <div class="checklist"><h4>Food-safety checklist (required)</h4><div id="safetyChecklistContainer"></div></div>
+                <button type="submit" class="btn btn-primary btn-block btn-lg">Post surplus</button>
                 <div id="formFeedback" class="form-feedback"></div>
               </form>
             </div>
             <div>
-              <div class="glass panel ai">
-                <div class="ai-title"><span class="tag">AI module</span><strong>Freshness & category scanner</strong></div>
-                <p class="muted">Optionally attach a photo, then scan to auto-detect the diet and a freshness score.</p>
-                <div class="ai-row"><input type="file" id="foodImageInput" accept="image/*" class="input" /><button type="button" id="runAiScanBtn" class="btn btn-accent btn-sm">Run AI scan</button></div>
-                <div id="aiScanResult" class="ai-banner">Ready to scan (default 95% · Grade A)</div>
+              <div class="panel">
+                <h2>Freshness estimate</h2>
+                <p class="muted">A quick estimate from the dish and time since cooking. It does not replace a smell and taste check.</p>
+                <div class="ai-row"><input type="file" id="foodImageInput" accept="image/*" class="input" disabled title="Photo analysis is coming soon" /><button type="button" id="runAiScanBtn" class="btn btn-secondary btn-sm">Estimate</button></div>
+                <div id="aiScanResult" class="ai-banner">Not estimated yet</div>
+                <div class="soon-row" style="margin-top:12px"><span>Photo analysis <span class="soon-pill">Soon</span><div class="meta">Grade freshness from a photo of the food</div></span></div>
               </div>
-              <div class="glass panel">
+              <div class="panel">
+                <h3>Scheduling</h3>
+                <div class="soon-row"><span>Repeat every day <span class="soon-pill">Soon</span><div class="meta">Post the same surplus automatically</div></span><span class="switch"></span></div>
+              </div>
+              <div class="panel">
                 <h3>How a handover works</h3>
                 <ol class="how">
-                  <li>An NGO claims your listing and a <b>4-digit handover PIN</b> is generated.</li>
+                  <li>An NGO claims your listing and a <b>4-digit PIN</b> is generated.</li>
                   <li>You see the PIN under <b>My Listings</b> and share it with the volunteer at pickup.</li>
-                  <li>The volunteer enters the PIN to confirm collection, so every rescue is verified.</li>
+                  <li>The volunteer enters the PIN to confirm collection.</li>
                 </ol>
               </div>
             </div>
@@ -186,50 +215,53 @@
         </section>
 
         <section class="view" id="view-mylistings">
-          <div class="glass panel"><div class="panel-head"><div><h2>My listings</h2><p class="muted">Everything you posted. Share the handover PIN when a volunteer arrives.</p></div><button class="btn btn-primary btn-sm" data-go="post">+ Post surplus</button></div>
+          <div class="panel"><div class="panel-head"><div><h2>My listings</h2><p class="muted">Everything you posted. Share the handover PIN when a volunteer arrives.</p></div><button class="btn btn-primary btn-sm" data-go="give">Post surplus</button></div>
             <div id="myListings" class="card-list"></div></div>
         </section>
 
         <section class="view" id="view-pickups">
-          <div class="glass panel"><div class="panel-head"><div><h2>Active pickups</h2><p class="muted">Navigate, collect with the donor's PIN, or release if you cannot make it.</p></div></div><div id="pickupsActive" class="card-list"></div></div>
-          <div class="glass panel"><div class="panel-head"><div><h2>Completed rescues</h2><p class="muted">Rate hygiene for finished pickups.</p></div></div><div id="pickupsDone" class="card-list"></div></div>
+          <div class="panel"><div class="panel-head"><div><h2>Active pickups</h2><p class="muted">Navigate, collect with the donor's PIN, or release if you cannot make it.</p></div></div><div id="pickupsActive" class="card-list"></div></div>
+          <div class="panel"><div class="panel-head"><div><h2>Completed</h2><p class="muted">Rate food quality for finished pickups.</p></div></div><div id="pickupsDone" class="card-list"></div></div>
         </section>
 
         <section class="view" id="view-moderation">
-          <div class="glass panel"><div class="panel-head"><div><h2>All listings</h2><p class="muted">Every listing in the system, including expired ones.</p></div></div>
+          <div class="panel"><div class="panel-head"><div><h2>All listings</h2><p class="muted">Every listing in the system, including expired ones.</p></div><button class="btn btn-ghost btn-sm is-disabled" disabled title="Coming soon">Export CSV <span class="soon-pill">Soon</span></button></div>
             <div class="table-wrap"><table class="table"><thead><tr><th>Dish</th><th>Donor</th><th>Status</th><th>Meals</th><th>Use before</th><th></th></tr></thead><tbody id="moderationBody"></tbody></table></div></div>
         </section>
 
         <section class="view" id="view-users">
-          <div class="glass panel"><div class="panel-head"><div><h2>User management</h2><p class="muted">Change roles or suspend accounts. Every change is written to the audit log.</p></div></div>
+          <div class="panel"><div class="panel-head"><div><h2>Users and roles</h2><p class="muted">Change roles or suspend accounts. Every change is written to the audit log.</p></div></div>
             <div class="table-wrap"><table class="table"><thead><tr><th>Name</th><th>Email</th><th>Organization</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody id="userTableBody"></tbody></table></div></div>
         </section>
 
         <section class="view" id="view-insights">
           <div class="insights-grid">
-            <div class="glass panel"><h2>Meals posted vs rescued</h2><p class="muted" id="rescueRateLabel">Rescue rate: …</p><div id="dailyChart" class="bar-chart"></div></div>
-            <div class="glass panel"><h2>Rescued meals by diet</h2><p class="muted">Share of collected meals</p><div class="donut-wrap"><div id="typeDonut" class="donut"></div><div id="typeLegend" class="donut-legend"></div></div></div>
-            <div class="glass panel"><h2>Top donors</h2><ol id="donorBoard" class="board"></ol></div>
-            <div class="glass panel"><h2>Top NGOs</h2><ol id="ngoBoard" class="board"></ol></div>
+            <div class="panel"><h2>Meals posted and rescued</h2><p class="muted" id="rescueRateLabel">Rescue rate</p><div id="dailyChart" class="bar-chart"></div></div>
+            <div class="panel"><h2>Rescued meals by diet</h2><p class="muted">Share of collected meals</p><div class="donut-wrap"><div id="typeDonut" class="donut"></div><div id="typeLegend" class="donut-legend"></div></div></div>
+            <div class="panel"><h2>Top donors</h2><ol id="donorBoard" class="board"></ol></div>
+            <div class="panel"><h2>Top NGOs</h2><ol id="ngoBoard" class="board"></ol></div>
           </div>
         </section>
 
         <section class="view" id="view-roadmap">
-          <p class="muted">What is already shipped and where CampusFoodShare goes next.</p>
+          <p class="muted" style="margin-bottom:4px">What you can use today, what we are building, and what is on hold.</p>
           <div id="roadmapBody" class="road-grid"></div>
         </section>
+
+        <section class="view" id="view-settings"><div id="settingsBody"></div></section>
+        <section class="view" id="view-soon"><div id="soonBody"></div></section>
       </main>
     </div>
   </div>
 
-  <aside id="notifDrawer" class="drawer glass">
+  <aside id="notifDrawer" class="drawer">
     <div class="drawer-head"><h3>Activity</h3><button class="icon-btn" id="closeNotif" aria-label="Close"></button></div>
     <div id="notificationsList" class="ntf-list"></div>
   </aside>
 
   <div id="cmdModal" class="modal-overlay">
     <div class="modal cmd-modal">
-      <input id="cmdInput" class="input" placeholder="Jump to a page or run an action…" autocomplete="off" />
+      <input id="cmdInput" class="input" placeholder="Search pages and actions" autocomplete="off" />
       <ul id="cmdList" class="cmd-list"></ul>
     </div>
   </div>
@@ -242,19 +274,19 @@
         <button class="auth-tab" data-mode="signup">Create account</button>
       </div>
       <form id="signinForm" class="auth-form active" novalidate>
-        <div class="form-group"><label for="siEmail">Email</label><input type="email" id="siEmail" class="input" required placeholder="you@campus.edu" /></div>
+        <div class="form-group"><label for="siEmail">Email</label><input type="email" id="siEmail" class="input" required placeholder="you@campus.edu" autocomplete="username" /></div>
         <div class="form-group"><label for="siPassword">Password</label>
-          <div class="password-input"><input type="password" id="siPassword" class="input" required placeholder="••••••••" /><button type="button" id="siTogglePwd" class="btn-toggle">Show</button></div></div>
-        <div class="form-group"><label>Sign in as *</label>
+          <div class="password-input"><input type="password" id="siPassword" class="input" required autocomplete="current-password" /><button type="button" id="siTogglePwd" class="btn-toggle">Show</button></div></div>
+        <div class="form-group"><label>Sign in as</label>
           <div class="role-chips" id="siRoleChips">
             <button type="button" class="role-chip" data-role="admin">Admin</button>
-            <button type="button" class="role-chip" data-role="donor">Donor / Mess</button>
-            <button type="button" class="role-chip" data-role="ngo">NGO / Receiver</button>
+            <button type="button" class="role-chip" data-role="donor">Donor</button>
+            <button type="button" class="role-chip" data-role="ngo">NGO</button>
             <button type="button" class="role-chip" data-role="volunteer">Volunteer</button>
-          </div>
-          <p class="muted" style="margin-top:.4rem">Your role decides which menu and dashboard open. It must match your account.</p></div>
-        <button type="submit" class="btn btn-primary btn-block">Sign in</button>
-        <details class="cred-box"><summary>Demo accounts for evaluators</summary>
+          </div></div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg">Sign in</button>
+        <div class="auth-footer"><span class="muted">Forgot your password? <span class="soon-pill">Soon</span></span></div>
+        <details class="cred-box"><summary>Demo accounts</summary>
           <table class="cred-table">
             <tr><td>Admin</td><td>admin@campusfoodshare.org</td><td>admin123</td></tr>
             <tr><td>Donor</td><td>donor@campusfoodshare.org</td><td>donor123</td></tr>
@@ -263,28 +295,28 @@
           </table></details>
       </form>
       <form id="signupForm" class="auth-form" novalidate>
-        <div class="form-group"><label for="suName">Full name</label><input type="text" id="suName" class="input" required placeholder="e.g., Ramesh Kulkarni" /></div>
+        <div class="form-group"><label for="suName">Full name</label><input type="text" id="suName" class="input" required autocomplete="name" /></div>
         <div class="form-row">
-          <div class="form-group"><label for="suEmail">Email</label><input type="email" id="suEmail" class="input" required /></div>
-          <div class="form-group"><label for="suPhone">Phone</label><input type="text" id="suPhone" class="input" placeholder="+91 98450 12345" /></div>
+          <div class="form-group"><label for="suEmail">Email</label><input type="email" id="suEmail" class="input" required autocomplete="email" /></div>
+          <div class="form-group"><label for="suPhone">Phone</label><input type="text" id="suPhone" class="input" placeholder="+91 98450 12345" autocomplete="tel" /></div>
         </div>
-        <div class="form-group"><label for="suOrg">Organization (mess / NGO / chapter)</label><input type="text" id="suOrg" class="input" /></div>
+        <div class="form-group"><label for="suOrg">Organization (mess, NGO or chapter)</label><input type="text" id="suOrg" class="input" /></div>
         <div class="form-group"><label for="suPassword">Password</label>
-          <div class="password-input"><input type="password" id="suPassword" class="input" required placeholder="Min. 6 characters" /><button type="button" id="suTogglePwd" class="btn-toggle">Show</button></div></div>
-        <div class="form-group"><label>I am a…</label>
+          <div class="password-input"><input type="password" id="suPassword" class="input" required placeholder="At least 6 characters" autocomplete="new-password" /><button type="button" id="suTogglePwd" class="btn-toggle">Show</button></div></div>
+        <div class="form-group"><label>I am a</label>
           <div class="role-chips">
-            <button type="button" class="role-chip" data-role="donor">Donor / Mess</button>
-            <button type="button" class="role-chip" data-role="ngo">NGO / Receiver</button>
+            <button type="button" class="role-chip" data-role="donor">Donor</button>
+            <button type="button" class="role-chip" data-role="ngo">NGO</button>
             <button type="button" class="role-chip" data-role="volunteer">Volunteer</button>
           </div></div>
-        <button type="submit" class="btn btn-primary btn-block">Create account</button>
+        <button type="submit" class="btn btn-primary btn-block btn-lg">Create account</button>
         <div class="auth-footer"><span>Already registered?</span><span class="demo-hint switch-to-signin">Sign in</span></div>
       </form>
     </div>
   </div>
 
   <div id="reqModal" class="modal-overlay">
-    <div class="modal big-modal">
+    <div class="modal">
       <div class="modal-header"><h3 data-i18n="howMany">How many people need food?</h3><button id="closeReqBtn" class="icon-btn" aria-label="Close"></button></div>
       <div id="reqForm">
         <div class="num-row" id="reqPeople">
@@ -292,22 +324,22 @@
           <button type="button" class="num-btn" data-people="4">4</button><button type="button" class="num-btn" data-people="5">5</button><button type="button" class="num-btn" data-people="10">10+</button>
         </div>
         <label for="reqPhone" data-i18n="phoneOpt">Your phone number (optional)</label>
-        <input id="reqPhone" class="input big" inputmode="tel" autocomplete="tel" placeholder="+91 ..." />
-        <button id="reqSend" class="big-cta cta-green" type="button"><span class="emo">✅</span><b data-i18n="sendReq">SEND</b></button>
+        <input id="reqPhone" class="input big" inputmode="tel" autocomplete="tel" placeholder="+91" />
+        <p class="muted" style="margin-top:8px" data-i18n="reqPrivacy">Your location and number are shared only with NGOs and volunteers who can help.</p>
+        <button id="reqSend" class="big-cta cta-green" type="button"><b data-i18n="sendReq">Send request</b></button>
       </div>
-      <div id="reqDone" class="req-done" style="display:none"><div class="emo">✅</div><h3 data-i18n="thanks">Thank you! Help is on the way.</h3><p data-i18n="thanksSub">NGOs and volunteers near you have been told.</p></div>
     </div>
   </div>
 
   <div id="claimModal" class="modal-overlay">
     <div class="modal">
-      <div class="modal-header"><h3>Claim surplus pickup</h3><button id="closeClaimModalBtn" class="icon-btn" aria-label="Close"></button></div>
+      <div class="modal-header"><h3>Claim pickup</h3><button id="closeClaimModalBtn" class="icon-btn" aria-label="Close"></button></div>
       <form id="claimModalForm">
         <input type="hidden" id="claimListingIdInput" />
-        <div class="form-group"><label for="claimNgoName">NGO / receiver organization *</label><input type="text" id="claimNgoName" class="input" required /></div>
-        <div class="form-group"><label for="claimVolunteerName">Pickup volunteer *</label><input type="text" id="claimVolunteerName" class="input" required /></div>
-        <div class="form-group"><label for="claimVolunteerPhone">Volunteer phone *</label><input type="text" id="claimVolunteerPhone" class="input" required value="+91 99001 44556" /></div>
-        <button type="submit" class="btn btn-primary btn-block">Confirm claim & lock pickup</button>
+        <div class="form-group"><label for="claimNgoName">NGO / receiving organization</label><input type="text" id="claimNgoName" class="input" required /></div>
+        <div class="form-group"><label for="claimVolunteerName">Pickup volunteer</label><input type="text" id="claimVolunteerName" class="input" required /></div>
+        <div class="form-group"><label for="claimVolunteerPhone">Volunteer phone</label><input type="text" id="claimVolunteerPhone" class="input" required value="+91 99001 44556" /></div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg">Confirm and lock pickup</button>
       </form>
     </div>
   </div>
@@ -317,25 +349,25 @@
       <div class="modal-header"><h3>Confirm collection</h3><button id="closeCollectModalBtn" class="icon-btn" aria-label="Close"></button></div>
       <form id="collectModalForm">
         <input type="hidden" id="collectListingIdInput" />
-        <p class="muted" id="collectHint">Ask the donor for the 4-digit handover PIN shown on their listing.</p>
-        <div class="form-group"><label for="collectPinInput">Handover PIN</label><input type="text" id="collectPinInput" class="input pin" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" /></div>
-        <button type="submit" class="btn btn-primary btn-block">Verify & mark collected</button>
+        <p class="muted" id="collectHint" style="margin-bottom:12px">Ask the donor for the 4-digit handover PIN shown on their listing.</p>
+        <div class="form-group"><label for="collectPinInput">Handover PIN</label><input type="text" id="collectPinInput" class="input pin" inputmode="numeric" maxlength="4" autocomplete="off" /></div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg">Verify and collect</button>
       </form>
     </div>
   </div>
 
   <div id="rateModal" class="modal-overlay">
     <div class="modal">
-      <div class="modal-header"><h3>Rate food hygiene & packaging</h3><button id="closeRateModalBtn" class="icon-btn" aria-label="Close"></button></div>
+      <div class="modal-header"><h3>Rate the food</h3><button id="closeRateModalBtn" class="icon-btn" aria-label="Close"></button></div>
       <form id="rateModalForm">
         <input type="hidden" id="rateListingIdInput" />
         <input type="hidden" id="rateStarValue" value="5" />
-        <div class="form-group"><label>Star rating</label>
+        <div class="form-group"><label>Rating</label>
           <div class="star-picker">
             <button type="button" class="star-btn active" data-val="1">★</button><button type="button" class="star-btn active" data-val="2">★</button><button type="button" class="star-btn active" data-val="3">★</button><button type="button" class="star-btn active" data-val="4">★</button><button type="button" class="star-btn active" data-val="5">★</button>
           </div></div>
-        <div class="form-group"><label for="rateCommentInput">Note for the donor</label><input type="text" id="rateCommentInput" class="input" required value="Fresh, warm and hygienically packed. Distributed safely." /></div>
-        <button type="submit" class="btn btn-primary btn-block">Submit review</button>
+        <div class="form-group"><label for="rateCommentInput">Note for the donor</label><input type="text" id="rateCommentInput" class="input" required value="Fresh, warm and well packed." /></div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg">Submit review</button>
       </form>
     </div>
   </div>

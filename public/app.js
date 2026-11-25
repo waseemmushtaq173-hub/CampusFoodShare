@@ -18,6 +18,17 @@ const ICONS = {
   menu: 'M3 6h18M3 12h18M3 18h18', x: 'M18 6L6 18M6 6l12 12', utensils: 'M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2M7 2v20M21 15V2a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7',
   alert: 'M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0', star: 'M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8-6.2-3.3-6.2 3.3L7 14.2 2 9.3l6.9-1z',
 };
+Object.assign(ICONS, {
+  phone: 'M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .4 1.9.7 2.8a2 2 0 01-.5 2.1L8.1 9.9a16 16 0 006 6l1.3-1.3a2 2 0 012.1-.4c.9.3 1.8.6 2.8.7a2 2 0 011.7 2z',
+  gift: 'M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z',
+  volume: 'M11 5L6 9H2v6h4l5 4zM15.5 8.5a5 5 0 010 7M19 5a9 9 0 010 14', send: 'M22 2L11 13M22 2l-7 20-4-9-9-4z', arrow: 'M5 12h14M13 6l6 6-6 6',
+  navigation: 'M3 11l19-9-9 19-2-8z', box: 'M21 8l-9-5-9 5v8l9 5 9-5zM3.3 7L12 12l8.7-5M12 22V12', tag: 'M20.6 13.4l-7.2 7.2a2 2 0 01-2.8 0L2 12V2h10l8.6 8.6a2 2 0 010 2.8zM7 7h.01',
+  flame: 'M8.5 14.5A2.5 2.5 0 0011 12c0-1.4-.5-2-1-3-1.1-2.1-.2-4 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.2.4-2.3 1-3 0 1.4 1 2.5 2.5 2.5z',
+  lock: 'M5 11h14v10H5zM8 11V7a4 4 0 018 0v4', calendar: 'M3 4h18v18H3zM16 2v4M8 2v4M3 10h18', route: 'M6 19a3 3 0 100-6 3 3 0 000 6M18 11a3 3 0 100-6 3 3 0 000 6M9 16h6a3 3 0 003-3M12 8H9a3 3 0 00-3 3',
+  award: 'M12 15a6 6 0 100-12 6 6 0 000 12M8.2 13.9L7 23l5-3 5 3-1.2-9.1', message: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z',
+  sliders: 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6', type: 'M4 7V4h16v3M9 20h6M12 4v16', camera: 'M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2zM12 17a4 4 0 100-8 4 4 0 000 8',
+  store: 'M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M9 13h.01M15 9h.01M15 13h.01',
+});
 const ic = (n) => `<svg class="ic" viewBox="0 0 24 24"><path d="${ICONS[n] || ''}"/></svg>`;
 
 /* ── State ── */
@@ -32,18 +43,18 @@ const CLAIM_ROLES = ['ngo', 'volunteer', 'admin'];
 
 /* ── Role menus ── */
 const NAV = {
-  guest: [['start', 'Start Here', 'heart'], ['need', 'Find Food', 'utensils'], ['overview', 'About', 'home'], ['explore', 'Live Map & Feed', 'map'], ['insights', 'Insights', 'chart'], ['roadmap', 'Roadmap', 'rocket']],
-  donor: [['dashboard', 'Dashboard', 'grid'], ['give', 'Give Food (Easy)', 'heart'], ['post', 'Detailed Form', 'plus'], ['mylistings', 'My Listings', 'list'], ['explore', 'Live Map', 'map'], ['insights', 'Insights', 'chart'], ['roadmap', 'Roadmap', 'rocket']],
-  ngo: [['dashboard', 'Dashboard', 'grid'], ['requests', 'People Needing Food', 'heart'], ['explore', 'Find & Claim', 'map'], ['pickups', 'My Pickups', 'truck'], ['insights', 'Insights', 'chart'], ['roadmap', 'Roadmap', 'rocket']],
-  volunteer: [['dashboard', 'Dashboard', 'grid'], ['requests', 'People Needing Food', 'heart'], ['explore', 'Available Pickups', 'map'], ['pickups', 'My Tasks', 'truck'], ['insights', 'Insights', 'chart'], ['roadmap', 'Roadmap', 'rocket']],
-  admin: [['dashboard', 'Control Center', 'shield'], ['requests', 'People Needing Food', 'heart'], ['moderation', 'All Listings', 'list'], ['users', 'Users & Roles', 'users'], ['explore', 'Live Map', 'map'], ['give', 'Give Food (Easy)', 'heart'], ['post', 'Detailed Form', 'plus'], ['insights', 'Insights', 'chart'], ['roadmap', 'Roadmap', 'rocket']],
+  guest: [['start', 'Start Here', 'home'], ['need', 'Find Food', 'utensils'], ['track', 'My Request', 'clock'], ['explore', 'Live Map', 'map'], ['insights', 'Insights', 'chart'], ['overview', 'About', 'heart'], ['roadmap', 'Roadmap', 'rocket']],
+  donor: [['dashboard', 'Dashboard', 'grid'], ['give', 'Donate Food', 'gift'], ['mylistings', 'My Listings', 'list'], ['explore', 'Live Map', 'map'], ['post', 'Detailed Form', 'plus'], ['schedules', 'Recurring Surplus', 'calendar', true], ['insights', 'Insights', 'chart'], ['roadmap', 'Roadmap', 'rocket'], ['settings', 'Settings', 'sliders']],
+  ngo: [['dashboard', 'Dashboard', 'grid'], ['requests', 'People Needing Food', 'heart'], ['explore', 'Find & Claim', 'map'], ['pickups', 'My Pickups', 'truck'], ['routes', 'Route Planner', 'route', true], ['insights', 'Insights', 'chart'], ['roadmap', 'Roadmap', 'rocket'], ['settings', 'Settings', 'sliders']],
+  volunteer: [['dashboard', 'Dashboard', 'grid'], ['requests', 'People Needing Food', 'heart'], ['explore', 'Available Pickups', 'map'], ['pickups', 'My Tasks', 'truck'], ['routes', 'Route Planner', 'route', true], ['insights', 'Insights', 'chart'], ['roadmap', 'Roadmap', 'rocket'], ['settings', 'Settings', 'sliders']],
+  admin: [['dashboard', 'Overview', 'grid'], ['requests', 'People Needing Food', 'heart'], ['moderation', 'All Listings', 'list'], ['users', 'Users & Roles', 'users'], ['explore', 'Live Map', 'map'], ['insights', 'Insights', 'chart'], ['reports', 'Reports & Certificates', 'award', true], ['integrations', 'SMS & WhatsApp', 'message', true], ['roadmap', 'Roadmap', 'rocket'], ['settings', 'Settings', 'sliders']],
 };
 const ROLE_LABEL = { guest: 'Guest', donor: 'Donor', ngo: 'NGO', volunteer: 'Volunteer', admin: 'Admin' };
 const PAGE_SUB = {
   overview: 'Public, read-only view of the platform', explore: 'Real-time listings ranked by distance and expiry', post: 'Alert nearby NGOs in under a minute',
   mylistings: 'Track every listing you have posted', pickups: 'Your claimed and completed rescues', moderation: 'Review and moderate every listing',
   users: 'Manage roles and access', insights: 'Impact analytics and leaderboards', roadmap: 'Shipped features and what is next',
-  start: 'Pick one big button to begin', need: 'Free food close to you', give: 'Give food in a few taps', requests: 'People asking for food near you',
+  start: 'Share surplus food with people nearby', track: 'Follow your request for food', settings: 'Your account and preferences', start_: '', need: 'Free food close to you', give: 'Give food in a few taps', requests: 'People asking for food near you',
 };
 const roleOf = () => (currentUser ? currentUser.role : 'guest');
 const titleFor = (r) => (r === 'dashboard' ? `${ROLE_LABEL[roleOf()]} ${roleOf() === 'admin' ? 'Control Center' : 'Dashboard'}` : navLabel(r, (NAV[roleOf()].find((n) => n[0] === r) || [, 'Home'])[1]));
@@ -112,7 +123,7 @@ function clearSession() {
 
 function updateAuthUI() {
   const role = roleOf();
-  $('navMenu').innerHTML = NAV[role].map(([id, label, icon]) => `<button class="nav-item" data-route="${id}">${ic(icon)}<span>${esc(navLabel(id, label))}</span></button>`).join('');
+  $('navMenu').innerHTML = NAV[role].map(([id, label, icon, soon]) => `<button class="nav-item${soon ? ' is-soon' : ''}" data-route="${id}">${ic(icon)}<span>${esc(navLabel(id, label))}</span>${soon ? '<em class="soon-pill">Soon</em>' : ''}</button>`).join('');
   $('navLabel').textContent = `${ROLE_LABEL[role]} menu`;
   if (currentUser) {
     const initial = esc((currentUser.name || '?').trim()[0].toUpperCase());
@@ -197,7 +208,8 @@ function renderRoute() {
     route = ids[0];
     history.replaceState(null, '', `#/${route}`);
   }
-  document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${route}`));
+  const viewId = SOON[route] ? 'soon' : route;
+  document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${viewId}`));
   document.querySelectorAll('.nav-item').forEach((n) => n.classList.toggle('active', n.dataset.route === route));
   $('pageTitle').textContent = titleFor(route);
   $('pageSub').textContent = PAGE_SUB[route] || (route === 'dashboard' ? `Signed in as ${currentUser ? currentUser.email : ''}` : '');
@@ -209,8 +221,9 @@ function renderRoute() {
 
 function loadRoute(route) {
   loadNotifications(route === 'overview');
+  if (SOON[route]) return renderSoon(route);
   ({
-    overview: () => {}, start: loadStart, need: loadNeed, give: renderGive, requests: loadRequests, dashboard: loadDashboard, explore: () => { loadListings(); loadLocations(); }, mylistings: loadMyListings, pickups: loadPickups,
+    overview: () => {}, track: loadTrack, settings: renderSettings, start: loadStart, need: loadNeed, give: renderGive, requests: loadRequests, dashboard: loadDashboard, explore: () => { loadListings(); loadLocations(); }, mylistings: loadMyListings, pickups: loadPickups,
     moderation: loadModeration, users: loadUsers, insights: loadInsights, roadmap: renderRoadmap, post: () => {},
   }[route] || (() => {}))();
 }
@@ -227,7 +240,7 @@ function setLiveUI(on) {
   btn.classList.toggle('blocked', gpsBlocked && !on);
   $('gpsIcon').innerHTML = ic('pin');
   const acc = on && gpsAcc ? ` ±${Math.round(gpsAcc)}m` : '';
-  $('currentCoordsLabel').textContent = gpsBlocked && !on ? 'GPS blocked · click to retry' : `${on ? 'LIVE · ' : ''}${ngoLocation.lat}, ${ngoLocation.lng}${acc}`;
+  $('currentCoordsLabel').textContent = gpsBlocked && !on ? 'Location off' : `${on ? 'LIVE · ' : ''}${ngoLocation.lat}, ${ngoLocation.lng}${acc}`;
   btn.title = on ? 'Live GPS on - click to stop' : 'Start live GPS tracking';
   const b = $('gpsBanner');
   if (!b) return;
@@ -397,14 +410,14 @@ function cardHtml(item, idx) {
       <div><span class="listing-title">#${idx + 1} · ${esc(item.foodTitle)}</span>
         <div class="sub">${esc(item.donorName)}${item.donorPhone ? ` · <a href="tel:${esc(item.donorPhone.replace(/\s/g, ''))}">${esc(item.donorPhone)}</a>` : ''}</div></div>
       <div class="badges"><span class="badge badge-${esc(item.status)}">${esc(item.status.toUpperCase())}</span>${item.status === 'posted' ? timerBadge(item.useBefore) : ''}
-        <span class="badge badge-ai">${esc(item.aiFreshnessScore || 95)}% fresh</span><span class="badge">${esc(item.distanceKm)} km</span></div>
+        <span class="badge">Freshness ${esc(item.aiFreshnessScore || 95)}%</span><span class="badge">${esc(item.distanceKm)} km</span></div>
     </div>
     <div class="stepper"><div class="done">1 · Posted</div><div class="${done(2)}">2 · Claimed</div><div class="${item.status === 'collected' ? 'done' : ''}">3 · Collected</div></div>
     <div class="listing-meta">
       <div><strong>Diet:</strong> ${esc(item.foodType)}</div><div><strong>Quantity:</strong> ${esc(item.quantityMeals)} meals (~${esc(item.weightKg)} kg)</div>
       <div><strong>Pickup:</strong> ${esc(item.location.address)} · <a href="${directions}" target="_blank" rel="noopener">Directions ↗</a></div><div><strong>Priority score:</strong> ${esc(item.urgencyScore)}</div>
     </div>
-    <div class="listing-actions"><span class="hint ok">✓ Safety checklist & AI verified</span><div class="action-row">${actions}</div></div>
+    <div class="listing-actions"><span class="hint ok">Safety checklist confirmed</span><div class="action-row">${actions}</div></div>
   </div>`;
 }
 const renderCards = (el, list, empty) => { el.innerHTML = list.length ? list.map(cardHtml).join('') : `<div class="empty">${empty}</div>`; };
@@ -461,7 +474,7 @@ async function loadDashboard() {
   const r = await api(`/api/dashboard?${locQuery()}`);
   if (!r.ok || !r.data.stats) return;
   const d = r.data, s = d.stats, body = $('dashboardBody');
-  const welcome = (sub, buttons) => `<div class="glass welcome"><div><h2>${greeting()}, ${first()}</h2><p class="muted">${sub}</p></div><div class="welcome-actions">${buttons}</div></div>`;
+  const welcome = (sub, buttons) => `<div class="welcome"><div><h2>${greeting()}, ${first()}</h2><p class="muted">${sub}</p></div><div class="welcome-actions">${buttons}</div></div>`;
   if (d.role === 'donor') {
     body.innerHTML = welcome('Here is how your surplus is doing.', `<button class="btn btn-primary" data-go="post">${ic('plus')} Post surplus</button><button class="btn btn-ghost" data-go="mylistings">My listings</button>`) +
       `<div class="kpi-grid">${kpi('Meals posted', s.mealsPosted, `${s.listings} listings`, 'utensils', 'var(--accent)')}${kpi('Meals rescued', s.mealsRescued, `${s.kgRescued} kg saved`, 'heart', 'var(--green)')}${kpi('Live listings', s.active + s.inTransit, `${s.active} open · ${s.inTransit} in transit`, 'clock', 'var(--blue)')}${kpi('Rescue rate', pct(s.rescueRate), 'rescued vs expired', 'chart', 'var(--primary)')}${kpi('Avg rating', s.avgRating == null ? '—' : `${s.avgRating} ★`, 'from NGO reviews', 'star', 'var(--purple)')}</div>
@@ -517,31 +530,80 @@ async function loadInsights() {
     $('typeLegend').innerHTML = Object.entries(a.data.byType).map(([k, v]) => `<div><i style="background:${colors[k]}"></i>${esc(k)} <b>${v}</b></div>`).join('');
   }
   if (l.ok) {
-    const board = (arr) => arr.length ? arr.map((x, i) => `<li><span class="medal">${['🥇', '🥈', '🥉'][i] || i + 1}</span><span class="nm">${esc(x.name)}</span><b>${x.meals} meals</b></li>`).join('') : '<li class="muted">No completed rescues yet.</li>';
+    const board = (arr) => arr.length ? arr.map((x, i) => `<li><span class="medal">${i + 1}</span><span class="nm">${esc(x.name)}</span><b>${x.meals} meals</b></li>`).join('') : '<li class="muted">No completed rescues yet.</li>';
     $('donorBoard').innerHTML = board(l.data.donors); $('ngoBoard').innerHTML = board(l.data.ngos);
   }
 }
 
 /* ── Roadmap ── */
 const ROADMAP = [
-  ['shipped', 'Role-based dashboards', 'Dedicated menus and dashboards for guests, donors, NGOs, volunteers and admins.'],
-  ['shipped', 'Live GPS & real-time feed', 'Continuous location tracking and instant cross-browser updates over server-sent events.'],
-  ['shipped', 'Handover PIN verification', 'A 4-digit code ties each pickup to the donor, so every rescue is verified.'],
-  ['shipped', 'Admin console & audit log', 'Role changes, suspensions and a trail of every administrative action.'],
-  ['shipped', 'Haversine + min-heap ranking', 'Nearest and soonest-expiring listings surface first.'],
-  ['next', 'SMS / WhatsApp alerts', 'Push alerts to NGOs within a chosen radius via Twilio or WhatsApp Business.'],
-  ['next', 'Real computer-vision freshness model', 'Replace the rule-based scanner with an image model that grades uploaded photos.'],
-  ['next', 'MongoDB persistence', 'Move from the JSON file store to MongoDB Atlas for multi-instance hosting.'],
-  ['next', 'Installable PWA & offline mode', 'Add-to-home-screen app with cached listings for patchy campus Wi-Fi.'],
-  ['future', 'Volunteer route optimization', 'Batch several pickups into one efficient route.'],
-  ['future', 'Recurring surplus schedules', 'Mess and canteens pre-schedule daily surplus windows.'],
-  ['future', 'Multi-campus & city mode', 'Federate campuses and nearby restaurants under one network.'],
-  ['future', 'Email verification & JWT refresh', 'Production-grade identity, rate limiting and password reset.'],
-  ['future', 'Impact certificates', 'Auto-generated PDF certificates for donors and volunteers (NSS credits).'],
+  ['shipped', 'Role-based accounts and dashboards', 'Separate menus and dashboards for donors, NGOs, volunteers and admins, with server-enforced permissions.'],
+  ['shipped', 'Live map and smart ranking', 'Listings ranked by distance and time left, with a live map and filters.'],
+  ['shipped', 'Claim, collect and rate', 'NGOs claim a pickup, a 4-digit PIN verifies the handover, and quality is rated afterwards.'],
+  ['shipped', 'Live GPS and volunteer tracking', 'Watch a volunteer approach the pickup point in real time.'],
+  ['shipped', 'Real-time updates', 'Every post, claim and collection appears instantly for everyone.'],
+  ['shipped', 'Find food and ask for help', 'People can find free food nearby, or ask for it and follow the request until someone arrives.'],
+  ['shipped', 'Tap-only donating', 'A five-step flow for donors who are short on time.'],
+  ['shipped', 'Insights and leaderboards', 'Seven-day activity, rescue rate, diet split and top donors and NGOs.'],
+  ['shipped', 'Admin tools and audit log', 'Change roles, suspend accounts, moderate listings and review every action.'],
+  ['shipped', 'English, Hindi and Kannada', 'With read-aloud for people who prefer to listen.'],
+  ['next', 'Installable mobile app', 'Add to home screen with cached listings for patchy campus Wi-Fi.'],
+  ['next', 'Email verification and password reset', 'Production-grade account recovery.'],
+  ['future', 'Recurring surplus schedules', 'Messes and canteens post surplus automatically on chosen days.'],
+  ['future', 'Route planner', 'Combine several pickups into one efficient trip for volunteers.'],
+  ['future', 'SMS and WhatsApp alerts', 'Radius-based alerts on the channels people already use.'],
+  ['future', 'Reports and certificates', 'Monthly impact reports and certificates for donors and volunteers.'],
+  ['future', 'Photo-based freshness analysis', 'Grade freshness from a photo of the food.'],
+  ['future', 'Multi-campus network', 'Connect several campuses and nearby restaurants.'],
 ];
 function renderRoadmap() {
-  const label = { shipped: 'Shipped', next: 'Up next', future: 'Future' };
+  const label = { shipped: 'Live', next: 'In progress', future: 'On hold' };
   $('roadmapBody').innerHTML = ROADMAP.map(([s, t, d]) => `<div class="road"><span class="st ${s}">${label[s]}</span><h4>${esc(t)}</h4><p>${esc(d)}</p></div>`).join('');
+}
+
+/* ── Features that are designed but on hold ── */
+const SOON = {
+  schedules: { icon: 'calendar', title: 'Recurring surplus schedules', status: 'On hold', desc: 'Set it once and your mess or canteen posts surplus automatically on the days and times you choose.', bullets: ['Daily, weekly or event-based schedules', 'Pre-filled from your usual menu', 'Pause during holidays and exams'] },
+  routes: { icon: 'route', title: 'Route planner', status: 'On hold', desc: 'Combine several pickups into one efficient trip so volunteers cover more ground in less time.', bullets: ['Multi-stop routes ordered by expiry time', 'Live arrival estimates for donors and NGOs', 'Works with live GPS'] },
+  reports: { icon: 'award', title: 'Reports and certificates', status: 'On hold', desc: 'Download impact reports for your institution and certificates for donors and volunteers.', bullets: ['Monthly PDF impact reports', 'Volunteer hour certificates', 'Summaries ready for CSR and NSS records'] },
+  integrations: { icon: 'message', title: 'SMS and WhatsApp alerts', status: 'On hold', desc: 'Reach NGOs and volunteers on the channels they already use, within a radius you choose.', bullets: ['Radius-based alerts', 'Reply to claim a listing', 'Delivery receipts'] },
+};
+function renderSoon(id) {
+  const s = SOON[id];
+  if (!s) return;
+  let notified = false; try { notified = localStorage.getItem('cf_notify_' + id) === '1'; } catch (e) { /* ignore */ }
+  $('soonBody').innerHTML = `<div class="panel soon-card"><div class="s-ico">${ic(s.icon)}</div><span class="badge">${esc(s.status)}</span><h2>${esc(s.title)}</h2><p class="muted">${esc(s.desc)}</p>
+    <ul>${s.bullets.map((b) => `<li>${esc(b)}</li>`).join('')}</ul>
+    <div class="action-row"><button class="btn btn-primary" data-act="notify" data-id="${esc(id)}" ${notified ? 'disabled' : ''}>${notified ? 'You will be notified' : 'Notify me when it is ready'}</button><button class="btn btn-ghost" data-go="dashboard">Back to dashboard</button></div></div>`;
+}
+
+/* ── Settings ── */
+function renderSettings() {
+  if (!currentUser) return;
+  const u = currentUser;
+  const row = (k, v) => `<dt>${esc(k)}</dt><dd>${esc(v || 'Not set')}</dd>`;
+  const soonRow = (label, meta) => `<div class="soon-row"><span>${esc(label)} <span class="soon-pill">Soon</span><div class="meta">${esc(meta)}</div></span><span class="switch"></span></div>`;
+  $('settingsBody').innerHTML = `<div class="two-col">
+    <div>
+      <div class="panel"><h2>Profile</h2><dl class="kv" style="margin-top:12px">${row('Name', u.name)}${row('Email', u.email)}${row('Role', ROLE_LABEL[u.role])}${row('Organization', u.organization)}${row('Phone', u.phone)}</dl></div>
+      <div class="panel"><h2>Security</h2>
+        <div class="soon-row"><span>Change password <span class="soon-pill">Soon</span><div class="meta">Update your password from here</div></span><button class="btn btn-ghost btn-sm" disabled>Change</button></div>
+        <div class="soon-row"><span>Sign out of this device<div class="meta">You will need to sign in again</div></span><button class="btn btn-secondary btn-sm" data-act="signout">Sign out</button></div></div>
+    </div>
+    <div>
+      <div class="panel"><h2>Preferences</h2>
+        <div class="soon-row"><span>Language</span><select id="setLang" class="input" style="width:auto"><option value="en">English</option><option value="hi">हिन्दी</option><option value="kn">ಕನ್ನಡ</option></select></div>
+        <div class="soon-row"><span>Theme</span><select id="setTheme" class="input" style="width:auto"><option value="light">Light</option><option value="dark">Dark</option></select></div>
+        <div class="soon-row"><span>Larger text and buttons</span><button class="btn btn-secondary btn-sm" id="setEasy">Toggle</button></div></div>
+      <div class="panel"><h2>Notifications</h2>
+        <div class="soon-row"><span>In-app alerts<div class="meta">Live updates inside the app</div></span><span class="switch on"></span></div>
+        ${soonRow('SMS alerts', 'Text messages for nearby surplus')}${soonRow('WhatsApp alerts', 'Claim by replying to a message')}${soonRow('Email digest', 'A daily summary of your activity')}</div>
+      <div class="panel"><h2>Your data</h2>${soonRow('Download my data', 'Export everything we hold about you')}</div>
+    </div></div>`;
+  $('setLang').value = lang; $('setTheme').value = document.documentElement.dataset.theme;
+  $('setLang').addEventListener('change', (e) => setLang(e.target.value));
+  $('setTheme').addEventListener('change', (e) => applyTheme(e.target.value));
+  $('setEasy').addEventListener('click', () => setEasy(!document.body.classList.contains('easy')));
 }
 
 /* ── Actions ── */
@@ -591,6 +653,7 @@ document.addEventListener('click', (e) => {
     claim: () => openClaimModal(id), collect: () => openCollectModal(id), rate: () => openRateModal(id), delete: () => deleteListing(id),
     release: () => requireAuth('release a pickup') && act(`/api/listings/${encodeURIComponent(id)}/release`, {}, 'Claim released. The listing is available again.'),
     signout: signOut, reset: resetDemo,
+    notify: () => { try { localStorage.setItem('cf_notify_' + id, '1'); } catch (e) { /* ignore */ } showToast("Thanks. We'll let you know when it is ready."); renderSoon(id); },
     suspend: async () => { lastOwnAction = Date.now(); const r = await api(`/api/admin/users/${encodeURIComponent(id)}`, { method: 'PATCH', body: { suspended: a.dataset.val === '1' } }); showToast(r.ok ? 'User updated' : (r.data.error || 'Failed')); loadUsers(); },
   }[a.dataset.act] || (() => {}))();
 });
@@ -602,7 +665,7 @@ function openCmd() {
   cmdItems = [
     ...NAV[role].map(([id, label, icon]) => ({ label: `Go to ${label}`, icon, run: () => go(id) })),
     { label: watchId !== null ? 'Stop live GPS' : 'Start live GPS', icon: 'pin', run: toggleLiveGps },
-    { label: 'Switch theme (dark / light / lavender)', icon: 'sun', run: toggleTheme },
+    { label: 'Switch light / dark theme', icon: 'sun', run: toggleTheme },
     currentUser ? { label: 'Sign out', icon: 'logout', run: signOut } : { label: 'Sign in / Sign up', icon: 'users', run: () => openAuth('signin') },
   ];
   $('cmdModal').classList.add('active'); $('cmdInput').value = ''; renderCmd(); setTimeout(() => $('cmdInput').focus(), 50);
@@ -616,10 +679,10 @@ function renderCmd() {
 function runCmd(i) { $('cmdModal').classList.remove('active'); if (cmdItems[i]) cmdItems[i].run(); }
 
 /* ── Theme ── */
-const THEMES = ['dark', 'light', 'lavender'];
-const THEME_ICON = { dark: 'sun', light: 'heart', lavender: 'moon' }; // icon hints at the NEXT theme
+const THEMES = ['light', 'dark'];
+const THEME_ICON = { light: 'moon', dark: 'sun' }; // icon hints at the NEXT theme
 function applyTheme(t) {
-  if (!THEMES.includes(t)) t = 'dark';
+  if (!THEMES.includes(t)) t = 'light';
   document.documentElement.dataset.theme = t;
   $('themeBtn').innerHTML = ic(THEME_ICON[t]);
   $('themeBtn').title = `Theme: ${t} (click to switch)`;
@@ -662,7 +725,7 @@ const toggleLiveGps = () => (watchId !== null ? stopLiveGps() : startLiveGps());
 
 /* ── Boot ── */
 document.addEventListener('DOMContentLoaded', async () => {
-  let theme = 'dark'; try { theme = localStorage.getItem('cf_theme') || 'dark'; } catch (e) { /* ignore */ }
+  let theme = 'light'; try { theme = localStorage.getItem('cf_theme') || 'light'; } catch (e) { /* ignore */ }
   applyTheme(theme);
   $('brandMark').innerHTML = ic('leaf'); $('menuBtn').innerHTML = ic('menu'); $('cmdIcon').innerHTML = ic('search'); $('bellIcon').innerHTML = ic('bell'); $('gpsIcon').innerHTML = ic('pin');
   ['closeNotif', 'closeAuthModalBtn', 'closeClaimModalBtn', 'closeCollectModalBtn', 'closeRateModalBtn'].forEach((id) => { $(id).innerHTML = ic('x'); });
@@ -787,7 +850,7 @@ async function runAiFoodScanner() {
   if (!r.ok) return;
   latestAiScan = r.data; $('foodType').value = r.data.detectedType;
   $('aiScanResult').textContent = `Detected ${r.data.detectedType} · Freshness ${r.data.freshnessScore}% (${r.data.freshnessStatus}) · safe for ~${r.data.recommendedSafeHours} h`;
-  showToast(`AI scan complete: ${r.data.freshnessScore}% freshness`);
+  showToast(`Freshness estimate: ${r.data.freshnessScore}%`);
 }
 async function handleDonorSubmit(e) {
   e.preventDefault();

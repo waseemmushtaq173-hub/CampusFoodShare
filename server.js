@@ -442,11 +442,18 @@ app.get('/api/locations', requireRole(USER_ROLES.ADMIN, USER_ROLES.DONOR, USER_R
     const p = [...liveLocations.values()]
       .filter((x) => x.at >= fresh && (x.userId === l.claimedBy.userId || baseName(x.name) === baseName(l.claimedBy.volunteerName)))
       .sort((a, b) => b.at - a.at)[0];
-    if (!p) continue;
+    let pos = p;
+    if (!pos && l.claimedBy.sim) {
+      const claimedAt = new Date(l.claimedBy.claimedAt).getTime();
+      const progress = Math.min(0.95, Math.max(0.05, (Date.now() - claimedAt) / (25 * 60000)));
+      const sLat = Number(l.location.lat) + 0.011, sLng = Number(l.location.lng) - 0.009;
+      pos = { name: l.claimedBy.volunteerName, lat: sLat + (Number(l.location.lat) - sLat) * progress, lng: sLng + (Number(l.location.lng) - sLng) * progress, at: Date.now(), simulated: true };
+    }
+    if (!pos) continue;
     out.push({
-      listingId: l.id, title: l.foodTitle, name: String(p.name).replace(/\s*\(.*\)\s*$/, ''), lat: p.lat, lng: p.lng, at: p.at,
+      listingId: l.id, title: l.foodTitle, name: String(pos.name).replace(/\s*\(.*\)\s*$/, ''), lat: pos.lat, lng: pos.lng, at: pos.at, simulated: Boolean(pos.simulated),
       pickup: { lat: l.location.lat, lng: l.location.lng },
-      distanceKm: calculateHaversineDistance(p.lat, p.lng, Number(l.location.lat), Number(l.location.lng)),
+      distanceKm: calculateHaversineDistance(pos.lat, pos.lng, Number(l.location.lat), Number(l.location.lng)),
     });
   }
   res.json({ locations: out });
@@ -489,19 +496,55 @@ app.get('/api/requests', requireRole(USER_ROLES.NGO, USER_ROLES.VOLUNTEER, USER_
   const lng = parseFloat(req.query.lng) || 77.5946;
   const fresh = Date.now() - 6 * 3600000;
   const open = (readDb().requests || [])
-    .filter((r) => r.status === 'open' && new Date(r.createdAt).getTime() >= fresh)
+    .filter((r) => ['open', 'accepted'].includes(r.status) && new Date(r.createdAt).getTime() >= fresh)
     .map((r) => ({ ...r, distanceKm: calculateHaversineDistance(lat, lng, r.lat, r.lng) }))
     .sort((a, b) => a.distanceKm - b.distanceKm);
   res.json({ requests: open, peopleWaiting: open.reduce((sum, r) => sum + r.people, 0) });
 });
 
+app.get('/api/requests/:id', (req, res) => {
+  const r = (readDb().requests || []).find((x) => x.id === req.params.id);
+  if (!r) return res.status(404).json({ error: 'Request not found' });
+  res.json({ request: {
+    id: r.id, people: r.people, status: r.status, createdAt: r.createdAt, acceptedAt: r.acceptedAt || null, helpedAt: r.helpedAt || null,
+    acceptedBy: r.acceptedBy ? { name: r.acceptedBy.name, org: r.acceptedBy.org, phone: r.acceptedBy.phone } : null,
+  } });
+});
+
+app.post('/api/requests/:id/accept', requireRole(USER_ROLES.NGO, USER_ROLES.VOLUNTEER, USER_ROLES.ADMIN), (req, res) => {
+  const db = readDb();
+  const request = (db.requests || []).find((r) => r.id === req.params.id);
+  if (!request) return res.status(404).json({ error: 'Request not found' });
+  if (request.status !== 'open') return res.status(409).json({ error: 'Someone has already taken this request' });
+  request.status = 'accepted';
+  request.acceptedAt = new Date().toISOString();
+  request.acceptedBy = { name: req.user.name, org: req.user.organization || '', phone: req.user.phone || '' };
+  addNotification(db, { type: 'REQUEST_ACCEPTED', title: 'Request accepted', message: `${req.user.name} is on the way to help ${request.people} ${request.people === 1 ? 'person' : 'people'}.` });
+  writeDb(db);
+  res.json({ message: 'Request accepted' });
+});
+
+app.post('/api/requests/:id/cancel', (req, res) => {
+  const db = readDb();
+  const request = (db.requests || []).find((r) => r.id === req.params.id);
+  if (!request) return res.status(404).json({ error: 'Request not found' });
+  if (!['open', 'accepted'].includes(request.status)) return res.status(409).json({ error: 'This request is already closed' });
+  request.status = 'cancelled';
+  request.cancelledAt = new Date().toISOString();
+  writeDb(db);
+  res.json({ message: 'Request cancelled' });
+});
+
+app.get('/api/directory', (req, res) => res.json({ directory: readDb().directory || [] }));
+
 app.post('/api/requests/:id/help', requireRole(USER_ROLES.NGO, USER_ROLES.VOLUNTEER, USER_ROLES.ADMIN), (req, res) => {
   const db = readDb();
   const request = (db.requests || []).find((r) => r.id === req.params.id);
   if (!request) return res.status(404).json({ error: 'Request not found' });
-  if (request.status !== 'open') return res.status(409).json({ error: 'This request was already handled' });
+  if (!['open', 'accepted'].includes(request.status)) return res.status(409).json({ error: 'This request was already handled' });
   request.status = 'helped';
   request.helpedBy = req.user.name;
+  if (!request.acceptedBy) request.acceptedBy = { name: req.user.name, org: req.user.organization || '', phone: req.user.phone || '' };
   request.helpedAt = new Date().toISOString();
   addNotification(db, { type: 'REQUEST_HELPED', title: 'Request fulfilled', message: `${req.user.name} helped ${request.people} ${request.people === 1 ? 'person' : 'people'} get food.` });
   writeDb(db);

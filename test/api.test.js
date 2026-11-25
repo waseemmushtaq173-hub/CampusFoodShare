@@ -196,7 +196,7 @@ test('errors are returned as JSON', async () => {
 test('admin reset restores demo data', async () => {
   assert.equal((await call('POST', '/api/reset-demo', {}, tok.admin)).status, 200);
   const list = await call('GET', '/api/listings?includeExpired=true');
-  assert.equal(list.data.listings.length, 4);
+  assert.ok(list.data.listings.length >= 25, 'rich demo data is restored');
 });
 
 test('people in need can ask for food; only NGOs, volunteers and admins can see and answer', async () => {
@@ -216,6 +216,27 @@ test('people in need can ask for food; only NGOs, volunteers and admins can see 
   assert.equal((await call('POST', `/api/requests/${ok.data.id}/help`, {}, tok.ngo)).status, 409);
   const after = await call('GET', '/api/requests', undefined, tok.ngo);
   assert.ok(!after.data.requests.some((r) => r.id === ok.data.id), 'helped requests leave the queue');
+});
+
+test('request lifecycle: received, accepted by a named helper, helped, plus cancel and directory', async () => {
+  const made = await call('POST', '/api/requests', { people: 2, lat: 12.97, lng: 77.59 });
+  assert.equal(made.status, 201);
+  const id = made.data.id;
+  const view = async () => (await call('GET', `/api/requests/${id}`)).data.request;
+  assert.equal((await view()).status, 'open');
+  assert.equal((await call('POST', `/api/requests/${id}/accept`, {}, tok.donor)).status, 403);
+  assert.equal((await call('POST', `/api/requests/${id}/accept`, {}, tok.vol)).status, 200);
+  assert.equal((await call('POST', `/api/requests/${id}/accept`, {}, tok.ngo)).status, 409, 'only one helper can take a request');
+  const accepted = await view();
+  assert.equal(accepted.status, 'accepted');
+  assert.ok(accepted.acceptedBy && accepted.acceptedBy.name, 'the person can see who is coming');
+  assert.equal((await call('POST', `/api/requests/${id}/help`, {}, tok.vol)).status, 200);
+  assert.equal((await view()).status, 'helped');
+  assert.equal((await call('POST', `/api/requests/${id}/cancel`, {})).status, 409);
+  const another = (await call('POST', '/api/requests', { people: 1, lat: 12.97, lng: 77.59 })).data.id;
+  assert.equal((await call('POST', `/api/requests/${another}/cancel`, {})).status, 200);
+  assert.equal((await call('GET', '/api/requests/nope')).status, 404);
+  assert.ok((await call('GET', '/api/directory')).data.directory.length >= 3);
 });
 
 test('food requests are rate limited per device', async () => {

@@ -23,21 +23,21 @@ Colleges, hostels, canteens, and campus events often throw away good cooked food
 4. **Automatic Expiry Cleanup & Food-Safety Checklist (Objective 4):** Expired listings are automatically swept on every query, and donors must verify a 4-point food-safety checklist before publishing.
 5. **SDG 2, 11 & 12 Impact Dashboard (Objective 5):** Real-time dashboard tracking total meals saved, kilograms of food rescued, and CO₂e emissions prevented.
 
-6. **Roles & Security (extension):** Donor / NGO / Volunteer / Admin accounts with scrypt-hashed passwords, token sessions, and server-enforced role permissions (donors post & withdraw, NGOs/volunteers claim, release, collect & rate, admins manage everything).
-7. **Insights (extension):** 7-day posted-vs-rescued chart, rescued-by-diet donut, rescue rate, donor & NGO leaderboards, live expiry countdowns, one-tap Google Maps directions, and an admin user console.
+### Extensions beyond the five objectives (working today)
+- **Role-based accounts and dashboards** (donor, NGO, volunteer, admin) with server-enforced permissions, scrypt-hashed passwords, token sessions and sign-in lockout.
+- **Live map, live GPS and real-time updates** (server-sent events), including a volunteer-tracking marker on claimed pickups.
+- **Handover PIN** verification at collection, and quality ratings afterwards.
+- **Find food and ask for help:** people can find free food nearby without signing in, or ask for food and follow the request until a named helper accepts it. NGOs and volunteers see the queue and accept or complete requests.
+- **Tap-only donating**, English / Hindi / Kannada, read-aloud, helpline directory.
+- **Insights, leaderboards, admin console and audit log.**
 
-8. **Role dashboards (extension):** Every role gets its own sidebar menu and dashboard (guest, donor, NGO, volunteer, admin), a colourful light/dark theme, a Ctrl+K command palette and a notification drawer.
-9. **Live GPS & real-time feed (extension):** `watchPosition` tracking re-ranks distances as you move, and server-sent events (`/api/stream`) refresh every open browser the moment a listing is posted, claimed, collected or expires.
-10. **Handover PIN (extension):** Claiming generates a 4-digit PIN that the donor shares; collection is only accepted with the right PIN.
+### On hold (visible in the app, clearly marked "Soon")
+Recurring surplus schedules, route planner, SMS / WhatsApp alerts, reports and certificates, photo-based freshness analysis, password reset, multi-campus network.
 
-**Sign-in is role-based (RBAC):** choose your role, then type your own email and password. The server rejects the sign-in if the role does not match the account, locks an email for 10 minutes after 5 failed attempts, and the matching menu and dashboard open.
+### Demo data
+The app seeds a believable dataset: five Bengaluru areas, a week of history, 5 donors, 3 NGOs, 3 volunteers, open food requests and demo helplines (numbers are placeholders). Primary demo accounts: `admin@campusfoodshare.org / admin123`, `donor@campusfoodshare.org / donor123`, `ngo@campusfoodshare.org / ngo123`, `volunteer@campusfoodshare.org / vol123`. Other seeded users follow the same pattern (`<role>123`). Choose your role when signing in; the server rejects a role that does not match the account.
 
-11. **Easy mode for everyone (extension):** A picture-first start screen with three giant buttons (*I need food / I have food to give / I want to help*), free-food cards with one-tap walking directions and calling, a tap-only 5-step "give food" flow, an "ask for food" request that alerts NGOs and volunteers, English / Hindi / Kannada, and a read-aloud 🔊 button on every screen. No reading or typing skills are required to find food.
-12. **Map tiles:** Esri street tiles (no API key, no Referer needed) with OpenStreetMap mirrors as fallback; Leaflet is self-hosted so the map survives blocked CDNs.
-
-**Run the automated tests:** `npm test` (boots the real server on a throwaway database and checks auth, RBAC, the PIN lifecycle, live tracking privacy, admin controls, help requests and the live event stream).
-
-**Demo logins:** `admin@campusfoodshare.org / admin123`, `donor@campusfoodshare.org / donor123`, `ngo@campusfoodshare.org / ngo123`, `volunteer@campusfoodshare.org / vol123` (set `DB_FILE_PATH` to use a different data file).
+**Tests:** `npm test` boots the real server on a throwaway database and checks auth, RBAC, the PIN lifecycle, tracking privacy, admin controls, the help-request lifecycle and the live event stream.
 
 ---
 
