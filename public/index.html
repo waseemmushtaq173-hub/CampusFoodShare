@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div id="toastContainer" class="toast-container"></div>
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
   <div class="app">
     <aside class="sidebar" id="sidebar">
@@ -151,6 +151,7 @@
               <div><h2>Priority queue</h2><p class="muted">Nearest and soonest-expiring first</p></div>
               <input type="text" id="searchInput" class="input search" placeholder="Search dish, mess or landmark" />
             </div>
+            <div class="filter-meta"><span id="resultCount" class="muted"></span><button id="clearFilters" class="btn btn-ghost btn-sm" hidden>Clear filters</button></div>
             <div id="listingsContainer" class="card-list"></div>
           </div>
         </section>
@@ -225,12 +226,12 @@
         </section>
 
         <section class="view" id="view-moderation">
-          <div class="panel"><div class="panel-head"><div><h2>All listings</h2><p class="muted">Every listing in the system, including expired ones.</p></div><button class="btn btn-ghost btn-sm is-disabled" disabled title="Coming soon">Export CSV <span class="soon-pill">Soon</span></button></div>
+          <div class="panel"><div class="panel-head"><div><h2>All listings</h2><p class="muted">Every listing in the system, including expired ones.</p></div><input type="search" id="modSearch" class="input search" placeholder="Filter by dish, donor or status" /><button class="btn btn-ghost btn-sm is-disabled" disabled title="Coming soon">Export CSV <span class="soon-pill">Soon</span></button></div>
             <div class="table-wrap"><table class="table"><thead><tr><th>Dish</th><th>Donor</th><th>Status</th><th>Meals</th><th>Use before</th><th></th></tr></thead><tbody id="moderationBody"></tbody></table></div></div>
         </section>
 
         <section class="view" id="view-users">
-          <div class="panel"><div class="panel-head"><div><h2>Users and roles</h2><p class="muted">Change roles or suspend accounts. Every change is written to the audit log.</p></div></div>
+          <div class="panel"><div class="panel-head"><div><h2>Users and roles</h2><p class="muted">Change roles or suspend accounts. Every change is written to the audit log.</p></div><input type="search" id="userSearch" class="input search" placeholder="Filter by name, email or role" /></div>
             <div class="table-wrap"><table class="table"><thead><tr><th>Name</th><th>Email</th><th>Organization</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody id="userTableBody"></tbody></table></div></div>
         </section>
 
@@ -284,6 +285,7 @@
             <button type="button" class="role-chip" data-role="ngo">NGO</button>
             <button type="button" class="role-chip" data-role="volunteer">Volunteer</button>
           </div></div>
+        <div class="form-error" id="siError" role="alert" hidden></div>
         <button type="submit" class="btn btn-primary btn-block btn-lg">Sign in</button>
         <div class="auth-footer"><span class="muted">Forgot your password? <span class="soon-pill">Soon</span></span></div>
         <details class="cred-box"><summary>Demo accounts</summary>
@@ -309,6 +311,7 @@
             <button type="button" class="role-chip" data-role="ngo">NGO</button>
             <button type="button" class="role-chip" data-role="volunteer">Volunteer</button>
           </div></div>
+        <div class="form-error" id="suError" role="alert" hidden></div>
         <button type="submit" class="btn btn-primary btn-block btn-lg">Create account</button>
         <div class="auth-footer"><span>Already registered?</span><span class="demo-hint switch-to-signin">Sign in</span></div>
       </form>
@@ -375,5 +378,6 @@
   <script src="/vendor/leaflet/leaflet.js"></script>
   <script src="app.js"></script>
   <script src="easy.js"></script>
+  <script src="ux.js"></script>
 </body>
 </html>

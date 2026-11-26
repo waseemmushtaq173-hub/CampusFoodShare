@@ -37,6 +37,7 @@ let ngoLocation = { lat: 12.9716, lng: 77.5946 };
 let currentUser = null, authToken = null, selectedRole = '', selectedSiRole = '';
 let latestAiScan = { freshnessScore: 95, freshnessStatus: 'Excellent Freshness (Grade A)' };
 let searchTimer = null, pickupDirty = false, lastOwnAction = 0, refreshTimer = null;
+let markerById = {};
 let watchId = null, firstFix = true, lastFetchPos = null, lastFetchAt = 0, lastNotifs = [];
 let gpsWarned = false, gpsBlocked = false, gpsAcc = null, volLayer = null, lastShare = { t: 0, lat: 0, lng: 0 };
 const CLAIM_ROLES = ['ngo', 'volunteer', 'admin'];
@@ -45,9 +46,9 @@ const CLAIM_ROLES = ['ngo', 'volunteer', 'admin'];
 const NAV = {
   guest: [['start', 'Start Here', 'home'], ['need', 'Find Food', 'utensils'], ['track', 'My Request', 'clock'], ['explore', 'Live Map', 'map'], ['insights', 'Insights', 'chart'], ['overview', 'About', 'heart'], ['roadmap', 'Roadmap', 'rocket']],
   donor: [['dashboard', 'Dashboard', 'grid'], ['give', 'Donate Food', 'gift'], ['mylistings', 'My Listings', 'list'], ['explore', 'Live Map', 'map'], ['post', 'Detailed Form', 'plus'], ['schedules', 'Recurring Surplus', 'calendar', true], ['insights', 'Insights', 'chart'], ['roadmap', 'Roadmap', 'rocket'], ['settings', 'Settings', 'sliders']],
-  ngo: [['dashboard', 'Dashboard', 'grid'], ['requests', 'People Needing Food', 'heart'], ['explore', 'Find & Claim', 'map'], ['pickups', 'My Pickups', 'truck'], ['routes', 'Route Planner', 'route', true], ['insights', 'Insights', 'chart'], ['roadmap', 'Roadmap', 'rocket'], ['settings', 'Settings', 'sliders']],
-  volunteer: [['dashboard', 'Dashboard', 'grid'], ['requests', 'People Needing Food', 'heart'], ['explore', 'Available Pickups', 'map'], ['pickups', 'My Tasks', 'truck'], ['routes', 'Route Planner', 'route', true], ['insights', 'Insights', 'chart'], ['roadmap', 'Roadmap', 'rocket'], ['settings', 'Settings', 'sliders']],
-  admin: [['dashboard', 'Overview', 'grid'], ['requests', 'People Needing Food', 'heart'], ['moderation', 'All Listings', 'list'], ['users', 'Users & Roles', 'users'], ['explore', 'Live Map', 'map'], ['insights', 'Insights', 'chart'], ['reports', 'Reports & Certificates', 'award', true], ['integrations', 'SMS & WhatsApp', 'message', true], ['roadmap', 'Roadmap', 'rocket'], ['settings', 'Settings', 'sliders']],
+  ngo: [['dashboard', 'Dashboard', 'grid'], ['requests', 'Food Requests', 'heart'], ['explore', 'Find & Claim', 'map'], ['pickups', 'My Pickups', 'truck'], ['routes', 'Route Planner', 'route', true], ['insights', 'Insights', 'chart'], ['roadmap', 'Roadmap', 'rocket'], ['settings', 'Settings', 'sliders']],
+  volunteer: [['dashboard', 'Dashboard', 'grid'], ['requests', 'Food Requests', 'heart'], ['explore', 'Available Pickups', 'map'], ['pickups', 'My Tasks', 'truck'], ['routes', 'Route Planner', 'route', true], ['insights', 'Insights', 'chart'], ['roadmap', 'Roadmap', 'rocket'], ['settings', 'Settings', 'sliders']],
+  admin: [['dashboard', 'Overview', 'grid'], ['requests', 'Food Requests', 'heart'], ['moderation', 'All Listings', 'list'], ['users', 'Users & Roles', 'users'], ['explore', 'Live Map', 'map'], ['insights', 'Insights', 'chart'], ['reports', 'Reports & Certificates', 'award', true], ['integrations', 'SMS & WhatsApp', 'message', true], ['roadmap', 'Roadmap', 'rocket'], ['settings', 'Settings', 'sliders']],
 };
 const ROLE_LABEL = { guest: 'Guest', donor: 'Donor', ngo: 'NGO', volunteer: 'Volunteer', admin: 'Admin' };
 const PAGE_SUB = {
@@ -61,12 +62,22 @@ const titleFor = (r) => (r === 'dashboard' ? `${ROLE_LABEL[roleOf()]} ${roleOf()
 
 /* ── Helpers ── */
 function showToast(message) {
+  const box = $('toastContainer');
+  const text = String(message);
+  const dupe = [...box.children].find((t) => t.textContent === text);
+  if (dupe) { dupe.classList.remove('toast-pop'); void dupe.offsetWidth; dupe.classList.add('toast-pop'); return; }
   const t = document.createElement('div');
-  t.className = 'toast-msg'; t.textContent = message;
-  $('toastContainer').appendChild(t);
-  setTimeout(() => t.remove(), 4200);
+  const bad = /(fail|cannot|could not|denied|invalid|incorrect|too many|required|expired|not allowed|already|unable|error|blocked)/i.test(text);
+  t.className = `toast-msg${bad ? ' toast-error' : ''}`;
+  t.textContent = text;
+  t.setAttribute('role', bad ? 'alert' : 'status');
+  t.addEventListener('click', () => t.remove());
+  box.appendChild(t);
+  while (box.children.length > 3) box.firstChild.remove();
+  setTimeout(() => t.remove(), bad ? 6000 : 3800);
 }
 
+/* ── API helper: attaches token, returns { ok, status, data } ── */
 async function api(path, { method = 'GET', body } = {}) {
   const headers = {};
   if (body !== undefined) headers['Content-Type'] = 'application/json';
@@ -163,7 +174,8 @@ function requireAuth(action) {
 
 async function doSignIn(email, password, role) {
   const r = await api('/api/auth/signin', { method: 'POST', body: { email, password, role } });
-  if (!r.ok) { showToast(r.data.error || 'Sign in failed'); return false; }
+  if (!r.ok) { const msg = r.data.error || 'Sign in failed'; showToast(msg); setFormError('siError', msg); return false; }
+  setFormError('siError', '');
   saveSession(r.data.user, r.data.token);
   $('authModal').classList.remove('active');
   showToast(`Signed in as ${r.data.user.name} (${ROLE_LABEL[r.data.user.role]})`);
@@ -175,7 +187,8 @@ async function handleSignUp(e) {
   e.preventDefault();
   if (!selectedRole) return showToast('Please select a role');
   const r = await api('/api/auth/signup', { method: 'POST', body: { name: $('suName').value.trim(), email: $('suEmail').value.trim(), password: $('suPassword').value, phone: $('suPhone').value.trim(), organization: $('suOrg').value.trim(), role: selectedRole } });
-  if (!r.ok) return showToast(r.data.error || 'Sign up failed');
+  if (!r.ok) { const msg = r.data.error || 'Sign up failed'; showToast(msg); setFormError('suError', msg); return; }
+  setFormError('suError', '');
   saveSession(r.data.user, r.data.token);
   $('authModal').classList.remove('active'); $('signupForm').reset();
   showToast(`Welcome, ${r.data.user.name}!`); location.hash = '#/dashboard'; renderRoute();
@@ -227,7 +240,8 @@ function loadRoute(route) {
     moderation: loadModeration, users: loadUsers, insights: loadInsights, roadmap: renderRoadmap, post: () => {},
   }[route] || (() => {}))();
 }
-const refreshCurrent = () => loadRoute(currentRoute());
+const STATIC_ROUTES = ['settings', 'post', 'give', 'roadmap'];
+const refreshCurrent = () => { const r = currentRoute(); if (!STATIC_ROUTES.includes(r) && !SOON[r]) loadRoute(r); };
 function debouncedRefresh() { clearTimeout(refreshTimer); refreshTimer = setTimeout(refreshCurrent, 250); }
 const go = (r) => { location.hash = `#/${r}`; };
 
@@ -405,7 +419,7 @@ function cardHtml(item, idx) {
   if (role === 'admin' && item.status !== 'posted') actions += ` <button class="btn btn-danger btn-sm" data-act="delete" data-id="${id}">Remove</button>`;
   const directions = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(item.location.lat + ',' + item.location.lng)}&origin=${encodeURIComponent(ngoLocation.lat + ',' + ngoLocation.lng)}`;
   const done = (s) => (item.status === 'collected' || (s === 2 && item.status === 'claimed') ? 'done' : '');
-  return `<div class="listing-card st-${esc(item.status)}">
+  return `<div class="listing-card st-${esc(item.status)}" data-lid="${id}">
     <div class="listing-top">
       <div><span class="listing-title">#${idx + 1} · ${esc(item.foodTitle)}</span>
         <div class="sub">${esc(item.donorName)}${item.donorPhone ? ` · <a href="tel:${esc(item.donorPhone.replace(/\s/g, ''))}">${esc(item.donorPhone)}</a>` : ''}</div></div>
@@ -415,7 +429,7 @@ function cardHtml(item, idx) {
     <div class="stepper"><div class="done">1 · Posted</div><div class="${done(2)}">2 · Claimed</div><div class="${item.status === 'collected' ? 'done' : ''}">3 · Collected</div></div>
     <div class="listing-meta">
       <div><strong>Diet:</strong> ${esc(item.foodType)}</div><div><strong>Quantity:</strong> ${esc(item.quantityMeals)} meals (~${esc(item.weightKg)} kg)</div>
-      <div><strong>Pickup:</strong> ${esc(item.location.address)} · <a href="${directions}" target="_blank" rel="noopener">Directions ↗</a></div><div><strong>Priority score:</strong> ${esc(item.urgencyScore)}</div>
+      <div><strong>Pickup:</strong> ${esc(item.location.address)} · <a href="${directions}" target="_blank" rel="noopener">Directions ↗</a> · <a href="#/explore" data-focus="${id}">Show on map</a></div><div><strong>Priority score:</strong> ${esc(item.urgencyScore)}</div>
     </div>
     <div class="listing-actions"><span class="hint ok">Safety checklist confirmed</span><div class="action-row">${actions}</div></div>
   </div>`;
@@ -431,21 +445,27 @@ async function loadListings() {
   const r = await api(`/api/listings?${p}`);
   if (!r.ok) return;
   if (markersLayer) markersLayer.clearLayers();
+  markerById = {};
   if (markersLayer) r.data.listings.forEach((i) => {
     const color = { posted: '#22c55e', claimed: '#f59e0b', collected: '#0ea5e9' }[i.status] || '#64748b';
-    L.circleMarker([i.location.lat, i.location.lng], { radius: 10, fillColor: color, color: '#fff', weight: 2, fillOpacity: 0.9 })
+    const mk = L.circleMarker([i.location.lat, i.location.lng], { radius: 10, fillColor: color, color: '#fff', weight: 2, fillOpacity: 0.9 })
       .bindPopup(`<strong>${esc(i.foodTitle)}</strong><br/>${esc(i.donorName)}<br/>${esc(i.quantityMeals)} meals · <b>${esc(i.distanceKm)} km</b>`).addTo(markersLayer);
+    markerById[i.id] = mk;
+    mk.on('click', () => highlightListing(i.id));
   });
-  renderCards($('listingsContainer'), r.data.listings, 'No surplus food listings match your filters.');
+  const filtered = Boolean($('statusFilter').value || $('typeFilter').value || $('searchInput').value);
+  renderCards($('listingsContainer'), r.data.listings, filtered ? 'No listings match your filters. Try clearing them.' : 'Nothing is listed right now. New surplus appears here the moment a donor posts it.');
+  $('resultCount').textContent = `${r.data.listings.length} listing${r.data.listings.length === 1 ? '' : 's'}`;
+  $('clearFilters').hidden = !filtered;
 }
 async function loadMyListings() {
   const r = await api(`/api/listings?scope=mine&includeExpired=true&${locQuery()}`);
-  if (r.ok) renderCards($('myListings'), r.data.listings, 'You have not posted anything yet. Use "Post Surplus" to alert nearby NGOs.');
+  if (r.ok) renderCards($('myListings'), r.data.listings, 'You have not posted anything yet.<br><button class="btn btn-primary btn-sm" data-go="give" style="margin-top:12px">Donate food</button>');
 }
 async function loadPickups() {
   const r = await api(`/api/listings?scope=mine&${locQuery()}`);
   if (!r.ok) return;
-  renderCards($('pickupsActive'), r.data.listings.filter((l) => l.status === 'claimed'), 'No active pickups. Open "Find & Claim" to grab one.');
+  renderCards($('pickupsActive'), r.data.listings.filter((l) => l.status === 'claimed'), 'No active pickups.<br><button class="btn btn-primary btn-sm" data-go="explore" style="margin-top:12px">Find food to claim</button>');
   renderCards($('pickupsDone'), r.data.listings.filter((l) => l.status === 'collected'), 'Completed rescues will appear here.');
 }
 
@@ -456,6 +476,8 @@ const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good 
 const first = () => esc(currentUser.name.replace(/\s*\(.*\)\s*$/, '').split(' ')[0]);
 function animateCounts(root = document) {
   root.querySelectorAll('[data-count]').forEach((el) => {
+    if (el.dataset.counted === el.dataset.count) return;
+    el.dataset.counted = el.dataset.count;
     const target = Number(el.dataset.count), suffix = el.dataset.suffix || '', start = performance.now();
     if (!isFinite(target) || target === 0) { el.textContent = `0${suffix}`; return; }
     const step = (t) => {
@@ -654,7 +676,7 @@ document.addEventListener('click', (e) => {
     release: () => requireAuth('release a pickup') && act(`/api/listings/${encodeURIComponent(id)}/release`, {}, 'Claim released. The listing is available again.'),
     signout: signOut, reset: resetDemo,
     notify: () => { try { localStorage.setItem('cf_notify_' + id, '1'); } catch (e) { /* ignore */ } showToast("Thanks. We'll let you know when it is ready."); renderSoon(id); },
-    suspend: async () => { lastOwnAction = Date.now(); const r = await api(`/api/admin/users/${encodeURIComponent(id)}`, { method: 'PATCH', body: { suspended: a.dataset.val === '1' } }); showToast(r.ok ? 'User updated' : (r.data.error || 'Failed')); loadUsers(); },
+    suspend: async () => { if (a.dataset.val === '1' && !(await confirmDialog({ title: 'Suspend this user?', message: 'They will be signed out and unable to sign in until you reactivate them.', confirmText: 'Suspend', danger: true }))) return; lastOwnAction = Date.now(); const r = await api(`/api/admin/users/${encodeURIComponent(id)}`, { method: 'PATCH', body: { suspended: a.dataset.val === '1' } }); showToast(r.ok ? 'User updated' : (r.data.error || 'Failed')); loadUsers(); },
   }[a.dataset.act] || (() => {}))();
 });
 
@@ -871,5 +893,6 @@ async function handleDonorSubmit(e) {
   fb.style.color = 'var(--green)'; fb.textContent = 'Surplus food broadcast successfully!';
   showToast('Surplus alert published to nearby NGOs');
   $('foodTitle').value = ''; document.querySelectorAll('input[name="safetyCheck"]').forEach((c) => { c.checked = false; });
+  setTimeout(() => { fb.textContent = ''; go('mylistings'); }, 900);
   setTimeout(() => go('mylistings'), 700);
 }

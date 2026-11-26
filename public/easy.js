@@ -11,7 +11,7 @@ const I18N = {
     doneGive: 'Done! NGOs are being told.', giveMore: 'Give more food', signFirst: 'Please sign in as a donor first', signIn: 'Sign in', whereHint: 'Example: Hostel gate',
     reqTitle: 'People who need food', iHelped: 'I helped', directions: 'Directions', noReq: 'Nobody is waiting right now. Thank you for checking!', ago: 'ago',
     f1: 'Rice & Dal', f2: 'Roti & Sabzi', f3: 'Biryani', f4: 'Bakery / Snacks', next: 'Next', easy: 'Easy mode', peopleWaiting: 'people waiting for food',
-    nav_start: 'Start Here', nav_need: 'Find Food', nav_give: 'Give Food (Easy)', nav_requests: 'People Needing Food',
+    nav_start: 'Start Here', nav_need: 'Find Food', nav_give: 'Give Food (Easy)', nav_requests: 'Food Requests',
   },
   hi: {
     startTitle: 'आप क्या करना चाहते हैं?', needFood: 'मुझे खाना चाहिए', needFoodSub: 'आसपास मुफ़्त खाना देखें', giveFood: 'मेरे पास देने के लिए खाना है', giveFoodSub: 'भूखे लोगों को अभी बताएँ',
@@ -53,7 +53,7 @@ Object.assign(I18N.en, {
   tr2: 'A helper is on the way', tr2d: 'Waiting for someone nearby to accept. This usually takes a few minutes.', tr3: 'Help has arrived', tr3d: 'We hope the meal helps. Thank you for using CampusFoodShare.',
   cancelReq: 'Cancel request', noReqYet: 'You have not asked for food yet.', accept: 'I will help', meanwhile: 'Free food near you in the meantime', cancelled: 'This request was cancelled.', helperComing: 'is coming to help you',
   directions: 'Directions', call: 'Call', noFoodNear: 'No free food is listed near you right now. You can ask for help below or call a helpline.', peopleWaiting: 'people waiting for food', seeThem: 'See all',
-  nav_start: 'Start Here', nav_need: 'Find Food', nav_track: 'My Request', nav_give: 'Donate Food', nav_requests: 'People Needing Food',
+  nav_start: 'Start Here', nav_need: 'Find Food', nav_track: 'My Request', nav_give: 'Donate Food', nav_requests: 'Food Requests',
 });
 Object.assign(I18N.hi, {
   needFood: 'खाना खोजें', needFoodSub: 'आसपास मुफ़्त खाना, रास्ते के साथ', giveFood: 'खाना दें', giveFoodSub: 'बचा हुआ खाना कुछ टैप में बाँटें', helpOut: 'स्वयंसेवक बनें', helpOutSub: 'संस्थाओं के लिए खाना पहुँचाएँ',
@@ -335,7 +335,13 @@ document.addEventListener('click', (e) => {
   const ac = e.target.closest('[data-accept]');
   if (ac) { api(`/api/requests/${encodeURIComponent(ac.dataset.accept)}/accept`, { method: 'POST', body: {} }).then((r) => { showToast(r.ok ? 'You accepted this request. Please head over.' : (r.data.error || 'Failed')); refreshCurrent(); }); return; }
   const cr = e.target.closest('[data-cancel-req]');
-  if (cr) { api(`/api/requests/${encodeURIComponent(cr.dataset.cancelReq)}/cancel`, { method: 'POST', body: {} }).then((r) => { showToast(r.ok ? t('cancelled') : (r.data.error || 'Failed')); refreshCurrent(); }); return; }
+  if (cr) {
+    confirmDialog({ title: t('cancelReq') + '?', message: 'Nobody will be sent to help you if you cancel. You can always ask again.', confirmText: t('cancelReq'), cancelText: 'Keep request', danger: true }).then((ok) => {
+      if (!ok) return;
+      api(`/api/requests/${encodeURIComponent(cr.dataset.cancelReq)}/cancel`, { method: 'POST', body: {} }).then((r) => { showToast(r.ok ? t('cancelled') : (r.data.error || 'Failed')); refreshCurrent(); });
+    });
+    return;
+  }
   if (e.target.closest('#reqSend')) return sendReq();
   if (e.target.closest('[data-loc]')) { gpsBlocked = false; startLiveGps(); return; }
   const lc = e.target.closest('[data-lang]'); if (lc) return setLang(lc.dataset.lang);
