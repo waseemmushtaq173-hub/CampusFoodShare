@@ -32,9 +32,14 @@ Colleges, hostels, canteens, and campus events often throw away good cooked food
 - **Insights, leaderboards, admin console and audit log.**
 
 ### On hold (visible in the app, clearly marked "Soon")
-Recurring surplus schedules, route planner, SMS / WhatsApp alerts, reports and certificates, photo-based freshness analysis, password reset, multi-campus network.
+Recurring surplus schedules, route planner, SMS / WhatsApp alerts, reports and certificates, photo-based freshness analysis, email delivery of reset codes, multi-campus network.
+
+### Access
+Sign-in sessions are stored hashed in the database (30 days), so people stay signed in across restarts. Forgotten passwords are recovered with a one-time 6-digit code (shown on screen in demo mode, written to the server log otherwise; email delivery is on hold). Signed-in users can change their password in Settings. Requests nobody answers expire after 3 hours.
 
 ### Demo data
+Sample data is labelled in the app, and admins can click **Start empty** to clear it. Set `DEMO_MODE=off` to stop the app from regenerating demo listings when they expire.
+
 The app seeds a believable dataset: five Bengaluru areas, a week of history, 5 donors, 3 NGOs, 3 volunteers, open food requests and demo helplines (numbers are placeholders). Primary demo accounts: `admin@campusfoodshare.org / admin123`, `donor@campusfoodshare.org / donor123`, `ngo@campusfoodshare.org / ngo123`, `volunteer@campusfoodshare.org / vol123`. Other seeded users follow the same pattern (`<role>123`). Choose your role when signing in; the server rejects a role that does not match the account.
 
 **Tests:** `npm test` boots the real server on a throwaway database and checks auth, RBAC, the PIN lifecycle, tracking privacy, admin controls, the help-request lifecycle and the live event stream.

@@ -287,7 +287,7 @@
           </div></div>
         <div class="form-error" id="siError" role="alert" hidden></div>
         <button type="submit" class="btn btn-primary btn-block btn-lg">Sign in</button>
-        <div class="auth-footer"><span class="muted">Forgot your password? <span class="soon-pill">Soon</span></span></div>
+        <div class="auth-footer"><button type="button" class="link-btn" id="forgotLink">Forgot password?</button></div>
         <details class="cred-box"><summary>Demo accounts</summary>
           <table class="cred-table">
             <tr><td>Admin</td><td>admin@campusfoodshare.org</td><td>admin123</td></tr>
@@ -295,6 +295,18 @@
             <tr><td>NGO</td><td>ngo@campusfoodshare.org</td><td>ngo123</td></tr>
             <tr><td>Volunteer</td><td>volunteer@campusfoodshare.org</td><td>vol123</td></tr>
           </table></details>
+      </form>
+      <form id="forgotForm" class="auth-form" novalidate>
+        <p class="muted" style="margin-bottom:14px">Enter your email and we will generate a one-time code to set a new password.</p>
+        <div class="form-group"><label for="fgEmail">Email</label><input type="email" id="fgEmail" class="input" autocomplete="username" /></div>
+        <div id="fgStep2" hidden>
+          <div class="big-note good" id="fgDemo" hidden></div>
+          <div class="form-group"><label for="fgCode">6-digit code</label><input type="text" id="fgCode" class="input pin" inputmode="numeric" maxlength="6" autocomplete="one-time-code" /></div>
+          <div class="form-group"><label for="fgPassword">New password</label><input type="password" id="fgPassword" class="input" placeholder="At least 6 characters" autocomplete="new-password" /></div>
+        </div>
+        <div class="form-error" id="fgError" role="alert" hidden></div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="fgSubmit">Send code</button>
+        <div class="auth-footer"><button type="button" class="link-btn" id="fgBack">Back to sign in</button></div>
       </form>
       <form id="signupForm" class="auth-form" novalidate>
         <div class="form-group"><label for="suName">Full name</label><input type="text" id="suName" class="input" required autocomplete="name" /></div>

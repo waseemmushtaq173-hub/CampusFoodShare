@@ -43,6 +43,7 @@ const I18N = {
   },
 };
 Object.assign(I18N.en, {
+  person: 'person', reqExpired: 'This request expired after 3 hours without a helper. Please call a helpline below, or ask again.', askAgain: 'Ask again', dismiss: 'Dismiss', expiredBadge: 'Expired',
   needFood: 'Find food', needFoodSub: 'Free food near you, with directions', giveFood: 'Donate food', giveFoodSub: 'Share leftovers in a few taps', helpOut: 'Volunteer', helpOutSub: 'Pick up and deliver for NGOs',
   freeFood: 'Free food near you', askFood: 'Nobody near me? Ask for food', sendReq: 'Send request', sendFood: 'Post this food now', takeMe: 'Directions', min: 'min walk',
   open: 'Open', kicker: 'Community food sharing', heroTitle: "Good food shouldn't go to waste.", heroSub: 'Campus kitchens and canteens share their surplus meals with people nearby, in minutes, while it is still fresh.',
@@ -56,6 +57,7 @@ Object.assign(I18N.en, {
   nav_start: 'Start Here', nav_need: 'Find Food', nav_track: 'My Request', nav_give: 'Donate Food', nav_requests: 'Food Requests',
 });
 Object.assign(I18N.hi, {
+  person: 'व्यक्ति', reqExpired: 'किसी के न आने से यह अनुरोध 3 घंटे बाद समाप्त हो गया। नीचे हेल्पलाइन पर फ़ोन करें, या फिर से माँगें।', askAgain: 'फिर से माँगें', dismiss: 'हटाएँ', expiredBadge: 'समाप्त',
   needFood: 'खाना खोजें', needFoodSub: 'आसपास मुफ़्त खाना, रास्ते के साथ', giveFood: 'खाना दें', giveFoodSub: 'बचा हुआ खाना कुछ टैप में बाँटें', helpOut: 'स्वयंसेवक बनें', helpOutSub: 'संस्थाओं के लिए खाना पहुँचाएँ',
   freeFood: 'आपके पास मुफ़्त खाना', askFood: 'पास में कुछ नहीं? खाना माँगें', sendReq: 'अनुरोध भेजें', takeMe: 'रास्ता', open: 'खोलें', kicker: 'समुदाय में खाना बाँटें', heroTitle: 'अच्छा खाना बर्बाद नहीं होना चाहिए।',
   heroSub: 'कैंपस की रसोइयाँ और कैंटीन अपना बचा हुआ खाना आसपास के लोगों से मिनटों में साझा करते हैं, जब तक वह ताज़ा है।', ctaFind: 'मेरे पास खाना खोजें', ctaGive: 'बचा हुआ खाना दें', availNow: 'अभी उपलब्ध', seeAll: 'सब देखें',
@@ -68,6 +70,7 @@ Object.assign(I18N.hi, {
   nav_track: 'मेरा अनुरोध',
 });
 Object.assign(I18N.kn, {
+  person: 'ವ್ಯಕ್ತಿ', reqExpired: 'ಯಾರೂ ಬಾರದ ಕಾರಣ ಈ ವಿನಂತಿ 3 ಗಂಟೆಗಳ ನಂತರ ಮುಗಿದಿದೆ. ಕೆಳಗಿನ ಸಹಾಯವಾಣಿಗೆ ಕರೆ ಮಾಡಿ, ಅಥವಾ ಮತ್ತೆ ಕೇಳಿ.', askAgain: 'ಮತ್ತೆ ಕೇಳಿ', dismiss: 'ತೆಗೆದುಹಾಕಿ', expiredBadge: 'ಮುಗಿದಿದೆ',
   needFood: 'ಊಟ ಹುಡುಕಿ', needFoodSub: 'ಹತ್ತಿರದ ಉಚಿತ ಊಟ, ದಾರಿಯೊಂದಿಗೆ', giveFood: 'ಊಟ ಕೊಡಿ', giveFoodSub: 'ಉಳಿದ ಊಟವನ್ನು ಕೆಲವೇ ಟ್ಯಾಪ್‌ಗಳಲ್ಲಿ ಹಂಚಿ', helpOut: 'ಸ್ವಯಂಸೇವಕರಾಗಿ', helpOutSub: 'ಸಂಸ್ಥೆಗಳಿಗೆ ಊಟ ತಲುಪಿಸಿ',
   freeFood: 'ನಿಮ್ಮ ಹತ್ತಿರದ ಉಚಿತ ಊಟ', askFood: 'ಹತ್ತಿರ ಏನೂ ಇಲ್ಲವೇ? ಊಟ ಕೇಳಿ', sendReq: 'ವಿನಂತಿ ಕಳುಹಿಸಿ', takeMe: 'ದಾರಿ', open: 'ತೆರೆಯಿರಿ', kicker: 'ಸಮುದಾಯದ ಊಟ ಹಂಚಿಕೆ', heroTitle: 'ಒಳ್ಳೆಯ ಊಟ ವ್ಯರ್ಥವಾಗಬಾರದು.',
   heroSub: 'ಕ್ಯಾಂಪಸ್ ಅಡುಗೆಮನೆ ಮತ್ತು ಕ್ಯಾಂಟೀನ್‌ಗಳು ಉಳಿದ ಊಟವನ್ನು ಹತ್ತಿರದ ಜನರೊಂದಿಗೆ ನಿಮಿಷಗಳಲ್ಲಿ ಹಂಚಿಕೊಳ್ಳುತ್ತವೆ, ಅದು ತಾಜಾ ಇರುವಾಗಲೇ.', ctaFind: 'ನನ್ನ ಹತ್ತಿರ ಊಟ ಹುಡುಕಿ', ctaGive: 'ಉಳಿದ ಊಟ ಕೊಡಿ', availNow: 'ಈಗ ಲಭ್ಯ', seeAll: 'ಎಲ್ಲವನ್ನೂ ನೋಡಿ',
@@ -193,6 +196,7 @@ async function sendReq() {
   const r = await api('/api/requests', { method: 'POST', body: { people: reqPeople, phone: $('reqPhone').value, lat: ngoLocation.lat, lng: ngoLocation.lng } });
   if (!r.ok) return showToast(r.data.error || 'Could not send. Please try again.');
   try { localStorage.setItem('cf_req', r.data.id); } catch (err) { /* ignore */ }
+  updateAuthUI();
   $('reqModal').classList.remove('active'); $('reqPhone').value = '';
   showToast(t('tr1'));
   speak(`${t('tr1')}. ${t('tr1d')}`);
@@ -204,18 +208,20 @@ async function loadTrack() {
   const empty = () => { el.innerHTML = `<div class="panel"><h2>${esc(t('trackTitle'))}</h2><p class="muted" style="margin:6px 0 14px">${esc(t('noReqYet'))}</p><button class="btn btn-primary" data-tile="need">${esc(t('ctaFind'))}</button></div>`; };
   if (!id) return empty();
   const r = await api(`/api/requests/${encodeURIComponent(id)}`);
-  if (!r.ok) { try { localStorage.removeItem('cf_req'); } catch (err) { /* ignore */ } return empty(); }
+  if (!r.ok) { try { localStorage.removeItem('cf_req'); } catch (err) { /* ignore */ } updateAuthUI(); return; }
   const q = r.data.request;
-  const open = q.status === 'open', acc = q.status === 'accepted', helped = q.status === 'helped', cancelled = q.status === 'cancelled';
+  const open = q.status === 'open', acc = q.status === 'accepted', helped = q.status === 'helped', cancelled = q.status === 'cancelled', expired = q.status === 'expired';
+  const closed = cancelled || expired || helped;
+  const dir = expired ? await api('/api/directory') : null;
   const step = (n, done, now, title, desc) => `<div class="track-step ${done ? 'done' : now ? 'now' : ''}"><span class="tdot">${done ? ic('check') : n}</span><div><h4>${esc(title)}</h4><p>${desc}</p></div></div>`;
   const hp = q.acceptedBy;
   const helperDesc = hp ? `<strong>${esc(hp.name)}</strong>${hp.org ? `, ${esc(hp.org)}` : ''} ${esc(t('helperComing'))}.${hp.phone ? ` <a href="tel:${esc(String(hp.phone).replace(/[^\d+]/g, ''))}">${esc(hp.phone)}</a>` : ''}` : esc(t('tr2d'));
   const lst = await api(`/api/listings?status=posted&${locQuery()}`);
   const near = lst.ok ? lst.data.listings.sort((x, y) => x.distanceKm - y.distanceKm).slice(0, 2) : [];
   el.innerHTML = `<div class="two-col"><div class="panel">
-      <div class="panel-head"><div><h2>${esc(t('trackTitle'))}</h2><p class="muted">#${esc(q.id.slice(-6).toUpperCase())} · ${esc(q.people)} ${esc(t('people'))} · ${esc(timeAgo(q.createdAt))}</p></div>${cancelled ? '<span class="badge">Cancelled</span>' : helped ? '<span class="badge badge-posted">Helped</span>' : acc ? '<span class="badge badge-claimed">On the way</span>' : '<span class="badge badge-claimed">Waiting</span>'}</div>
-      ${cancelled ? `<div class="big-note">${esc(t('cancelled'))}</div>` : `<div class="track-steps">${step(1, true, false, t('tr1'), esc(t('tr1d')))}${step(2, acc || helped, open, t('tr2'), helperDesc)}${step(3, helped, false, t('tr3'), esc(t('tr3d')))}</div>`}
-      <div class="action-row" style="margin-top:6px">${(open || acc) ? `<button class="btn btn-danger" data-cancel-req="${esc(q.id)}">${esc(t('cancelReq'))}</button>` : `<button class="btn btn-primary" data-tile="need">${esc(t('ctaFind'))}</button>`}</div>
+      <div class="panel-head"><div><h2>${esc(t('trackTitle'))}</h2><p class="muted">#${esc(q.id.slice(-6).toUpperCase())} · ${esc(q.people)} ${esc(q.people === 1 ? t('person') : t('people'))} · ${esc(timeAgo(q.createdAt))}</p></div>${expired ? `<span class="badge">${esc(t('expiredBadge'))}</span>` : cancelled ? '<span class="badge">Cancelled</span>' : helped ? '<span class="badge badge-posted">Helped</span>' : acc ? '<span class="badge badge-claimed">On the way</span>' : '<span class="badge badge-claimed">Waiting</span>'}</div>
+      ${expired ? `<div class="big-note wait">${esc(t('reqExpired'))}</div><div>${dir && dir.ok ? dir.data.directory.map((h) => `<div class="helpline"><div><strong>${esc(h.name)}</strong><span>${esc(h.area)} · ${esc(h.hours)}</span></div><a class="big-btn call" href="tel:${esc(String(h.phone).replace(/[^\d+]/g, ''))}">${ic('phone')}${esc(h.phone)}</a></div>`).join('') : ''}</div>` : cancelled ? `<div class="big-note">${esc(t('cancelled'))}</div>` : `<div class="track-steps">${step(1, true, false, t('tr1'), esc(t('tr1d')))}${step(2, acc || helped, open, t('tr2'), helperDesc)}${step(3, helped, false, t('tr3'), esc(t('tr3d')))}</div>`}
+      <div class="action-row" style="margin-top:6px">${(open || acc) ? `<button class="btn btn-danger" data-cancel-req="${esc(q.id)}">${esc(t('cancelReq'))}</button>` : `<button class="btn btn-primary" data-ask="1">${esc(t('askAgain'))}</button><button class="btn btn-ghost" data-dismiss-req="1">${esc(t('dismiss'))}</button>`}</div>
     </div>
     <div class="panel"><h2>${esc(t('meanwhile'))}</h2><div class="mini-list" style="margin-top:8px">${near.map((l) => `<div class="mini"><div><strong>${esc(l.foodTitle)}</strong><small>${esc(l.distanceKm)} ${esc(t('km'))} · ${walkMins(l.distanceKm)} ${esc(t('min'))}</small></div><div class="right"><a class="big-btn go" style="min-height:36px;padding:0 12px" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${l.location.lat},${l.location.lng}&travelmode=walking">${ic('navigation')}${esc(t('takeMe'))}</a></div></div>`).join('') || `<div class="empty">${esc(t('noFoodNear'))}</div>`}</div></div></div>`;
 }
@@ -292,7 +298,7 @@ function requestCard(r) {
   const accepted = r.status === 'accepted';
   const act = accepted ? `<button class="big-btn done" data-help="${esc(r.id)}">${ic('check')}${esc(t('iHelped'))}</button>` : `<button class="big-btn go" data-accept="${esc(r.id)}">${esc(t('accept'))}</button>`;
   return `<div class="need-card"><div class="need-emo">${ic('users')}</div>
-    <div class="need-main"><h3>${esc(r.people)} ${esc(t('people'))}</h3><div class="need-meta"><span class="pill">${ic('pin')}${esc(r.distanceKm.toFixed(2))} ${esc(t('km'))}</span><span class="pill">${ic('clock')}${esc(timeAgo(r.createdAt))}</span>${phone ? `<span class="pill">${ic('phone')}${esc(r.phone)}</span>` : ''}${accepted ? `<span class="badge badge-claimed">${esc(r.acceptedBy ? r.acceptedBy.name : '')}</span>` : '<span class="badge badge-posted">Open</span>'}</div></div>
+    <div class="need-main"><h3>${esc(r.people)} ${esc(r.people === 1 ? t('person') : t('people'))}</h3><div class="need-meta"><span class="pill">${ic('pin')}${esc(r.distanceKm.toFixed(2))} ${esc(t('km'))}</span><span class="pill">${ic('clock')}${esc(timeAgo(r.createdAt))}</span>${phone ? `<span class="pill">${ic('phone')}${esc(r.phone)}</span>` : ''}${accepted ? `<span class="badge badge-claimed">${esc(r.acceptedBy ? r.acceptedBy.name : '')}</span>` : '<span class="badge badge-posted">Open</span>'}</div></div>
     <div class="need-actions"><a class="big-btn call" target="_blank" rel="noopener" href="${nav}">${ic('navigation')}${esc(t('directions'))}</a>${phone ? `<a class="big-btn call" href="tel:${esc(phone)}">${ic('phone')}${esc(t('call'))}</a>` : ''}${act}</div></div>`;
 }
 async function loadRequests() {
@@ -342,6 +348,7 @@ document.addEventListener('click', (e) => {
     });
     return;
   }
+  if (e.target.closest('[data-dismiss-req]')) { try { localStorage.removeItem('cf_req'); } catch (err) { /* ignore */ } go('start'); updateAuthUI(); return; }
   if (e.target.closest('#reqSend')) return sendReq();
   if (e.target.closest('[data-loc]')) { gpsBlocked = false; startLiveGps(); return; }
   const lc = e.target.closest('[data-lang]'); if (lc) return setLang(lc.dataset.lang);

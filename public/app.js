@@ -57,6 +57,7 @@ const PAGE_SUB = {
   users: 'Manage roles and access', insights: 'Impact analytics and leaderboards', roadmap: 'Shipped features and what is next',
   start: 'Share surplus food with people nearby', track: 'Follow your request for food', settings: 'Your account and preferences', start_: '', need: 'Free food close to you', give: 'Give food in a few taps', requests: 'People asking for food near you',
 };
+const hasRequest = () => { try { return !!localStorage.getItem('cf_req'); } catch (e) { return false; } };
 const roleOf = () => (currentUser ? currentUser.role : 'guest');
 const titleFor = (r) => (r === 'dashboard' ? `${ROLE_LABEL[roleOf()]} ${roleOf() === 'admin' ? 'Control Center' : 'Dashboard'}` : navLabel(r, (NAV[roleOf()].find((n) => n[0] === r) || [, 'Home'])[1]));
 
@@ -134,7 +135,7 @@ function clearSession() {
 
 function updateAuthUI() {
   const role = roleOf();
-  $('navMenu').innerHTML = NAV[role].map(([id, label, icon, soon]) => `<button class="nav-item${soon ? ' is-soon' : ''}" data-route="${id}">${ic(icon)}<span>${esc(navLabel(id, label))}</span>${soon ? '<em class="soon-pill">Soon</em>' : ''}</button>`).join('');
+  $('navMenu').innerHTML = NAV[role].filter((n) => n[0] !== 'track' || hasRequest()).map(([id, label, icon, soon]) => `<button class="nav-item${soon ? ' is-soon' : ''}" data-route="${id}">${ic(icon)}<span>${esc(navLabel(id, label))}</span>${soon ? '<em class="soon-pill">Soon</em>' : ''}</button>`).join('');
   $('navLabel').textContent = `${ROLE_LABEL[role]} menu`;
   if (currentUser) {
     const initial = esc((currentUser.name || '?').trim()[0].toUpperCase());
@@ -214,7 +215,7 @@ const currentRoute = () => (location.hash.replace(/^#\/?/, '') || '').split('?')
 
 function renderRoute() {
   const role = roleOf();
-  const ids = NAV[role].map((n) => n[0]);
+  const ids = NAV[role].filter((n) => n[0] !== 'track' || hasRequest()).map((n) => n[0]);
   let route = currentRoute();
   if (!ids.includes(route)) {
     if (!currentUser && ['dashboard', 'post', 'mylistings', 'pickups', 'moderation', 'users'].includes(route)) { showToast('Sign in to open that page'); }
@@ -505,7 +506,7 @@ async function loadDashboard() {
   } else if (d.role === 'admin') {
     const roles = Object.entries(s.roles).map(([k, v]) => `<div class="stat-row"><span>${ROLE_LABEL[k] || k}</span><b>${v}</b></div>`).join('');
     const bar = (label, v, tone) => `<div class="stat-row"><span>${label}</span><b>${v}</b></div><div class="meter"><i style="width:${s.listings ? (v / s.listings) * 100 : 0}%;background:${tone}"></i></div>`;
-    body.innerHTML = welcome('Platform health at a glance.', `<button class="btn btn-primary" data-go="users">${ic('users')} Manage users</button><button class="btn btn-ghost" data-go="moderation">Moderate listings</button><button class="btn btn-danger" data-act="reset">Reset demo data</button>`) +
+    body.innerHTML = welcome('Platform health at a glance.', `<button class="btn btn-primary" data-go="users">${ic('users')} Manage users</button><button class="btn btn-ghost" data-go="moderation">Moderate listings</button><button class="btn btn-ghost" data-act="startfresh">Start empty</button><button class="btn btn-danger" data-act="reset">Reset demo data</button>`) +
       `<div class="kpi-grid">${kpi('Users', s.users, `${s.suspended} suspended`, 'users', 'var(--blue)')}${kpi('Listings', s.listings, `${s.posted} open now`, 'list', 'var(--accent)')}${kpi('Meals saved', s.mealsSaved, 'platform total', 'heart', 'var(--green)')}${kpi('Rescue rate', pct(s.rescueRate), 'rescued vs expired', 'chart', 'var(--primary)')}${kpi('Expiring < 30 min', s.expiringSoon, s.expiringSoon ? 'needs attention' : 'all clear', 'alert', 'var(--red)', s.expiringSoon > 0)}</div>
       <div class="dash-grid"><div class="glass panel"><h2>Listing pipeline</h2><div style="margin-top:.8rem">${bar('Posted', s.posted, 'var(--green)')}${bar('Claimed', s.claimed, 'var(--accent)')}${bar('Collected', s.collected, 'var(--blue)')}${bar('Expired', s.expired, 'var(--muted)')}</div><h3 style="margin-top:1rem">Users by role</h3>${roles}</div>
       <div class="glass panel"><h2>Audit log</h2><div class="mini-list" style="margin-top:.8rem">${d.audit.map((n) => mini(n.title, esc(n.message), `<small>${timeAgo(n.createdAt)}</small>`)).join('')}</div></div></div>`;
@@ -570,7 +571,8 @@ const ROADMAP = [
   ['shipped', 'Admin tools and audit log', 'Change roles, suspend accounts, moderate listings and review every action.'],
   ['shipped', 'English, Hindi and Kannada', 'With read-aloud for people who prefer to listen.'],
   ['next', 'Installable mobile app', 'Add to home screen with cached listings for patchy campus Wi-Fi.'],
-  ['next', 'Email verification and password reset', 'Production-grade account recovery.'],
+  ['shipped', 'Persistent sign-in and password reset', 'Stay signed in across restarts, and recover a forgotten password with a one-time code.'],
+  ['next', 'Email delivery for sign-in codes', 'Send reset codes and verification links by email instead of showing them on screen.'],
   ['future', 'Recurring surplus schedules', 'Messes and canteens post surplus automatically on chosen days.'],
   ['future', 'Route planner', 'Combine several pickups into one efficient trip for volunteers.'],
   ['future', 'SMS and WhatsApp alerts', 'Radius-based alerts on the channels people already use.'],
@@ -609,7 +611,9 @@ function renderSettings() {
     <div>
       <div class="panel"><h2>Profile</h2><dl class="kv" style="margin-top:12px">${row('Name', u.name)}${row('Email', u.email)}${row('Role', ROLE_LABEL[u.role])}${row('Organization', u.organization)}${row('Phone', u.phone)}</dl></div>
       <div class="panel"><h2>Security</h2>
-        <div class="soon-row"><span>Change password <span class="soon-pill">Soon</span><div class="meta">Update your password from here</div></span><button class="btn btn-ghost btn-sm" disabled>Change</button></div>
+        <form id="pwForm" style="padding:12px 0;border-top:1px solid var(--border)"><div style="font-weight:600;margin-bottom:10px">Change password</div>
+          <div class="form-row"><div class="form-group"><label for="pwCur">Current password</label><input type="password" id="pwCur" class="input" autocomplete="current-password" required /></div><div class="form-group"><label for="pwNew">New password</label><input type="password" id="pwNew" class="input" autocomplete="new-password" placeholder="At least 6 characters" required /></div></div>
+          <div class="form-error" id="pwError" role="alert" hidden></div><button type="submit" class="btn btn-secondary btn-sm">Update password</button></form>
         <div class="soon-row"><span>Sign out of this device<div class="meta">You will need to sign in again</div></span><button class="btn btn-secondary btn-sm" data-act="signout">Sign out</button></div></div>
     </div>
     <div>
@@ -626,6 +630,13 @@ function renderSettings() {
   $('setLang').addEventListener('change', (e) => setLang(e.target.value));
   $('setTheme').addEventListener('change', (e) => applyTheme(e.target.value));
   $('setEasy').addEventListener('click', () => setEasy(!document.body.classList.contains('easy')));
+  $('pwForm').addEventListener('input', () => setFormError('pwError', ''));
+  $('pwForm').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const r = await api('/api/auth/password', { method: 'POST', body: { current: $('pwCur').value, password: $('pwNew').value } });
+    if (!r.ok) return setFormError('pwError', r.data.error || 'Could not change the password');
+    $('pwCur').value = ''; $('pwNew').value = ''; showToast(r.data.message);
+  });
 }
 
 /* ── Actions ── */

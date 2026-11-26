@@ -287,3 +287,7 @@ body.easy .cmd-btn, body.easy .live-badge, body.easy .page-heading p { display: 
 .page-heading h1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 1280px) { .page-heading p { display: none; } .cmd-text, kbd { display: none; } .cmd-btn { padding: 0 10px; } }
 @media (max-width: 1060px) { .lang-select { display: none; } }
+
+.link-btn { background: none; border: 0; padding: 0; color: var(--primary); font: 600 .84rem var(--font); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.demo-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; padding: 10px 14px; border-radius: 10px; background: var(--amber-tint); color: var(--amber); font-size: .86rem; }
+.demo-banner strong { color: inherit; } .demo-actions { display: flex; gap: 8px; }

@@ -281,3 +281,78 @@ window.addEventListener('hashchange', () => {
     return r;
   };
 })();
+
+/* ── 14. Forgot password: request a code, then choose a new password ── */
+(() => {
+  const form = document.getElementById('forgotForm');
+  if (!form) return;
+  let sent = false;
+  const show = () => {
+    document.querySelectorAll('.auth-form').forEach((f) => f.classList.remove('active'));
+    form.classList.add('active');
+    document.querySelectorAll('.auth-tab').forEach((t) => t.classList.remove('active'));
+    document.getElementById('authModalTitle').textContent = 'Reset your password';
+    sent = false;
+    document.getElementById('fgStep2').hidden = true; document.getElementById('fgDemo').hidden = true;
+    document.getElementById('fgSubmit').textContent = 'Send code';
+    document.getElementById('fgEmail').value = document.getElementById('siEmail').value;
+    setFormError('fgError', '');
+    setTimeout(() => document.getElementById('fgEmail').focus(), 60);
+  };
+  document.getElementById('forgotLink').addEventListener('click', show);
+  document.getElementById('fgBack').addEventListener('click', () => switchAuthTab('signin'));
+  form.addEventListener('input', () => setFormError('fgError', ''));
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    setFormError('fgError', '');
+    const email = document.getElementById('fgEmail').value.trim();
+    if (!sent) {
+      const r = await api('/api/auth/forgot', { method: 'POST', body: { email } });
+      if (!r.ok) return setFormError('fgError', r.data.error || 'Could not generate a code');
+      sent = true;
+      document.getElementById('fgStep2').hidden = false;
+      document.getElementById('fgSubmit').textContent = 'Reset password';
+      const d = document.getElementById('fgDemo');
+      d.hidden = false;
+      if (r.data.demoCode) { d.className = 'big-note good'; d.textContent = `Demo mode: your code is ${r.data.demoCode}. A real deployment sends this by email.`; document.getElementById('fgCode').value = r.data.demoCode; }
+      else { d.className = 'big-note'; d.textContent = 'If that email is registered, a code has been generated. Enter it below.'; }
+      document.getElementById('fgPassword').focus();
+      return;
+    }
+    const r = await api('/api/auth/reset', { method: 'POST', body: { email, code: document.getElementById('fgCode').value.trim(), password: document.getElementById('fgPassword').value } });
+    if (!r.ok) return setFormError('fgError', r.data.error || 'Could not reset the password');
+    showToast('Password updated. Please sign in.');
+    switchAuthTab('signin');
+    document.getElementById('siEmail').value = email; document.getElementById('siPassword').value = '';
+    document.getElementById('siPassword').focus();
+  });
+})();
+
+/* ── 15. Sample data is labelled as sample data; admins can start with nothing ── */
+function renderDemoBanner() {
+  api('/api/meta').then((r) => {
+    const old = document.getElementById('demoBanner'); if (old) old.remove();
+    if (!r.ok || !r.data.demo) return;
+    let hidden = false; try { hidden = sessionStorage.getItem('cf_demo_hide') === '1'; } catch (e) { /* ignore */ }
+    if (hidden) return;
+    const b = document.createElement('div');
+    b.id = 'demoBanner'; b.className = 'demo-banner';
+    b.innerHTML = `<span><strong>Sample data.</strong> The listings, people and requests you see are demo content, not real activity.</span><span class="demo-actions">${currentUser && currentUser.role === 'admin' ? '<button class="btn btn-sm btn-secondary" data-act="startfresh">Start empty</button>' : ''}<button class="btn btn-sm btn-ghost" data-act="hidedemo">Hide</button></span>`;
+    document.getElementById('views').prepend(b);
+  });
+}
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-act="startfresh"],[data-act="hidedemo"]');
+  if (!b) return;
+  if (b.dataset.act === 'hidedemo') { try { sessionStorage.setItem('cf_demo_hide', '1'); } catch (err) { /* ignore */ } const el = document.getElementById('demoBanner'); if (el) el.remove(); return; }
+  if (!(await confirmDialog({ title: 'Start with an empty platform?', message: 'All sample listings, requests and activity are removed and will not come back. Accounts are kept.', confirmText: 'Clear sample data', danger: true }))) return;
+  const r = await api('/api/admin/start-fresh', { method: 'POST', body: {} });
+  showToast(r.ok ? 'Sample data cleared. The platform now starts empty.' : (r.data.error || 'Could not clear the data'));
+  renderDemoBanner(); refreshCurrent();
+});
+(() => {
+  const realAuth = updateAuthUI;
+  // eslint-disable-next-line no-global-assign
+  updateAuthUI = function (...args) { const r = realAuth(...args); renderDemoBanner(); return r; };
+  renderDemoBanner();
+})();

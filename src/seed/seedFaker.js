@@ -139,7 +139,7 @@ function generateSeedData() {
     { name: 'City Hunger Helpline (demo)', area: 'All areas', phone: '+91 80000 12004', hours: '24 hours' },
   ];
 
-  return { users, donors: [], ngos: [], listings, claims: [], notifications, feedbacks: [], requests, directory };
+  return { meta: { demo: true, seededAt: iso(now) }, users, donors: [], ngos: [], listings, claims: [], notifications, feedbacks: [], requests, directory };
 }
 
 if (require.main === module) {

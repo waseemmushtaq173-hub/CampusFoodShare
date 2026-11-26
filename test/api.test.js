@@ -29,7 +29,7 @@ const listing = (over = {}) => ({
 });
 
 before(async () => {
-  server = spawn(process.execPath, ['server.js'], { env: { ...process.env, PORT: String(PORT), DB_FILE_PATH: DB }, cwd: path.join(__dirname, '..'), stdio: 'ignore' });
+  server = spawn(process.execPath, ['server.js'], { env: { ...process.env, PORT: String(PORT), DB_FILE_PATH: DB, DEMO_MODE: 'off' }, cwd: path.join(__dirname, '..'), stdio: 'ignore' });
   for (let i = 0; i < 50; i++) {
     try { if ((await fetch(`${BASE}/api/checklist`)).ok) break; } catch (e) { /* not up yet */ }
     await new Promise((r) => setTimeout(r, 200));
@@ -243,4 +243,113 @@ test('food requests are rate limited per device', async () => {
   let last;
   for (let i = 0; i < 6; i++) last = await call('POST', '/api/requests', { people: 1, lat: 12.97, lng: 77.59 });
   assert.equal(last.status, 429);
+});
+
+test('stale demo data refreshes itself and keeps accounts people created', async () => {
+  const { generateSeedData } = require('../src/seed/seedFaker');
+  const { hashAllPasswords, hashPassword } = require('../src/utils/auth');
+  const staleDb = path.join(os.tmpdir(), `cfs-stale-${process.pid}-${Date.now()}.json`);
+  const port = PORT + 1;
+  const data = generateSeedData();
+  hashAllPasswords(data);
+  // simulate "seeded yesterday": nothing is open any more
+  data.listings.forEach((l) => { if (l.status === 'posted' || l.status === 'claimed') { l.status = 'expired'; l.useBefore = new Date(Date.now() - 20 * 3600000).toISOString(); } });
+  data.users.push({ id: 'usr-custom-1', name: 'Custom Donor', email: 'custom@example.com', password: hashPassword('secret123'), role: 'donor', organization: 'Custom Kitchen', phone: '', verified: true });
+  fs.writeFileSync(staleDb, JSON.stringify(data));
+  const srv = spawn(process.execPath, ['server.js'], { env: { ...process.env, PORT: String(port), DB_FILE_PATH: staleDb }, cwd: path.join(__dirname, '..'), stdio: 'ignore' });
+  try {
+    const base = `http://localhost:${port}`;
+    for (let i = 0; i < 50; i++) { try { if ((await fetch(`${base}/api/checklist`)).ok) break; } catch (e) { /* starting */ } await new Promise((r) => setTimeout(r, 200)); }
+    const open = await (await fetch(`${base}/api/listings?status=posted`)).json();
+    assert.ok(open.count >= 3, 'demo has open listings again');
+    const login = await fetch(`${base}/api/auth/signin`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'custom@example.com', password: 'secret123', role: 'donor' }) });
+    assert.equal(login.status, 200, 'accounts created by people are kept');
+  } finally { srv.kill(); try { fs.unlinkSync(staleDb); } catch (e) { /* ignore */ } }
+});
+
+/* ---- helpers for tests that need their own server / database ---- */
+async function bootServer(port, dbFile, env = {}) {
+  const proc = spawn(process.execPath, ['server.js'], { env: { ...process.env, PORT: String(port), DB_FILE_PATH: dbFile, ...env }, cwd: path.join(__dirname, '..'), stdio: 'ignore' });
+  const base = `http://localhost:${port}`;
+  for (let i = 0; i < 60; i++) { try { if ((await fetch(`${base}/api/checklist`)).ok) break; } catch (e) { /* starting */ } await new Promise((r) => setTimeout(r, 200)); }
+  const api = async (m, u, body, token) => {
+    const r = await fetch(base + u, { method: m, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: body === undefined ? undefined : JSON.stringify(body) });
+    let data = {}; try { data = await r.json(); } catch (e) { /* empty */ }
+    return { status: r.status, data };
+  };
+  return { proc, api, stop: () => new Promise((res) => { proc.once('exit', res); proc.kill(); setTimeout(res, 1500); }) };
+}
+const tmpDb = (tag) => path.join(os.tmpdir(), `cfs-${tag}-${process.pid}-${Date.now()}.json`);
+
+test('sign-in survives a server restart', async () => {
+  const file = tmpDb('sess');
+  let srv = await bootServer(PORT + 2, file, { DEMO_MODE: 'off' });
+  try {
+    const login = await srv.api('POST', '/api/auth/signin', { email: 'ngo@campusfoodshare.org', password: 'ngo123', role: 'ngo' });
+    assert.equal(login.status, 200);
+    const token = login.data.token;
+    await srv.stop();
+    srv = await bootServer(PORT + 2, file, { DEMO_MODE: 'off' });
+    const me = await srv.api('GET', '/api/auth/me', undefined, token);
+    assert.equal(me.status, 200, 'the same token still works after a restart');
+    assert.equal(me.data.user.email, 'ngo@campusfoodshare.org');
+    const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
+    assert.ok(raw.sessions.every((x) => x.h && !JSON.stringify(x).includes(token)), 'tokens are stored hashed');
+    await srv.api('POST', '/api/auth/signout', {}, token);
+    assert.equal((await srv.api('GET', '/api/auth/me', undefined, token)).status, 401, 'sign-out revokes the session');
+  } finally { await srv.stop(); try { fs.unlinkSync(file); } catch (e) { /* ignore */ } }
+});
+
+test('password reset with a one-time code, and change password', async () => {
+  const file = tmpDb('pw');
+  const srv = await bootServer(PORT + 3, file, { DEMO_MODE: 'off', SHOW_RESET_CODE: '1' });
+  const D = 'donor@campusfoodshare.org';
+  try {
+    assert.equal((await srv.api('POST', '/api/auth/forgot', { email: 'nope' })).status, 400);
+    const unknown = await srv.api('POST', '/api/auth/forgot', { email: 'nobody@example.com' });
+    assert.equal(unknown.status, 200);
+    assert.equal(unknown.data.demoCode, undefined, 'unknown emails get no code and no hint');
+    const old = (await srv.api('POST', '/api/auth/signin', { email: D, password: 'donor123', role: 'donor' })).data.token;
+    const f = await srv.api('POST', '/api/auth/forgot', { email: D });
+    assert.match(f.data.demoCode, /^\d{6}$/);
+    assert.equal((await srv.api('POST', '/api/auth/reset', { email: D, code: '000000', password: 'newpass1' })).status, 400, 'wrong code');
+    assert.equal((await srv.api('POST', '/api/auth/reset', { email: D, code: f.data.demoCode, password: '123' })).status, 400, 'short password');
+    assert.equal((await srv.api('POST', '/api/auth/reset', { email: D, code: f.data.demoCode, password: 'newpass1' })).status, 200);
+    assert.equal((await srv.api('POST', '/api/auth/reset', { email: D, code: f.data.demoCode, password: 'newpass2' })).status, 400, 'a code works once');
+    assert.equal((await srv.api('GET', '/api/auth/me', undefined, old)).status, 401, 'old sessions are revoked');
+    assert.equal((await srv.api('POST', '/api/auth/signin', { email: D, password: 'donor123', role: 'donor' })).status, 401);
+    const t = (await srv.api('POST', '/api/auth/signin', { email: D, password: 'newpass1', role: 'donor' })).data.token;
+    assert.ok(t);
+    assert.equal((await srv.api('POST', '/api/auth/password', { current: 'wrong', password: 'another1' }, t)).status, 400);
+    assert.equal((await srv.api('POST', '/api/auth/password', { current: 'newpass1', password: 'another1' }, t)).status, 200);
+    assert.equal((await srv.api('GET', '/api/auth/me', undefined, t)).status, 200, 'this device stays signed in');
+    assert.equal((await srv.api('POST', '/api/auth/signin', { email: D, password: 'another1', role: 'donor' })).status, 200);
+    assert.equal((await srv.api('POST', '/api/auth/password', { current: 'x', password: 'y12345' })).status, 401, 'must be signed in');
+  } finally { await srv.stop(); try { fs.unlinkSync(file); } catch (e) { /* ignore */ } }
+});
+
+test('old requests expire, and "start empty" is respected after a restart', async () => {
+  const { generateSeedData } = require('../src/seed/seedFaker');
+  const { hashAllPasswords } = require('../src/utils/auth');
+  const file = tmpDb('fresh');
+  const data = generateSeedData(); hashAllPasswords(data);
+  data.requests.unshift({ id: 'req-old-1', people: 1, phone: '', name: '', note: '', lat: 12.97, lng: 77.59, status: 'open', createdAt: new Date(Date.now() - 5 * 3600000).toISOString() });
+  fs.writeFileSync(file, JSON.stringify(data));
+  let srv = await bootServer(PORT + 4, file, { DEMO_MODE: 'off' });
+  try {
+    assert.equal((await srv.api('GET', '/api/requests/req-old-1')).data.request.status, 'expired');
+    const ngo = (await srv.api('POST', '/api/auth/signin', { email: 'ngo@campusfoodshare.org', password: 'ngo123', role: 'ngo' })).data.token;
+    assert.ok(!(await srv.api('GET', '/api/requests', undefined, ngo)).data.requests.some((r) => r.id === 'req-old-1'), 'expired requests leave the queue');
+    assert.equal((await srv.api('POST', '/api/requests/req-old-1/accept', {}, ngo)).status, 409);
+    assert.equal((await srv.api('GET', '/api/meta')).data.demo, true);
+    const adm = (await srv.api('POST', '/api/auth/signin', { email: 'admin@campusfoodshare.org', password: 'admin123', role: 'admin' })).data.token;
+    assert.equal((await srv.api('POST', '/api/admin/start-fresh', {}, ngo)).status, 403);
+    assert.equal((await srv.api('POST', '/api/admin/start-fresh', {}, adm)).status, 200);
+    assert.equal((await srv.api('GET', '/api/listings?includeExpired=true')).data.count, 0);
+    assert.equal((await srv.api('GET', '/api/meta')).data.demo, false);
+    await srv.stop();
+    srv = await bootServer(PORT + 4, file); // demo refresh is ON, but the data was deliberately emptied
+    assert.equal((await srv.api('GET', '/api/listings?includeExpired=true')).data.count, 0, 'an emptied platform is not re-seeded');
+    assert.equal((await srv.api('POST', '/api/auth/signin', { email: 'ngo@campusfoodshare.org', password: 'ngo123', role: 'ngo' })).status, 200, 'accounts are kept');
+  } finally { await srv.stop(); try { fs.unlinkSync(file); } catch (e) { /* ignore */ } }
 });

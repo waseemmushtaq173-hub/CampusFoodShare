@@ -26,26 +26,62 @@ app.use('/vendor/leaflet', express.static(path.join(__dirname, 'node_modules', '
 // ---------- bootstrap: seed if empty, hash any plaintext passwords ----------
 {
   let db = readDb();
-  if (!db.listings || db.listings.length === 0 || !db.users || db.users.length === 0) db = generateSeedData();
+  if (!db.users || db.users.length === 0 || ((!db.listings || db.listings.length === 0) && isDemoData(db))) db = generateSeedData();
   hashAllPasswords(db);
   writeDb(db);
 }
+// (ensureFreshDemo runs again below, once its helpers exist)
+
+// ---------- demo data stays alive ----------
+// Demo listings are only valid for a few hours. When the data is demo data and (almost) nothing is
+// open any more, regenerate the live demo slice and keep any accounts people created themselves.
+// Set DEMO_MODE=off to disable this for real deployments.
+function isDemoData(db) {
+  return db.meta ? db.meta.demo !== false : (db.users || []).some((u) => u.id === 'usr-admin-1');
+}
+
+function ensureFreshDemo() {
+  if (process.env.DEMO_MODE === 'off') return false;
+  const { db } = sweepExpiredListings();
+  if (!isDemoData(db)) return false;
+  const open = (db.listings || []).filter((l) => l.status === LISTING_STATUS.POSTED).length;
+  if (open >= 3) return false;
+  const fresh = generateSeedData();
+  const seedIds = new Set(fresh.users.map((u) => u.id));
+  const mine = (db.users || []).filter((u) => !seedIds.has(u.id));
+  hashAllPasswords(fresh);
+  fresh.users = fresh.users.concat(mine);
+  fresh.sessions = db.sessions || [];
+  writeDb(fresh);
+  return true;
+}
+const sweepFresh = () => { ensureFreshDemo(); return sweepExpiredListings(); };
 
 // ---------- sessions (token -> userId) ----------
-const sessions = new Map();
+const SESSION_TTL = 30 * 24 * 3600000;
+const sha = (t) => crypto.createHash('sha256').update(String(t)).digest('hex');
+/** Sessions are stored (hashed) in the database, so people stay signed in across server restarts. */
+function createSession(userId) {
+  const token = crypto.randomBytes(24).toString('hex');
+  const db = readDb();
+  db.sessions = (db.sessions || []).filter((x) => x.exp > Date.now());
+  db.sessions.push({ h: sha(token), userId, exp: Date.now() + SESSION_TTL });
+  writeDb(db);
+  return token;
+}
 const newId = (prefix) => `${prefix}-${crypto.randomBytes(5).toString('hex')}`;
 
 function attachUser(req, res, next) {
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
-  const userId = token ? sessions.get(token) : null;
-  if (userId) {
-    const user = (readDb().users || []).find((u) => u.id === userId);
+  if (token) {
+    const db = readDb();
+    const h = sha(token);
+    const sess = (db.sessions || []).find((x) => x.h === h && x.exp > Date.now());
+    const user = sess && (db.users || []).find((u) => u.id === sess.userId);
     if (user && !user.suspended) {
       req.user = user;
       req.token = token;
-    } else {
-      sessions.delete(token);
     }
   }
   next();
@@ -100,10 +136,13 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
+if (ensureFreshDemo()) console.log('Demo data was stale and has been refreshed.');
+
 // auto-expiry sweep runs in the background so clients see expiries live
 setInterval(() => {
+  const refreshed = ensureFreshDemo();
   const { expiredSwept } = sweepExpiredListings();
-  if (expiredSwept > 0) broadcastChange();
+  if (refreshed || expiredSwept > 0) broadcastChange();
 }, 30000).unref();
 
 // ---------- auth ----------
@@ -136,8 +175,7 @@ app.post('/api/auth/signup', (req, res) => {
   };
   db.users.push(user);
   writeDb(db);
-  const token = crypto.randomBytes(24).toString('hex');
-  sessions.set(token, user.id);
+  const token = createSession(user.id);
   res.status(201).json({ message: 'Account created', user: publicUser(user), token });
 });
 
@@ -163,14 +201,81 @@ app.post('/api/auth/signin', (req, res) => {
     return res.status(403).json({ error: `This account is registered as ${user.role.toUpperCase()}. Select "${user.role}" to sign in.` });
   }
   failedLogins.delete(key);
-  const token = crypto.randomBytes(24).toString('hex');
-  sessions.set(token, user.id);
+  const token = createSession(user.id);
   res.json({ message: 'Signed in', user: publicUser(user), token });
 });
 
 app.post('/api/auth/signout', (req, res) => {
-  if (req.token) sessions.delete(req.token);
+  if (req.token) {
+    const db = readDb();
+    db.sessions = (db.sessions || []).filter((x) => x.h !== sha(req.token));
+    writeDb(db);
+  }
   res.json({ message: 'Signed out' });
+});
+
+// ---------- password reset and change ----------
+const resetHits = new Map(); // email -> timestamps
+const resetPassword = (db, user, newPassword) => {
+  user.password = hashPassword(newPassword);
+  db.sessions = (db.sessions || []).filter((x) => x.userId !== user.id);
+  failedLogins.delete(user.email);
+};
+
+app.post('/api/auth/forgot', (req, res) => {
+  const email = String((req.body || {}).email || '').trim().toLowerCase();
+  const generic = { message: 'If that email is registered, a reset code has been generated.' };
+  if (!/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({ error: 'Enter a valid email address' });
+  const now = Date.now();
+  const hits = (resetHits.get(email) || []).filter((t) => now - t < 3600000);
+  if (hits.length >= 3) return res.status(429).json({ error: 'Too many reset requests. Please try again in an hour.' });
+  hits.push(now); resetHits.set(email, hits);
+  const db = readDb();
+  const user = db.users.find((u) => u.email === email);
+  if (!user || user.suspended) return res.json(generic);
+  const code = String(crypto.randomInt(100000, 1000000));
+  db.resets = (db.resets || []).filter((r) => r.email !== email && r.exp > now);
+  db.resets.push({ email, h: sha(code), exp: now + 15 * 60000, tries: 0 });
+  writeDb(db);
+  // Email delivery is on hold. In demo mode the code is shown on screen; otherwise it is written to the server log.
+  if (isDemoData(db) || process.env.SHOW_RESET_CODE === '1') return res.json({ ...generic, demoCode: code });
+  console.log(`[password reset] code for ${email}: ${code}`);
+  res.json(generic);
+});
+
+app.post('/api/auth/reset', (req, res) => {
+  const { email, code, password } = req.body || {};
+  const key = String(email || '').trim().toLowerCase();
+  if (!key || !code || !password) return res.status(400).json({ error: 'Email, code and new password are required' });
+  if (String(password).length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  const db = readDb();
+  const rec = (db.resets || []).find((r) => r.email === key && r.exp > Date.now());
+  const user = db.users.find((u) => u.email === key);
+  if (!rec || !user) return res.status(400).json({ error: 'That code is invalid or has expired. Request a new one.' });
+  if (rec.tries >= 5) return res.status(429).json({ error: 'Too many wrong attempts. Request a new code.' });
+  if (rec.h !== sha(String(code).trim())) {
+    rec.tries += 1; writeDb(db);
+    return res.status(400).json({ error: 'Incorrect code. Check the digits and try again.' });
+  }
+  resetPassword(db, user, password);
+  db.resets = db.resets.filter((r) => r !== rec);
+  writeDb(db);
+  res.json({ message: 'Password updated. You can sign in now.' });
+});
+
+app.post('/api/auth/password', (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Please sign in to continue' });
+  const { current, password } = req.body || {};
+  if (!current || !password) return res.status(400).json({ error: 'Current and new password are required' });
+  if (String(password).length < 6) return res.status(400).json({ error: 'New password must be at least 6 characters' });
+  const db = readDb();
+  const user = db.users.find((u) => u.id === req.user.id);
+  if (!verifyPassword(current, user.password)) return res.status(400).json({ error: 'Your current password is incorrect' });
+  resetPassword(db, user, password);
+  const h = sha(req.token);
+  db.sessions.push({ h, userId: user.id, exp: Date.now() + SESSION_TTL }); // keep this device signed in
+  writeDb(db);
+  res.json({ message: 'Password changed. Other devices were signed out.' });
 });
 
 // ---------- reference data ----------
@@ -199,7 +304,7 @@ function sanitizeListing(l, user) {
 }
 app.get('/api/listings', (req, res) => {
   const { lat, lng, status, foodType, search, includeExpired } = req.query;
-  const { db, expiredSwept } = sweepExpiredListings();
+  const { db, expiredSwept } = sweepFresh();
   const ngoLat = lat ? parseFloat(lat) : 12.9716;
   const ngoLng = lng ? parseFloat(lng) : 77.5946;
 
@@ -260,7 +365,7 @@ function findListing(db, id) {
 app.post('/api/listings/:id/claim', requireRole(USER_ROLES.NGO, USER_ROLES.VOLUNTEER, USER_ROLES.ADMIN), (req, res) => {
   const { ngoName, volunteerName, volunteerPhone } = req.body || {};
   if (!ngoName || !volunteerName) return res.status(400).json({ error: 'ngoName and volunteerName required' });
-  const { db } = sweepExpiredListings();
+  const { db } = sweepFresh();
   const listing = findListing(db, req.params.id);
   if (!listing) return res.status(404).json({ error: 'Listing not found' });
   if (listing.status !== LISTING_STATUS.POSTED) return res.status(409).json({ error: `Cannot claim listing in '${listing.status}' status` });
@@ -281,7 +386,7 @@ app.post('/api/listings/:id/claim', requireRole(USER_ROLES.NGO, USER_ROLES.VOLUN
 });
 
 app.post('/api/listings/:id/release', requireRole(USER_ROLES.NGO, USER_ROLES.VOLUNTEER, USER_ROLES.ADMIN), (req, res) => {
-  const { db } = sweepExpiredListings();
+  const { db } = sweepFresh();
   const listing = findListing(db, req.params.id);
   if (!listing) return res.status(404).json({ error: 'Listing not found' });
   if (listing.status !== LISTING_STATUS.CLAIMED) return res.status(409).json({ error: 'Only claimed listings can be released' });
@@ -347,7 +452,7 @@ app.delete('/api/listings/:id', requireRole(USER_ROLES.ADMIN, USER_ROLES.DONOR),
 
 // ---------- impact, analytics, leaderboard ----------
 app.get('/api/impact', (req, res) => {
-  const { db } = sweepExpiredListings();
+  const { db } = sweepFresh();
   const by = (s) => db.listings.filter((l) => l.status === s);
   const collected = by(LISTING_STATUS.COLLECTED);
   const claimed = by(LISTING_STATUS.CLAIMED);
@@ -375,7 +480,7 @@ app.get('/api/impact', (req, res) => {
 });
 
 app.get('/api/analytics', (req, res) => {
-  const { db } = sweepExpiredListings();
+  const { db } = sweepFresh();
   const days = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
@@ -406,7 +511,7 @@ app.get('/api/analytics', (req, res) => {
 });
 
 app.get('/api/leaderboard', (req, res) => {
-  const { db } = sweepExpiredListings();
+  const { db } = sweepFresh();
   const donors = {};
   const ngos = {};
   for (const l of db.listings) {
@@ -461,6 +566,8 @@ app.get('/api/locations', requireRole(USER_ROLES.ADMIN, USER_ROLES.DONOR, USER_R
 
 // ---------- "I need food" requests from people in need (public, rate limited) ----------
 const requestHits = new Map(); // ip -> timestamps of recent requests
+const REQUEST_TTL = 3 * 3600000;
+const reqStatus = (r) => (['open', 'accepted'].includes(r.status) && Date.now() - new Date(r.createdAt).getTime() > REQUEST_TTL ? 'expired' : r.status);
 
 app.post('/api/requests', (req, res) => {
   const now = Date.now();
@@ -494,9 +601,8 @@ app.post('/api/requests', (req, res) => {
 app.get('/api/requests', requireRole(USER_ROLES.NGO, USER_ROLES.VOLUNTEER, USER_ROLES.ADMIN), (req, res) => {
   const lat = parseFloat(req.query.lat) || 12.9716;
   const lng = parseFloat(req.query.lng) || 77.5946;
-  const fresh = Date.now() - 6 * 3600000;
   const open = (readDb().requests || [])
-    .filter((r) => ['open', 'accepted'].includes(r.status) && new Date(r.createdAt).getTime() >= fresh)
+    .filter((r) => ['open', 'accepted'].includes(reqStatus(r)))
     .map((r) => ({ ...r, distanceKm: calculateHaversineDistance(lat, lng, r.lat, r.lng) }))
     .sort((a, b) => a.distanceKm - b.distanceKm);
   res.json({ requests: open, peopleWaiting: open.reduce((sum, r) => sum + r.people, 0) });
@@ -506,7 +612,7 @@ app.get('/api/requests/:id', (req, res) => {
   const r = (readDb().requests || []).find((x) => x.id === req.params.id);
   if (!r) return res.status(404).json({ error: 'Request not found' });
   res.json({ request: {
-    id: r.id, people: r.people, status: r.status, createdAt: r.createdAt, acceptedAt: r.acceptedAt || null, helpedAt: r.helpedAt || null,
+    id: r.id, people: r.people, status: reqStatus(r), createdAt: r.createdAt, acceptedAt: r.acceptedAt || null, helpedAt: r.helpedAt || null,
     acceptedBy: r.acceptedBy ? { name: r.acceptedBy.name, org: r.acceptedBy.org, phone: r.acceptedBy.phone } : null,
   } });
 });
@@ -515,7 +621,7 @@ app.post('/api/requests/:id/accept', requireRole(USER_ROLES.NGO, USER_ROLES.VOLU
   const db = readDb();
   const request = (db.requests || []).find((r) => r.id === req.params.id);
   if (!request) return res.status(404).json({ error: 'Request not found' });
-  if (request.status !== 'open') return res.status(409).json({ error: 'Someone has already taken this request' });
+  if (reqStatus(request) !== 'open') return res.status(409).json({ error: 'This request is no longer open' });
   request.status = 'accepted';
   request.acceptedAt = new Date().toISOString();
   request.acceptedBy = { name: req.user.name, org: req.user.organization || '', phone: req.user.phone || '' };
@@ -528,11 +634,22 @@ app.post('/api/requests/:id/cancel', (req, res) => {
   const db = readDb();
   const request = (db.requests || []).find((r) => r.id === req.params.id);
   if (!request) return res.status(404).json({ error: 'Request not found' });
-  if (!['open', 'accepted'].includes(request.status)) return res.status(409).json({ error: 'This request is already closed' });
+  if (!['open', 'accepted'].includes(reqStatus(request))) return res.status(409).json({ error: 'This request is already closed' });
   request.status = 'cancelled';
   request.cancelledAt = new Date().toISOString();
   writeDb(db);
   res.json({ message: 'Request cancelled' });
+});
+
+app.get('/api/meta', (req, res) => res.json({ demo: isDemoData(readDb()) }));
+
+app.post('/api/admin/start-fresh', requireRole(USER_ROLES.ADMIN), (req, res) => {
+  const db = readDb();
+  db.listings = []; db.requests = []; db.notifications = []; db.feedbacks = [];
+  db.meta = { demo: false, seededAt: null };
+  addNotification(db, { type: 'ADMIN_ACTION', title: 'Sample data cleared', message: `${req.user.name} cleared the sample data. The platform now starts empty.`, channel: 'Audit Log' });
+  writeDb(db);
+  res.json({ message: 'Sample data cleared' });
 });
 
 app.get('/api/directory', (req, res) => res.json({ directory: readDb().directory || [] }));
@@ -541,7 +658,7 @@ app.post('/api/requests/:id/help', requireRole(USER_ROLES.NGO, USER_ROLES.VOLUNT
   const db = readDb();
   const request = (db.requests || []).find((r) => r.id === req.params.id);
   if (!request) return res.status(404).json({ error: 'Request not found' });
-  if (!['open', 'accepted'].includes(request.status)) return res.status(409).json({ error: 'This request was already handled' });
+  if (!['open', 'accepted'].includes(reqStatus(request))) return res.status(409).json({ error: 'This request was already handled' });
   request.status = 'helped';
   request.helpedBy = req.user.name;
   if (!request.acceptedBy) request.acceptedBy = { name: req.user.name, org: req.user.organization || '', phone: req.user.phone || '' };
@@ -568,13 +685,13 @@ app.patch('/api/admin/users/:id', requireRole(USER_ROLES.ADMIN), (req, res) => {
   }
   if (suspended !== undefined) target.suspended = Boolean(suspended);
   addNotification(db, { type: 'ADMIN_ACTION', title: 'Admin Action', message: `${req.user.name} updated ${target.name}: role=${target.role}, ${target.suspended ? 'suspended' : 'active'}.`, channel: 'Audit Log' });
+  if (target.suspended) db.sessions = (db.sessions || []).filter((x) => x.userId !== target.id);
   writeDb(db);
-  if (target.suspended) for (const [t, uid] of sessions) if (uid === target.id) sessions.delete(t);
   res.json({ user: publicUser(target) });
 });
 
 app.get('/api/dashboard', (req, res) => {
-  const { db } = sweepExpiredListings();
+  const { db } = sweepFresh();
   const L = db.listings;
   const meals = (arr) => arr.reduce((s, i) => s + Number(i.quantityMeals || 0), 0);
   const kg = (arr) => Number(arr.reduce((s, i) => s + Number(i.weightKg || 0), 0).toFixed(1));
@@ -636,8 +753,12 @@ app.get('/api/dashboard', (req, res) => {
 });
 
 app.post('/api/reset-demo', requireRole(USER_ROLES.ADMIN), (req, res) => {
+  const before = readDb();
   const seeded = generateSeedData();
   hashAllPasswords(seeded);
+  // people whose accounts still exist after the reset stay signed in
+  const ids = new Set(seeded.users.map((u) => u.id));
+  seeded.sessions = (before.sessions || []).filter((x) => ids.has(x.userId) && x.exp > Date.now());
   writeDb(seeded);
   res.json({ message: 'Demo reset' });
 });
