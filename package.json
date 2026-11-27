@@ -2,12 +2,12 @@
   "name": "campus-food-share",
   "version": "2.0.0",
   "description": "CampusFoodShare: Full-Stack Web Platform Connecting Surplus Food Donors with NGOs & Volunteers (SDG 2, 11, 12)",
-  "main": "server.js",
+  "main": "backend/server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js",
-    "seed": "node src/seed/seedFaker.js",
-    "test": "node --test \"test/**/*.test.js\""
+    "start": "node backend/server.js",
+    "dev": "node --watch backend/server.js",
+    "seed": "node backend/src/seed/seedFaker.js",
+    "test": "node --test \"backend/test/**/*.test.js\""
   },
   "authors": [
     "Waseem Mushtaq Mir (1BG25CS184)",

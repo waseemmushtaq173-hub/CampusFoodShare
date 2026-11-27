@@ -291,3 +291,6 @@ body.easy .cmd-btn, body.easy .live-badge, body.easy .page-heading p { display: 
 .link-btn { background: none; border: 0; padding: 0; color: var(--primary); font: 600 .84rem var(--font); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .demo-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; padding: 10px 14px; border-radius: 10px; background: var(--amber-tint); color: var(--amber); font-size: .86rem; }
 .demo-banner strong { color: inherit; } .demo-actions { display: flex; gap: 8px; }
+
+.side-link { display: block; padding: 8px 12px; margin-bottom: 10px; border-radius: 9px; font: 500 .84rem var(--font); color: var(--muted); text-decoration: none; } .side-link:hover { background: var(--surface-2); color: var(--text); text-decoration: none; }
+.msg-card { padding: 16px 18px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); } .msg-card.read { opacity: .75; } .msg-card .msg-top { display: flex; justify-content: space-between; gap: 10px; } .msg-card p { margin: 8px 0 12px; font-size: .92rem; white-space: pre-wrap; }

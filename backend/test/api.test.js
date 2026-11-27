@@ -353,3 +353,95 @@ test('old requests expire, and "start empty" is respected after a restart', asyn
     assert.equal((await srv.api('POST', '/api/auth/signin', { email: 'ngo@campusfoodshare.org', password: 'ngo123', role: 'ngo' })).status, 200, 'accounts are kept');
   } finally { await srv.stop(); try { fs.unlinkSync(file); } catch (e) { /* ignore */ } }
 });
+
+/* ---- public website: donate without an account ---- */
+const guestDonation = (over = {}) => ({
+  donorName: 'Sunrise Hostel Mess', phone: '+91 98450 12345', foodTitle: 'Vegetable pulao and raita', foodType: 'Veg', quantityMeals: 30,
+  useBefore: new Date(Date.now() + 3 * 3600000).toISOString(), address: 'Hostel Block A, reception', notes: 'Packed in steel containers',
+  safetyConfirmed: true, ...over,
+});
+
+test('anyone can donate from the website without an account, and validation protects the platform', async () => {
+  assert.equal((await call('POST', '/api/public/donations', guestDonation({ phone: 'abc' }))).status, 400, 'phone required');
+  assert.equal((await call('POST', '/api/public/donations', guestDonation({ safetyConfirmed: false }))).status, 400, 'safety confirmation required');
+  assert.equal((await call('POST', '/api/public/donations', guestDonation({ useBefore: new Date(Date.now() - 1000).toISOString() }))).status, 400, 'deadline in the past');
+  assert.equal((await call('POST', '/api/public/donations', guestDonation({ useBefore: new Date(Date.now() + 30 * 3600000).toISOString() }))).status, 400, 'deadline beyond 24 hours');
+  assert.equal((await call('POST', '/api/public/donations', guestDonation({ foodType: 'Soup' }))).status, 400, 'unknown food type');
+  assert.equal((await call('POST', '/api/public/donations', guestDonation({ address: '' }))).status, 400, 'pickup location required');
+  const before = (await call('GET', '/api/listings?includeExpired=true')).data.count;
+  assert.equal((await call('POST', '/api/public/donations', guestDonation({ website: 'http://spam.example' }))).status, 201, 'bots are told it worked');
+  assert.equal((await call('GET', '/api/listings?includeExpired=true')).data.count, before, 'but nothing is created');
+
+  const ok = await call('POST', '/api/public/donations', guestDonation());
+  assert.equal(ok.status, 201);
+  assert.ok(ok.data.id && ok.data.token);
+  assert.equal(ok.data.approximateLocation, true, 'no coordinates means an approximate campus location');
+  const feed = await call('GET', '/api/listings?status=posted');
+  const mine = feed.data.listings.find((l) => l.id === ok.data.id);
+  assert.ok(mine, 'the donation shows up for NGOs and volunteers');
+  assert.equal(mine.donorId, 'guest');
+  assert.ok(!JSON.stringify(feed.data).includes(ok.data.token), 'the tracking secret never appears in public feeds');
+});
+
+test('a guest donor can track the donation, receives the handover PIN, and can withdraw', async () => {
+  const d = (await call('POST', '/api/public/donations', guestDonation({ foodTitle: 'Tracking test rice', lat: 12.97, lng: 77.59 }))).data;
+  const track = (token) => call('GET', `/api/public/donations/${d.id}?token=${token}`);
+  assert.equal((await track('wrong')).status, 404, 'wrong token');
+  assert.equal((await call('GET', `/api/public/donations/${d.id}`)).status, 404, 'no token');
+  const first = await track(d.token);
+  assert.equal(first.status, 200);
+  assert.equal(first.data.donation.status, 'posted');
+  assert.equal(first.data.donation.handoverCode, null);
+
+  const claim = await call('POST', `/api/listings/${d.id}/claim`, { ngoName: 'Robin Hood Army', volunteerName: 'Harsha S' }, tok.ngo);
+  assert.equal(claim.status, 200);
+  const pin = claim.data.listing.claimedBy.handoverCode;
+  const claimed = (await track(d.token)).data.donation;
+  assert.equal(claimed.status, 'claimed');
+  assert.equal(claimed.claimedBy.ngoName, 'Robin Hood Army', 'the donor can see who is coming');
+  assert.equal(claimed.handoverCode, pin, 'the donor gets the PIN to share at pickup');
+  const publicView = (await call('GET', '/api/listings?status=claimed')).data.listings.find((l) => l.id === d.id);
+  assert.equal(publicView.claimedBy.handoverCode, undefined, 'strangers never see the PIN');
+  assert.equal((await call('POST', `/api/public/donations/${d.id}/withdraw`, { token: d.token })).status, 409, 'claimed food cannot be withdrawn');
+
+  assert.equal((await call('POST', `/api/listings/${d.id}/collect`, { code: pin }, tok.ngo)).status, 200);
+  assert.equal((await track(d.token)).data.donation.status, 'collected');
+
+  const second = (await call('POST', '/api/public/donations', guestDonation({ foodTitle: 'Withdraw me' }))).data;
+  assert.equal((await call('POST', `/api/public/donations/${second.id}/withdraw`, { token: 'nope' })).status, 404);
+  assert.equal((await call('POST', `/api/public/donations/${second.id}/withdraw`, { token: second.token })).status, 200);
+  assert.equal((await call('GET', `/api/public/donations/${second.id}?token=${second.token}`)).status, 404);
+});
+
+test('contact form reaches the admin inbox; impact numbers include partners', async () => {
+  assert.equal((await call('POST', '/api/public/contact', { name: 'A', email: 'bad', message: 'short' })).status, 400);
+  assert.equal((await call('POST', '/api/public/contact', { name: 'Spam', email: 'a@b.co', message: 'buy cheap things now please', website: 'x' })).status, 201);
+  const sent = await call('POST', '/api/public/contact', { name: 'Asha Rao', email: 'asha@example.com', message: 'How do I register my hostel mess as a donor?' });
+  assert.equal(sent.status, 201);
+  assert.equal((await call('GET', '/api/admin/messages')).status, 401);
+  assert.equal((await call('GET', '/api/admin/messages', undefined, tok.donor)).status, 403);
+  const inbox = await call('GET', '/api/admin/messages', undefined, tok.admin);
+  assert.equal(inbox.status, 200);
+  assert.ok(inbox.data.messages.some((m) => m.email === 'asha@example.com'));
+  assert.ok(!inbox.data.messages.some((m) => m.name === 'Spam'), 'bot messages are dropped');
+  const msg = inbox.data.messages.find((m) => m.email === 'asha@example.com');
+  assert.equal(msg.read, false);
+  assert.equal((await call('PATCH', `/api/admin/messages/${msg.id}`, { read: true }, tok.admin)).status, 200);
+  assert.equal((await call('GET', '/api/admin/messages', undefined, tok.admin)).data.messages.find((m) => m.id === msg.id).read, true);
+  assert.equal((await call('PATCH', '/api/admin/messages/nope', { read: true }, tok.admin)).status, 404);
+  const impact = (await call('GET', '/api/impact')).data.metrics;
+  assert.ok(impact.partners >= 6, 'NGOs and volunteers are counted as community partners');
+});
+
+test('public forms are rate limited per device', async () => {
+  const file = tmpDb('rate');
+  const srv = await bootServer(PORT + 5, file, { DEMO_MODE: 'off' });
+  try {
+    let last;
+    for (let i = 0; i < 6; i++) last = await srv.api('POST', '/api/public/donations', guestDonation({ foodTitle: `Rate test ${i}` }));
+    assert.equal(last.status, 429);
+    let c;
+    for (let i = 0; i < 6; i++) c = await srv.api('POST', '/api/public/contact', { name: 'Tester', email: 'rate@example.com', message: 'This is a rate limit test message' });
+    assert.equal(c.status, 429);
+  } finally { await srv.stop(); try { fs.unlinkSync(file); } catch (e) { /* ignore */ } }
+});

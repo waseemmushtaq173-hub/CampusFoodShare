@@ -19,9 +19,10 @@ app.use(express.json({ limit: '100kb' }));
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
 app.use((req, res, next) => { res.set('Referrer-Policy', 'strict-origin-when-cross-origin'); next(); });
-app.use(express.static(path.join(__dirname, 'public')));
+// The frontend is a separate folder: the public website at / and the platform web app at /app/
+app.use(express.static(path.join(__dirname, '..', 'frontend')));
 // Leaflet is served locally so the map works even when public CDNs are blocked
-app.use('/vendor/leaflet', express.static(path.join(__dirname, 'node_modules', 'leaflet', 'dist')));
+app.use('/vendor/leaflet', express.static(path.join(__dirname, '..', 'node_modules', 'leaflet', 'dist')));
 
 // ---------- bootstrap: seed if empty, hash any plaintext passwords ----------
 {
@@ -52,6 +53,7 @@ function ensureFreshDemo() {
   hashAllPasswords(fresh);
   fresh.users = fresh.users.concat(mine);
   fresh.sessions = db.sessions || [];
+  fresh.messages = db.messages || [];
   writeDb(fresh);
   return true;
 }
@@ -348,6 +350,8 @@ app.post('/api/listings', requireRole(USER_ROLES.DONOR, USER_ROLES.ADMIN), (req,
     safetyChecklistConfirmed: true,
     checklistItems: body.checklistItems,
     location: { address: body.location.address || 'Campus Pickup Point', lat: body.location.lat, lng: body.location.lng },
+    notes: body.notes ? String(body.notes).trim().slice(0, 300) : '',
+    source: 'platform',
     claimedBy: null,
     feedback: null,
     createdAt: new Date().toISOString(),
@@ -474,6 +478,7 @@ app.get('/api/impact', (req, res) => {
       claimedListingsCount: claimed.length,
       collectedListingsCount: collected.length,
       expiredListingsCount: by(LISTING_STATUS.EXPIRED).length,
+      partners: (db.users || []).filter((u) => [USER_ROLES.NGO, USER_ROLES.VOLUNTEER].includes(u.role) && !u.suspended).length,
     },
     notifications: (db.notifications || []).slice(0, 12),
   });
@@ -645,11 +650,125 @@ app.get('/api/meta', (req, res) => res.json({ demo: isDemoData(readDb()) }));
 
 app.post('/api/admin/start-fresh', requireRole(USER_ROLES.ADMIN), (req, res) => {
   const db = readDb();
-  db.listings = []; db.requests = []; db.notifications = []; db.feedbacks = [];
+  db.listings = []; db.requests = []; db.notifications = []; db.feedbacks = []; db.tracking = [];
   db.meta = { demo: false, seededAt: null };
   addNotification(db, { type: 'ADMIN_ACTION', title: 'Sample data cleared', message: `${req.user.name} cleared the sample data. The platform now starts empty.`, channel: 'Audit Log' });
   writeDb(db);
   res.json({ message: 'Sample data cleared' });
+});
+
+// ---------- public website: donate without an account, track it, contact us ----------
+const donationHits = new Map();
+const contactHits = new Map();
+const attemptHits = new Map();
+const recent = (map, ip) => (map.get(ip) || []).filter((t) => Date.now() - t < 3600000);
+const overLimit = (map, ip, max) => recent(map, ip).length >= max;
+const record = (map, ip) => { map.set(ip, [...recent(map, ip), Date.now()]); };
+// Successful submissions are limited strictly; failed attempts only loosely, so a typo never locks a real donor out.
+const tooMany = (map, ip, max) => overLimit(map, ip, max) || (record(attemptHits, ip), overLimit(attemptHits, ip, 60));
+const ALL_CHECKS = FOOD_SAFETY_CHECKLIST.map((c) => c.id);
+const publicDonation = (l, withPin) => ({
+  id: l.id, foodTitle: l.foodTitle, foodType: l.foodType, quantityMeals: l.quantityMeals, status: l.status, useBefore: l.useBefore, createdAt: l.createdAt,
+  address: l.location.address, notes: l.notes || '',
+  claimedBy: l.claimedBy ? { ngoName: l.claimedBy.ngoName, volunteerName: l.claimedBy.volunteerName, volunteerPhone: l.claimedBy.volunteerPhone, claimedAt: l.claimedBy.claimedAt, collectedAt: l.claimedBy.collectedAt } : null,
+  handoverCode: withPin && l.status === LISTING_STATUS.CLAIMED && l.claimedBy ? l.claimedBy.handoverCode : null,
+});
+function trackedListing(db, id, token) {
+  const entry = (db.tracking || []).find((t) => t.listingId === id && t.h === sha(String(token || '')));
+  return entry ? (db.listings || []).find((l) => l.id === id) : null;
+}
+
+app.post('/api/public/donations', (req, res) => {
+  const b = req.body || {};
+  if (b.website) return res.status(201).json({ message: 'Thank you for sharing food.' }); // hidden field: only bots fill it in
+  if (tooMany(donationHits, req.ip || 'unknown', 5)) return res.status(429).json({ error: 'Too many donations from this device. Please try again in an hour.' });
+  const errors = [];
+  const phone = String(b.phone || '').trim();
+  if (!/^[0-9+() -]{7,20}$/.test(phone)) errors.push('A valid phone number is required so a team can reach you');
+  if (!b.donorName || String(b.donorName).trim().length < 2) errors.push('Your name or canteen name is required');
+  if (!b.address || String(b.address).trim().length < 3) errors.push('Pickup location is required');
+  const hasPoint = b.lat !== undefined && b.lat !== null && b.lat !== '' && b.lng !== undefined && b.lng !== null && b.lng !== '';
+  const lat = hasPoint ? Number(b.lat) : Number(process.env.DEFAULT_CAMPUS_LAT || 12.9716);
+  const lng = hasPoint ? Number(b.lng) : Number(process.env.DEFAULT_CAMPUS_LNG || 77.5946);
+  const confirmed = b.safetyConfirmed === true || b.safetyConfirmed === 'true';
+  const payload = {
+    donorName: b.donorName, foodTitle: b.foodTitle, foodType: b.foodType, quantityMeals: b.quantityMeals, useBefore: b.useBefore,
+    location: { address: b.address, lat, lng }, safetyChecklistConfirmed: confirmed, checklistItems: confirmed ? ALL_CHECKS : [],
+  };
+  errors.push(...validateListingPayload(payload));
+  if (new Date(b.useBefore).getTime() - Date.now() > 24 * 3600000) errors.push('Pickup deadline must be within the next 24 hours');
+  if (errors.length) return res.status(400).json({ error: 'Validation failed', details: errors });
+
+  record(donationHits, req.ip || 'unknown');
+  const db = readDb();
+  const meals = Math.round(Number(b.quantityMeals));
+  const id = newId('lst');
+  const token = crypto.randomBytes(8).toString('hex');
+  const listing = {
+    id, donorId: 'guest', donorName: String(b.donorName).trim().slice(0, 80), donorPhone: phone,
+    foodTitle: String(b.foodTitle).trim(), foodType: b.foodType, quantityMeals: meals,
+    weightKg: Number(b.weightKg) > 0 ? Number(b.weightKg) : Number((meals * 0.35).toFixed(1)),
+    aiFreshnessScore: analyzeFoodFreshness({ foodTitle: b.foodTitle, hoursSinceCooked: 1 }).freshnessScore, aiFreshnessStatus: 'Estimated from the dish',
+    preparedAt: new Date().toISOString(), useBefore: new Date(b.useBefore).toISOString(), status: LISTING_STATUS.POSTED,
+    safetyChecklistConfirmed: true, checklistItems: ALL_CHECKS,
+    location: { address: String(b.address).trim().slice(0, 140), lat, lng, approximate: !hasPoint },
+    notes: b.notes ? String(b.notes).trim().slice(0, 300) : '', source: 'public-form', donorVerified: false,
+    claimedBy: null, feedback: null, createdAt: new Date().toISOString(),
+  };
+  db.listings.unshift(listing);
+  db.tracking = [{ listingId: id, h: sha(token), createdAt: listing.createdAt }, ...(db.tracking || [])].slice(0, 500);
+  addNotification(db, { type: 'NEW_LISTING', title: 'New Surplus Food Posted', message: `${listing.donorName} (website) posted ${meals} ${listing.foodType} meals ("${listing.foodTitle}").` });
+  writeDb(db);
+  res.status(201).json({ message: 'Your food has been posted. NGOs and volunteers nearby can now claim it.', id, token, approximateLocation: !hasPoint });
+});
+
+app.get('/api/public/donations/:id', (req, res) => {
+  const l = trackedListing(readDb(), req.params.id, req.query.token);
+  if (!l) return res.status(404).json({ error: 'Donation not found' });
+  res.json({ donation: publicDonation(l, true) });
+});
+
+app.post('/api/public/donations/:id/withdraw', (req, res) => {
+  const db = readDb();
+  const l = trackedListing(db, req.params.id, (req.body || {}).token);
+  if (!l) return res.status(404).json({ error: 'Donation not found' });
+  if (l.status !== LISTING_STATUS.POSTED) return res.status(409).json({ error: 'Only unclaimed food can be withdrawn' });
+  db.listings = db.listings.filter((x) => x.id !== l.id);
+  addNotification(db, { type: 'WITHDRAWN', title: 'Listing Withdrawn', message: `"${l.foodTitle}" from ${l.donorName} was withdrawn by the donor.` });
+  writeDb(db);
+  res.json({ message: 'Your listing was withdrawn.' });
+});
+
+app.post('/api/public/contact', (req, res) => {
+  const b = req.body || {};
+  if (b.website) return res.status(201).json({ message: 'Thanks, we will get back to you.' });
+  if (tooMany(contactHits, req.ip || 'unknown', 5)) return res.status(429).json({ error: 'Too many messages from this device. Please try again later.' });
+  const name = String(b.name || '').trim(), email = String(b.email || '').trim().toLowerCase(), message = String(b.message || '').trim();
+  const errors = [];
+  if (name.length < 2) errors.push('Please tell us your name');
+  if (!/^\S+@\S+\.\S+$/.test(email)) errors.push('Enter a valid email address so we can reply');
+  if (message.length < 10) errors.push('Please write a few words about how we can help');
+  if (message.length > 1000) errors.push('Message is too long (1000 characters maximum)');
+  if (errors.length) return res.status(400).json({ error: 'Validation failed', details: errors });
+  record(contactHits, req.ip || 'unknown');
+  const db = readDb();
+  db.messages = [{ id: newId('msg'), name: name.slice(0, 80), email, message, createdAt: new Date().toISOString(), read: false }, ...(db.messages || [])].slice(0, 500);
+  writeDb(db);
+  res.status(201).json({ message: 'Thanks, we will get back to you soon.' });
+});
+
+app.get('/api/admin/messages', requireRole(USER_ROLES.ADMIN), (req, res) => {
+  const messages = readDb().messages || [];
+  res.json({ messages, unread: messages.filter((m) => !m.read).length });
+});
+
+app.patch('/api/admin/messages/:id', requireRole(USER_ROLES.ADMIN), (req, res) => {
+  const db = readDb();
+  const m = (db.messages || []).find((x) => x.id === req.params.id);
+  if (!m) return res.status(404).json({ error: 'Message not found' });
+  m.read = (req.body || {}).read !== false;
+  writeDb(db);
+  res.json({ message: m });
 });
 
 app.get('/api/directory', (req, res) => res.json({ directory: readDb().directory || [] }));
@@ -759,6 +878,7 @@ app.post('/api/reset-demo', requireRole(USER_ROLES.ADMIN), (req, res) => {
   // people whose accounts still exist after the reset stay signed in
   const ids = new Set(seeded.users.map((u) => u.id));
   seeded.sessions = (before.sessions || []).filter((x) => ids.has(x.userId) && x.exp > Date.now());
+  seeded.messages = before.messages || [];
   writeDb(seeded);
   res.json({ message: 'Demo reset' });
 });

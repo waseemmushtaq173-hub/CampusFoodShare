@@ -9,6 +9,46 @@
 
 ---
 
+## Project structure: frontend and backend
+
+CampusFoodShare is a full-stack project with two clearly separated parts that talk over a JSON API.
+
+```
+CampusFoodShare/
+├── frontend/                  FRONTEND (what people see, plain HTML / CSS / JavaScript, no build step)
+│   ├── index.html, site.css, site.js    Public website: explains the project, donate WITHOUT an account,
+│   │                                    track your donation, live food listings, helplines, FAQ, contact form
+│   └── app/                             Platform web app: role dashboards (donor, NGO, volunteer, admin),
+│       ├── index.html, styles.css       live map, GPS, claim / PIN collect / rate, requests, admin console
+│       └── app.js, easy.js, ux.js
+├── backend/                   BACKEND (Node.js + Express REST API, serves the frontend too)
+│   ├── server.js                        Routes: auth, listings, requests, live updates (SSE), public API, admin
+│   ├── src/models, src/storage, src/utils, src/seed    Validation, JSON-file database, Haversine, heap queue, seed data
+│   ├── data/db.json                     Database file (created and seeded on first run)
+│   └── test/api.test.js                 25 automated API tests (npm test)
+├── package.json, render.yaml, .env.example
+```
+
+**How the two parts connect:** the frontend never stores real data. The public website and the platform call the backend (`/api/...`); the backend validates, applies role permissions, stores data and pushes live updates to every open browser. Open **`/`** for the public website and **`/app/`** for the platform.
+
+### What a brand-new visitor can do (no account, no prior knowledge)
+1. Open the website, read **"What would you like to do?"** (donate / need food / NGO or volunteer) and the FAQ.
+2. **Donate food without signing up:** fill the short form. The backend creates a real listing for nearby NGOs and volunteers and returns a private tracking link.
+3. **Track the donation:** see when an NGO claims it, who is coming, and the 4-digit handover PIN to give the volunteer. Withdraw it any time before it is claimed.
+4. **Need food?** Find free food nearby with directions, or ask for help and call a helpline.
+5. **Contact the team:** messages go to the admin's inbox in the platform.
+
+### Main API endpoints
+| Area | Endpoints |
+|---|---|
+| Public (no login) | `GET /api/listings`, `GET /api/impact`, `GET /api/directory`, `POST /api/public/donations`, `GET /api/public/donations/:id?token=`, `POST /api/public/donations/:id/withdraw`, `POST /api/public/contact`, `POST /api/requests`, `GET /api/requests/:id` |
+| Auth | `POST /api/auth/signup`, `signin`, `signout`, `forgot`, `reset`, `password`, `GET /api/auth/me` |
+| Donor / NGO / Volunteer | `POST /api/listings`, `/:id/claim`, `/:id/release`, `/:id/collect`, `/:id/feedback`, `GET /api/dashboard`, `/api/locations`, `POST /api/location` |
+| Admin | `GET /api/admin/users`, `PATCH /api/admin/users/:id`, `GET/PATCH /api/admin/messages`, `POST /api/admin/start-fresh`, `POST /api/reset-demo` |
+| Live | `GET /api/stream` (server-sent events) |
+
+---
+
 ## 1. Project Overview & Problem Statement
 Colleges, hostels, canteens, and campus events often throw away good cooked food while people nearby go hungry. There is no quick, simple way to notify NGOs and volunteers that surplus food is available and must be collected within a few hours before it spoils.
 
@@ -62,7 +102,7 @@ npm run seed
 npm start
 ```
 
-Open **`http://localhost:3000`** in your browser.
+Open **`http://localhost:3000`** for the public website and **`http://localhost:3000/app/`** for the platform.
 
 ---
 

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Share surplus campus food with NGOs, volunteers and people in need. Donate in a minute, with no account." />
+  <title>CampusFoodShare | Share food, spread hope</title>
+  <link rel="stylesheet" href="site.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#home"><span class="brand-mark">🍃</span><span>Campus<span class="brand-green">FoodShare</span></span></a>
+    <nav aria-label="Main">
+      <a href="#get-started">Get started</a><a href="#how-it-works">How it works</a><a href="#food-listings">Food nearby</a><a href="#faq">FAQ</a><a href="#contact">Contact</a>
+    </nav>
+    <div class="nav-actions"><a class="nav-link" href="/app/">Open platform</a><a class="nav-cta" href="#donate">+ Donate food</a></div>
+  </header>
+
+  <main id="home">
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="live-dot"></span> FOOD RESCUE • COMMUNITY POWERED</div>
+        <h1>Good food deserves<br /><span>another chance.</span></h1>
+        <p>Have extra food from your campus, hostel or event? Share it with nearby NGOs and volunteers who can get it to people in need. No account needed to donate.</p>
+        <div class="hero-actions"><a class="button primary" href="#donate">Donate surplus food <span>→</span></a><a class="text-link" href="#how-it-works">See how it works</a></div>
+        <div class="hero-note"><span>✓</span> Quick to post <span>✓</span> No sign-up <span>✓</span> Food rescued locally</div>
+        <p class="hero-need">Need food today? <a href="/app/#/need">Find free food near you →</a></p>
+      </div>
+      <div class="hero-art" aria-label="Illustration of a food donation box">
+        <div class="sun"></div><div class="art-leaf leaf-one">✦</div><div class="art-leaf leaf-two">✦</div>
+        <div class="food-box"><div class="box-top"></div><div class="box-front"><span class="box-heart">♡</span><strong>SHARE<br />FOOD</strong><small>GOODNESS INSIDE</small></div><div class="food-bowl"><span>🥗</span></div></div>
+        <div class="art-caption"><span class="caption-icon">♥</span><div><strong>Every meal matters</strong><small>Turn surplus into support</small></div></div>
+      </div>
+    </section>
+
+    <section class="impact-strip" aria-label="Live impact">
+      <div><strong id="meal-count">…</strong><span>Meals shared <small id="demo-flag">Live from the platform</small></span></div>
+      <div><strong id="listing-count">…</strong><span>Available listings <small>Ready for pickup</small></span></div>
+      <div><strong id="partner-count">…</strong><span>Community partners <small>NGOs &amp; volunteers</small></span></div>
+      <div class="impact-message">A small share can<br /><b>make a big difference.</b></div>
+    </section>
+
+    <section class="section get-started" id="get-started">
+      <div class="section-heading"><div><div class="eyebrow">NEW HERE? START HERE</div><h2>What would you like to do?</h2></div><p>Pick the option that fits you. Each one takes only a few minutes.</p></div>
+      <div class="audience-grid">
+        <article class="audience">
+          <div class="step-icon peach">🍱</div><h3>I have food to donate</h3>
+          <ol><li>Fill in the short form below. <b>No account needed.</b></li><li>Your food appears instantly for nearby NGOs and volunteers.</li><li>Keep your tracking link. You will see who is coming and get a PIN to share at pickup.</li></ol>
+          <a class="button primary" href="#donate">Donate food <span>→</span></a>
+        </article>
+        <article class="audience">
+          <div class="step-icon green">📍</div><h3>I need food</h3>
+          <ol><li>Open <b>Find food</b> to see free meals close to you, with walking directions.</li><li>Nothing nearby? Tap <b>Ask for food</b> and nearby teams are alerted.</li><li>Or call a helpline listed below, any time.</li></ol>
+          <a class="button primary" href="/app/#/need">Find food near me <span>→</span></a>
+        </article>
+        <article class="audience">
+          <div class="step-icon blue">🤝</div><h3>I am an NGO or volunteer</h3>
+          <ol><li>Create a free account as an NGO or volunteer.</li><li>Claim food on the live map and go to the pickup point.</li><li>Enter the donor's PIN to confirm, then rate the food.</li></ol>
+          <a class="button primary" href="/app/?join=ngo">Join as a partner <span>→</span></a>
+        </article>
+      </div>
+    </section>
+
+    <section class="section how-section" id="how-it-works">
+      <div class="section-heading"><div><div class="eyebrow">SIMPLE FOR EVERYONE</div><h2>How CampusFoodShare works</h2></div><p>New here? You can share food in just a few steps.</p></div>
+      <div class="steps">
+        <article class="step"><div class="step-icon peach">🍱</div><span class="step-number">01</span><h3>Post your food</h3><p>Tell us what food is available, how much you have and when it should be collected.</p></article>
+        <article class="step"><div class="step-icon green">📍</div><span class="step-number">02</span><h3>A nearby team claims it</h3><p>The most urgent, closest food is shown first. An NGO or volunteer claims it and a 4-digit PIN is generated.</p></article>
+        <article class="step"><div class="step-icon blue">🤝</div><span class="step-number">03</span><h3>Connect &amp; hand over</h3><p>Share the PIN with the volunteer at pickup. Food is marked collected and counted in our impact.</p></article>
+      </div>
+    </section>
+
+    <section class="section donate-section" id="donate">
+      <div class="donate-intro"><div class="eyebrow">START YOUR FIRST DONATION</div><h2>Share food with<br /><span>someone who needs it.</span></h2><p>Fill in a few details. Your food listing goes live straight away so a local team can claim it. You do not need an account.</p>
+        <div class="safety-note"><span>ⓘ</span><div><strong>Food safety reminder</strong><p>Only share fresh, safely stored food in clean containers. Add a realistic pickup deadline and mention allergens or special handling.</p></div></div>
+      </div>
+      <div class="donate-side">
+        <form id="donation-form" class="donation-form" novalidate>
+          <div class="form-title"><div><h3>Food donation details</h3><p>Fields marked * are required.</p></div><span class="form-badge">FREE TO SHARE</span></div>
+          <div class="form-grid">
+            <label>Food name *<input name="foodTitle" required maxlength="140" placeholder="e.g. Vegetable rice" /></label>
+            <label>Type of food *<select name="foodType" required><option value="">Choose type</option><option value="Veg">Vegetarian</option><option value="Non-Veg">Non-vegetarian</option><option value="Vegan">Vegan</option><option value="Bakery">Bakery / packaged</option></select></label>
+            <label>Approx. number of meals *<input name="quantityMeals" required type="number" min="1" max="5000" inputmode="numeric" placeholder="e.g. 25" /></label>
+            <label>Pickup deadline *<input name="useBefore" required type="datetime-local" /></label>
+            <label class="full">Pickup location *<input name="address" required maxlength="140" placeholder="Building, campus or street" /></label>
+            <div class="full geo-row"><button type="button" class="button ghost" id="geo-btn">Use my current location</button><span id="geo-status" class="geo-status">Optional. Without it we show your pickup as near the campus centre.</span></div>
+            <label>Donor name *<input name="donorName" required maxlength="80" placeholder="Your name / canteen name" /></label>
+            <label>Phone number *<input name="phone" required type="tel" pattern="[0-9+() -]{7,20}" placeholder="Your contact number" /></label>
+            <label class="full">Additional information<textarea name="notes" rows="3" maxlength="300" placeholder="Preparation time, allergens, packaging, instructions..."></textarea></label>
+            <label class="full check"><input type="checkbox" name="safetyConfirmed" /> <span>I confirm this food was cooked or packed today, is stored safely and is in clean, covered containers. *</span></label>
+            <div class="hp" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off" /></label></div>
+          </div>
+          <div id="form-error" class="form-error" role="alert" hidden></div>
+          <button class="button primary submit-button" type="submit">Post food donation <span>→</span></button>
+          <p class="form-footnote">No account needed. Your phone number is shared only with teams that claim your food.</p>
+        </form>
+        <div id="donation-success" class="donation-success" hidden></div>
+      </div>
+    </section>
+
+    <section class="section tracker-section" id="my-donations" hidden>
+      <div class="section-heading"><div><div class="eyebrow">YOUR DONATIONS</div><h2>Track what you shared</h2></div><p>Saved on this device. Open your tracking link on any device to see the same status.</p></div>
+      <div id="my-donations-list" class="tracker-grid"></div>
+    </section>
+
+    <section class="section listings-section" id="food-listings">
+      <div class="section-heading listings-heading"><div><div class="eyebrow">HELP FOOD FIND A HOME</div><h2>Available food nearby</h2></div><span class="listing-subtitle" id="listing-subtitle">Live listings • Updated automatically</span></div>
+      <div id="listings" class="listing-grid"></div>
+      <p class="listing-footer">NGOs and volunteers: <a href="/app/?join=ngo">sign in to claim food</a> and see the live map. Looking for food? <a href="/app/#/need">Use Find food</a>.</p>
+    </section>
+
+    <section class="section help-section" id="need-help">
+      <div class="help-card">
+        <div><div class="eyebrow">NEED A MEAL TODAY?</div><h2>Help is a phone call away</h2><p>These community kitchens and helplines are listed so anyone can reach them directly.</p></div>
+        <div id="helplines" class="helplines"></div>
+        <a class="button primary" href="/app/#/need">Ask for food <span>→</span></a>
+      </div>
+    </section>
+
+    <section class="section faq-section" id="faq">
+      <div class="section-heading"><div><div class="eyebrow">GOOD TO KNOW</div><h2>Frequently asked questions</h2></div></div>
+      <div class="faq">
+        <details><summary>Do I need an account to donate food?</summary><p>No. Use the donation form on this page. You only need a name, a phone number and the pickup details. You will get a private tracking link to follow your donation. An account is only needed if you want a dashboard with your full history.</p></details>
+        <details><summary>What food can I share?</summary><p>Fresh, safely stored food: cooked meals, bakery items, fruit and vegetables or sealed packaged food. Please set a realistic pickup deadline (within 24 hours) and mention allergens in the notes. Do not share food that smells off, has been left uncovered or was cooked long ago.</p></details>
+        <details><summary>What is the handover PIN?</summary><p>When an NGO or volunteer claims your food, a 4-digit PIN is created. You see it on your tracking page. Give it to the volunteer when they arrive. They enter it to confirm the pickup, so only the right person collects your food.</p></details>
+        <details><summary>Is my phone number safe?</summary><p>It is shown on your listing so a team can call you about the pickup. We never sell it or use it for marketing. You can withdraw your listing at any time before it is claimed.</p></details>
+        <details><summary>What if nobody claims my food?</summary><p>Listings are ranked by distance and time left, so urgent food is shown first. If the deadline passes, the listing expires automatically. For large amounts, use the contact form and we will help find a team.</p></details>
+        <details><summary>Who can claim the food?</summary><p>Registered NGOs and volunteers. Anyone can <a href="/app/?join=ngo">create a free partner account</a>.</p></details>
+      </div>
+    </section>
+
+    <section class="contact-band" id="contact">
+      <div class="contact-intro"><div class="contact-symbol">✉</div><div><h2>Need help with your first donation?</h2><p>Send us a message and the CampusFoodShare team will reply by email.</p></div></div>
+      <form id="contact-form" class="contact-form" novalidate>
+        <div class="contact-grid">
+          <input name="name" required maxlength="80" placeholder="Your name" aria-label="Your name" />
+          <input name="email" required type="email" placeholder="Your email" aria-label="Your email" />
+          <textarea name="message" required rows="3" maxlength="1000" placeholder="How can we help?" aria-label="Message"></textarea>
+          <div class="hp" aria-hidden="true"><input name="website" tabindex="-1" autocomplete="off" /></div>
+        </div>
+        <div id="contact-msg" class="contact-msg" role="status"></div>
+        <button class="button light" type="submit">Send message <span>→</span></button>
+      </form>
+    </section>
+  </main>
+  <footer><a class="brand" href="#home"><span class="brand-mark">🍃</span><span>Campus<span class="brand-green">FoodShare</span></span></a><p>Sharing surplus. Supporting communities. Reducing waste.</p><small>Student project • Waseem Mushtaq Mir &amp; Harsha S • Guide: AT Sangeeta • <a href="/app/">Platform</a></small></footer>
+  <script src="site.js"></script>
+</body>
+</html>

@@ -244,6 +244,7 @@ async function updateNavBadges() {
   };
   const rq = await api(`/api/requests?${locQuery()}`);
   if (rq.ok) set('requests', rq.data.requests.length);
+  if (currentUser.role === 'admin') { const ms = await api('/api/admin/messages'); if (ms.ok) set('inbox', ms.data.unread); }
   if (currentUser.role !== 'admin') {
     const d = await api(`/api/dashboard?${locQuery()}`);
     if (d.ok && d.data.stats) set('pickups', d.data.stats.activePickups);
@@ -355,4 +356,36 @@ document.addEventListener('click', async (e) => {
   // eslint-disable-next-line no-global-assign
   updateAuthUI = function (...args) { const r = realAuth(...args); renderDemoBanner(); return r; };
   renderDemoBanner();
+})();
+
+/* ── 16. Admin inbox: messages from the public website's contact form ── */
+async function loadInbox() {
+  const r = await api('/api/admin/messages');
+  if (!r.ok) return;
+  document.getElementById('inboxList').innerHTML = r.data.messages.map((m) => `<div class="msg-card ${m.read ? 'read' : ''}"><div class="msg-top"><strong>${esc(m.name)}</strong><span class="muted">${esc(timeAgo(m.createdAt))}${m.read ? '' : ' · New'}</span></div>
+    <a href="mailto:${esc(m.email)}">${esc(m.email)}</a><p>${esc(m.message)}</p>
+    <div class="action-row"><a class="btn btn-secondary btn-sm" href="mailto:${esc(m.email)}?subject=Re%3A%20CampusFoodShare">Reply by email</a><button class="btn btn-ghost btn-sm" data-msg="${esc(m.id)}" data-read="${m.read ? 0 : 1}">${m.read ? 'Mark unread' : 'Mark read'}</button></div></div>`).join('')
+    || '<div class="empty">No messages yet. Messages sent from the website contact form appear here.</div>';
+}
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-msg]');
+  if (!b) return;
+  await api(`/api/admin/messages/${encodeURIComponent(b.dataset.msg)}`, { method: 'PATCH', body: { read: b.dataset.read === '1' } });
+  __badgeAt = 0; loadInbox(); updateNavBadges();
+});
+
+/* ── 17. Links from the public website: /app/?join=ngo opens sign-up with the role chosen ── */
+(() => {
+  const p = new URLSearchParams(location.search);
+  const join = p.get('join'), signin = p.get('signin');
+  if (!join && !signin) return;
+  history.replaceState(null, '', location.pathname + location.hash);
+  setTimeout(() => {
+    if (currentUser) return;
+    if (join) {
+      openAuth('signup');
+      const chip = document.querySelector(`#signupForm .role-chip[data-role="${join}"]`);
+      if (chip) chip.click();
+    } else openAuth('signin');
+  }, 900);
 })();
