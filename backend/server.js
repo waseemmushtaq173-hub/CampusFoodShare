@@ -113,13 +113,57 @@ app.use('/api', (req, res, next) => {
 });
 
 /** A donor may direct food to one organisation. It is reserved for that organisation for 30 minutes. */
+const PHONE_RE = /^[0-9+() -]{7,20}$/;
+const VEHICLES = ['Bike', 'Auto', 'Car', 'Van', 'Mini truck'];
+/** The donor can pick a listed ashram (targetOrgId) or type the details of one that is not on the platform yet. */
 function resolveTarget(db, body, foodType) {
-  if (!body.targetOrgId) return { fields: {} };
+  if (!body.targetOrgId) {
+    const d = body.targetOrgDetails;
+    if (!d || typeof d !== 'object' || !(d.name || d.phone || d.address)) return { fields: {} };
+    const name = String(d.name || '').trim(), phone = String(d.phone || '').trim(), address = String(d.address || '').trim();
+    if (name.length < 2) return { error: 'Enter the name of the ashram or NGO' };
+    if (!PHONE_RE.test(phone)) return { error: 'Enter a valid phone number for the ashram so it can be reached' };
+    if (address.length < 3) return { error: 'Enter the address of the ashram or NGO' };
+    return { fields: { targetOrgName: name.slice(0, 80), targetOrgCustom: { name: name.slice(0, 80), phone, address: address.slice(0, 140), contactPerson: String(d.contactPerson || '').trim().slice(0, 60) } } };
+  }
   const o = (db.organizations || []).find((x) => x.id === body.targetOrgId && x.active !== false);
   if (!o) return { error: 'The organisation you chose could not be found' };
   if (foodType && !o.acceptsDiets.includes(foodType)) return { error: `${o.name} does not accept ${foodType} food` };
-  return { fields: { targetOrgId: o.id, targetOrgName: o.name, directedUntil: new Date(Date.now() + 30 * 60000).toISOString() } };
+  return { fields: { targetOrgId: o.id, targetOrgName: o.name, targetOrgUserId: o.userId || null, directedUntil: new Date(Date.now() + 30 * 60000).toISOString() } };
 }
+
+/** How the food will reach the ashram: the donor brings it, asks a volunteer, or has arranged a vehicle. */
+function cleanTransport(t) {
+  if (!t || typeof t !== 'object' || !t.mode) return { fields: {} };
+  if (!['self', 'volunteer', 'vehicle'].includes(t.mode)) return { error: 'Choose how the food will reach the ashram' };
+  const out = { mode: t.mode };
+  if (t.mode === 'vehicle') {
+    if (!VEHICLES.includes(t.vehicleType)) return { error: 'Choose the type of vehicle you have arranged' };
+    out.vehicleType = t.vehicleType;
+    out.vehicleNumber = String(t.vehicleNumber || '').trim().slice(0, 20);
+    out.driverName = String(t.driverName || '').trim().slice(0, 60);
+    const dp = String(t.driverPhone || '').trim();
+    if (dp && !PHONE_RE.test(dp)) return { error: 'Enter a valid driver phone number' };
+    out.driverPhone = dp;
+    if (t.eta) { const e = new Date(t.eta); if (Number.isNaN(e.getTime())) return { error: 'Enter a valid arrival time' }; out.eta = e.toISOString(); }
+  }
+  return { fields: { transport: out } };
+}
+const transportText = (t) => (!t ? '' : t.mode === 'self' ? 'The donor will bring it.' : t.mode === 'volunteer' ? 'A volunteer will be asked to collect it.'
+  : `Vehicle: ${t.vehicleType}${t.vehicleNumber ? ' ' + t.vehicleNumber : ''}${t.driverName ? ', driver ' + t.driverName : ''}${t.eta ? ', arriving about ' + new Date(t.eta).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : ''}.`);
+/** Tells the chosen ashram (in the app) as soon as food is sent to it. An ashram that is not on the platform is passed to the admin to phone. */
+function notifyTarget(db, l) {
+  if (!l.targetOrgName) return;
+  const custom = !!l.targetOrgCustom;
+  addNotification(db, {
+    type: 'DIRECTED_DONATION',
+    title: custom ? 'Donation for an ashram not on the platform' : 'Food is being sent to you',
+    message: `${l.donorName} is sending ${l.quantityMeals} ${l.foodType} meals ("${l.foodTitle}") to ${l.targetOrgName}. ${transportText(l.transport)}${custom ? ` Please phone them on ${l.targetOrgCustom.phone} to let them know.` : ''}`.trim(),
+    channel: custom ? 'In-app (admin phones the ashram)' : 'In-app alert to the ashram',
+    audience: l.targetOrgUserId ? [l.targetOrgUserId] : [],
+  });
+}
+const visibleNotifications = (db, user) => (db.notifications || []).filter((n) => !n.audience || (user && (user.role === USER_ROLES.ADMIN || n.audience.includes(user.id))));
 
 function requireRole(...roles) {
   return (req, res, next) => {
@@ -332,11 +376,18 @@ function isMine(l, user) {
 
 /** Handover PIN is only visible to the owning donor, the claimant, the assigned volunteer and admins. */
 function sanitizeListing(l, user) {
-  if (!l.claimedBy || !l.claimedBy.handoverCode) return l;
+  let out = l;
+  const privileged = user && (user.role === USER_ROLES.ADMIN || l.donorId === user.id || isMine(l, user) || (l.targetOrgUserId && l.targetOrgUserId === user.id));
+  if (!privileged) {
+    if (out.transport && out.transport.driverPhone) { const { driverPhone, ...t } = out.transport; out = { ...out, transport: t }; }
+    if (out.targetOrgCustom) { const { phone, ...c } = out.targetOrgCustom; out = { ...out, targetOrgCustom: c }; }
+  }
+  if (out.targetOrgUserId) { const { targetOrgUserId, ...rest } = out; out = rest; }
+  if (!l.claimedBy || !l.claimedBy.handoverCode) return out;
   const canSee = user && (user.role === USER_ROLES.ADMIN || l.donorId === user.id || isMine(l, user));
-  if (canSee) return l;
+  if (canSee) return out;
   const { handoverCode, ...claimedBy } = l.claimedBy;
-  return { ...l, claimedBy };
+  return { ...out, claimedBy };
 }
 app.get('/api/listings', (req, res) => {
   const { lat, lng, status, foodType, search, includeExpired } = req.query;
@@ -365,6 +416,8 @@ app.post('/api/listings', requireRole(USER_ROLES.DONOR, USER_ROLES.ADMIN), (req,
   const db = readDb();
   const tgt = resolveTarget(db, body, body.foodType);
   if (tgt.error) return res.status(400).json({ error: 'Validation failed', details: [tgt.error] });
+  const tr = cleanTransport(body.transport);
+  if (tr.error) return res.status(400).json({ error: 'Validation failed', details: [tr.error] });
   const quantityMeals = Number(body.quantityMeals);
   const weightKg = Number(body.weightKg) > 0 ? Number(body.weightKg) : Number((quantityMeals * 0.35).toFixed(1));
   const aiAnalysis = analyzeFoodFreshness({ foodTitle: body.foodTitle, hoursSinceCooked: 1 });
@@ -389,12 +442,14 @@ app.post('/api/listings', requireRole(USER_ROLES.DONOR, USER_ROLES.ADMIN), (req,
     notes: body.notes ? String(body.notes).trim().slice(0, 300) : '',
     source: 'platform',
     ...tgt.fields,
+    ...tr.fields,
     claimedBy: null,
     feedback: null,
     createdAt: new Date().toISOString(),
   };
   db.listings.unshift(listing);
   addNotification(db, { type: 'NEW_LISTING', title: 'New Surplus Food Posted', message: `${listing.donorName} posted ${listing.quantityMeals} ${listing.foodType} meals ("${listing.foodTitle}").` });
+  notifyTarget(db, listing);
   writeDb(db);
   res.status(201).json({ message: 'Surplus food listing posted', listing });
 });
@@ -524,7 +579,7 @@ app.get('/api/impact', (req, res) => {
       expiredListingsCount: by(LISTING_STATUS.EXPIRED).length,
       partners: (db.users || []).filter((u) => [USER_ROLES.NGO, USER_ROLES.VOLUNTEER].includes(u.role) && !u.suspended).length,
     },
-    notifications: (db.notifications || []).slice(0, 12),
+    notifications: visibleNotifications(db, req.user).slice(0, 12),
   });
 });
 
@@ -713,7 +768,7 @@ const tooMany = (map, ip, max) => overLimit(map, ip, max) || (record(attemptHits
 const ALL_CHECKS = FOOD_SAFETY_CHECKLIST.map((c) => c.id);
 const publicDonation = (l, withPin) => ({
   id: l.id, foodTitle: l.foodTitle, foodType: l.foodType, quantityMeals: l.quantityMeals, status: l.status, useBefore: l.useBefore, createdAt: l.createdAt,
-  address: l.location.address, notes: l.notes || '', targetOrgName: l.targetOrgName || null,
+  address: l.location.address, notes: l.notes || '', targetOrgName: l.targetOrgName || null, targetOrgCustom: l.targetOrgCustom || null, transport: l.transport || null,
   claimedBy: l.claimedBy ? { ngoName: l.claimedBy.ngoName, volunteerName: l.claimedBy.volunteerName, volunteerPhone: l.claimedBy.volunteerPhone, claimedAt: l.claimedBy.claimedAt, collectedAt: l.claimedBy.collectedAt } : null,
   handoverCode: withPin && l.status === LISTING_STATUS.CLAIMED && l.claimedBy ? l.claimedBy.handoverCode : null,
 });
@@ -740,6 +795,8 @@ app.post('/api/public/donations', (req, res) => {
   const mealsIn = Number(b.quantityMeals) > 0 ? Number(b.quantityMeals) : (kgIn ? Math.max(1, Math.round(kgIn / KG_PER_MEAL)) : 0);
   const tgt = resolveTarget(readDb(), b, b.foodType);
   if (tgt.error) errors.push(tgt.error);
+  const tr = cleanTransport(b.transport);
+  if (tr.error) errors.push(tr.error);
   const payload = {
     donorName: b.donorName, foodTitle: b.foodTitle, foodType: b.foodType, quantityMeals: mealsIn, useBefore: b.useBefore,
     location: { address: b.address, lat, lng }, safetyChecklistConfirmed: confirmed, checklistItems: confirmed ? ALL_CHECKS : [],
@@ -761,14 +818,15 @@ app.post('/api/public/donations', (req, res) => {
     preparedAt: new Date().toISOString(), useBefore: new Date(b.useBefore).toISOString(), status: LISTING_STATUS.POSTED,
     safetyChecklistConfirmed: true, checklistItems: ALL_CHECKS,
     location: { address: String(b.address).trim().slice(0, 140), lat, lng, approximate: !hasPoint },
-    notes: b.notes ? String(b.notes).trim().slice(0, 300) : '', source: 'public-form', donorVerified: false, ...tgt.fields,
+    notes: b.notes ? String(b.notes).trim().slice(0, 300) : '', source: 'public-form', donorVerified: false, ...tgt.fields, ...tr.fields,
     claimedBy: null, feedback: null, createdAt: new Date().toISOString(),
   };
   db.listings.unshift(listing);
   db.tracking = [{ listingId: id, h: sha(token), createdAt: listing.createdAt }, ...(db.tracking || [])].slice(0, 500);
   addNotification(db, { type: 'NEW_LISTING', title: 'New Surplus Food Posted', message: `${listing.donorName} (website) posted ${meals} ${listing.foodType} meals ("${listing.foodTitle}").` });
+  notifyTarget(db, listing);
   writeDb(db);
-  res.status(201).json({ message: 'Your food has been posted. NGOs and volunteers nearby can now claim it.', id, token, approximateLocation: !hasPoint });
+  res.status(201).json({ message: 'Your food has been posted. NGOs and volunteers nearby can now claim it.', id, token, approximateLocation: !hasPoint, targetOrgName: listing.targetOrgName || null, notified: !!listing.targetOrgName, ashramPhone: listing.targetOrgCustom ? listing.targetOrgCustom.phone : null });
 });
 
 app.get('/api/public/donations/:id', (req, res) => {

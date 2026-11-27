@@ -90,6 +90,30 @@
               <div id="mp-list" class="mp-list"></div>
               <p id="mp-note" class="mp-note"></p>
             </div>
+            <fieldset class="full send-box">
+              <legend>Send it to a specific ashram (optional)</legend>
+              <p class="soft">Pick one above, or enter an ashram or NGO that is not listed. They are notified automatically as soon as you post.</p>
+              <label class="check"><input type="checkbox" id="custom-toggle" /> <span>My ashram is not listed. I will enter its details.</span></label>
+              <div id="custom-org" class="send-grid" hidden>
+                <label>Ashram or NGO name *<input id="cf-name" maxlength="80" placeholder="e.g. Sri Sai Seva Ashram" /></label>
+                <label>Their phone number *<input id="cf-phone" type="tel" maxlength="20" placeholder="Number we can call" /></label>
+                <label class="full">Their address *<input id="cf-address" maxlength="140" placeholder="Street, area, city" /></label>
+                <label>Contact person<input id="cf-person" maxlength="60" placeholder="Optional" /></label>
+              </div>
+            </fieldset>
+            <fieldset class="full send-box">
+              <legend>How will the food reach them?</legend>
+              <label class="check"><input type="radio" name="tmode" value="volunteer" checked /> <span>Ask a volunteer to collect it</span></label>
+              <label class="check"><input type="radio" name="tmode" value="self" /> <span>I will bring it myself</span></label>
+              <label class="check"><input type="radio" name="tmode" value="vehicle" /> <span>I have arranged a vehicle</span></label>
+              <div id="vehicle-box" class="send-grid" hidden>
+                <label>Vehicle<select id="tv-type"><option>Bike</option><option>Auto</option><option>Car</option><option>Van</option><option selected>Mini truck</option></select></label>
+                <label>Vehicle number<input id="tv-number" maxlength="20" placeholder="e.g. KA 01 AB 1234" /></label>
+                <label>Driver name<input id="tv-driver" maxlength="60" placeholder="Optional" /></label>
+                <label>Driver phone<input id="tv-phone" type="tel" maxlength="20" placeholder="Optional" /></label>
+                <label class="full">Expected arrival<input id="tv-eta" type="datetime-local" /></label>
+              </div>
+            </fieldset>
             <label>Donor name *<input name="donorName" required maxlength="80" placeholder="Your name / canteen name" /></label>
             <label>Phone number *<input name="phone" required type="tel" pattern="[0-9+() -]{7,20}" placeholder="Your contact number" /></label>
             <label class="full">Additional information<textarea name="notes" rows="3" maxlength="300" placeholder="Preparation time, allergens, packaging, instructions..."></textarea></label>

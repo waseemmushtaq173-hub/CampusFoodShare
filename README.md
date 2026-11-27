@@ -126,3 +126,5 @@ Open **`http://localhost:3000`** for the public website and **`http://localhost:
 1. Push this repository to GitHub.
 2. In Render, click **New + â†’ Blueprint** (or **Web Service**).
 3. Connect the repository; Render automatically reads `render.yaml` (`Build Command: npm install`, `Start Command: npm start`).
+
+**Send food to a specific ashram.** On the website or the platform's Detailed Form a donor can pick a listed ashram or enter the details of one that is not listed (name, phone, address). The ashram is notified in the app automatically (an unlisted one is passed to the admin to phone). The donor also says how it will reach them: a volunteer, self-delivery, or an arranged vehicle with number and driver. Open /demo.html to see the website and the backend console side by side.

@@ -23,7 +23,7 @@ function writeDb(data) {
   fs.writeFileSync(DB_FILE_PATH, JSON.stringify(data, null, 2), 'utf-8');
 }
 
-function addNotification(db, { type, title, message, channel = 'In-App + SMS/Telegram Alert' }) {
+function addNotification(db, { type, title, message, channel = 'In-App + SMS/Telegram Alert', audience }) {
   if (!db.notifications) db.notifications = [];
   db.notifications.unshift({
     id: 'ntf-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
@@ -31,6 +31,7 @@ function addNotification(db, { type, title, message, channel = 'In-App + SMS/Tel
     title,
     message,
     channel,
+    ...(audience ? { audience } : {}),
     createdAt: new Date().toISOString(),
   });
   db.notifications = db.notifications.slice(0, 30);

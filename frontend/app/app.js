@@ -425,7 +425,7 @@ function cardHtml(item, idx) {
       <div><span class="listing-title">#${idx + 1} · ${esc(item.foodTitle)}</span>
         <div class="sub">${esc(item.donorName)}${item.donorPhone ? ` · <a href="tel:${esc(item.donorPhone.replace(/\s/g, ''))}">${esc(item.donorPhone)}</a>` : ''}</div></div>
       <div class="badges"><span class="badge badge-${esc(item.status)}">${esc(item.status.toUpperCase())}</span>${item.status === 'posted' ? timerBadge(item.useBefore) : ''}
-        <span class="badge">Freshness ${esc(item.aiFreshnessScore || 95)}%</span><span class="badge">${esc(item.distanceKm)} km</span>${item.source === 'public-form' ? '<span class="badge" title="Posted from the public website without an account">Website donor</span>' : ''}${item.targetOrgName && Date.parse(item.directedUntil) > Date.now() ? `<span class="badge" title="Reserved for the first 30 minutes">Reserved: ${esc(item.targetOrgName)}</span>` : ''}</div>
+        <span class="badge">Freshness ${esc(item.aiFreshnessScore || 95)}%</span><span class="badge">${esc(item.distanceKm)} km</span>${item.source === 'public-form' ? '<span class="badge" title="Posted from the public website without an account">Website donor</span>' : ''}${item.targetOrgName && Date.parse(item.directedUntil) > Date.now() ? `<span class="badge" title="Reserved for the first 30 minutes">Reserved: ${esc(item.targetOrgName)}</span>` : ''}${item.targetOrgCustom ? `<span class="badge">For ${esc(item.targetOrgName)}</span>` : ''}${item.transport ? `<span class="badge" title="How the food is getting there">🚚 ${esc(transportText(item.transport))}</span>` : ''}</div>
     </div>
     <div class="stepper"><div class="done">1 · Posted</div><div class="${done(2)}">2 · Claimed</div><div class="${item.status === 'collected' ? 'done' : ''}">3 · Collected</div></div>
     <div class="listing-meta">
@@ -536,6 +536,14 @@ function updatePickupHint() {
   const d = kmBetween(CAMPUS, p);
   el.textContent = d > 30 ? `Check this pin: it is ${d.toFixed(0)} km from the campus area, so nearby NGOs will not see it as close.` : `Pin set: ${d < 1 ? Math.round(d * 1000) + ' m' : d.toFixed(1) + ' km'} from the campus centre. Visitors will see this distance on the website.`;
   el.style.color = d > 30 ? 'var(--red)' : '';
+}
+const transportText = (t) => (!t ? '' : t.mode === 'self' ? 'Donor will bring it' : t.mode === 'volunteer' ? 'Volunteer pickup' : `${t.vehicleType}${t.vehicleNumber ? ' ' + t.vehicleNumber : ''}${t.driverName ? ', driver ' + t.driverName : ''}${t.driverPhone ? ' (' + t.driverPhone + ')' : ''} on the way${t.eta ? ', about ' + new Date(t.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}`);
+function readSendP() {
+  const out = {};
+  if ($('p-custom-toggle').checked) out.targetOrgDetails = { name: $('p-cf-name').value.trim(), phone: $('p-cf-phone').value.trim(), address: $('p-cf-address').value.trim() };
+  const mode = document.querySelector('input[name="p-tmode"]:checked').value;
+  out.transport = mode === 'vehicle' ? { mode, vehicleType: $('p-tv-type').value, vehicleNumber: $('p-tv-number').value.trim(), driverName: $('p-tv-driver').value.trim(), driverPhone: $('p-tv-phone').value.trim(), ...($('p-tv-eta').value ? { eta: new Date($('p-tv-eta').value).toISOString() } : {}) } : { mode };
+  return out;
 }
 async function loadUsers() {
   const r = await api('/api/admin/users');
@@ -791,6 +799,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   ['pickupLat', 'pickupLng'].forEach((id) => $(id).addEventListener('input', () => { pickupDirty = true; updatePickupHint(); }));
   $('pickupUseMe').addEventListener('click', () => { pickupDirty = false; $('pickupLat').value = ngoLocation.lat; $('pickupLng').value = ngoLocation.lng; updatePickupHint(); showToast('Pin moved to your current location'); });
   $('pickupCampus').addEventListener('click', () => { pickupDirty = true; $('pickupLat').value = CAMPUS.lat; $('pickupLng').value = CAMPUS.lng; updatePickupHint(); });
+  $('p-custom-toggle').addEventListener('change', () => { $('p-custom-org').hidden = !$('p-custom-toggle').checked; if ($('p-custom-toggle').checked && $('targetOrg')) $('targetOrg').value = ''; });
+  document.querySelectorAll('input[name="p-tmode"]').forEach((r) => r.addEventListener('change', () => { $('p-vehicle').hidden = document.querySelector('input[name="p-tmode"]:checked').value !== 'vehicle'; }));
   updatePickupHint();
 
   // role cards on the guest home page
@@ -918,7 +928,7 @@ async function handleDonorSubmit(e) {
     donorName: $('donorName').value, donorPhone: $('donorPhone').value, foodType: $('foodType').value, foodTitle: $('foodTitle').value,
     quantityMeals: Number($('quantityMeals').value), aiFreshnessScore: latestAiScan.freshnessScore, aiFreshnessStatus: latestAiScan.freshnessStatus,
     useBefore: new Date(Date.now() + parseFloat($('hoursValid').value) * 3600000).toISOString(),
-    ...($('targetOrg') && $('targetOrg').value ? { targetOrgId: $('targetOrg').value } : {}),
+    ...($('targetOrg') && $('targetOrg').value ? { targetOrgId: $('targetOrg').value } : {}), ...readSendP(),
     safetyChecklistConfirmed: total > 0 && checked.length === total, checklistItems: checked,
     location: { address: $('pickupAddress').value, lat: parseFloat($('pickupLat').value), lng: parseFloat($('pickupLng').value) },
   } });

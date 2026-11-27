@@ -570,3 +570,32 @@ test('listings carry creation time and distance so the website can sort them', a
   const r = await call('GET', '/api/listings?status=posted&lat=13.0&lng=77.6');
   assert.ok(r.data.listings.every((l) => l.createdAt && typeof l.distanceKm === 'number'));
 });
+
+test('a donor can send food to a listed or unlisted ashram with a vehicle, and the ashram is notified', async () => {
+  const eta = new Date(Date.now() + 3600000).toISOString();
+  const send = (over) => call('POST', '/api/listings', listing({ foodTitle: 'Rice and sambar', quantityMeals: 143, weightKg: 50, ...over }), tok.donor);
+  // bad details are rejected
+  assert.equal((await send({ targetOrgDetails: { name: 'Sri Sai Ashram', phone: 'abc', address: 'Hosur Road' } })).status, 400);
+  assert.equal((await send({ transport: { mode: 'vehicle', vehicleType: 'Rocket' } })).status, 400);
+  // an ashram that is not on the platform: its details are stored, the admin is told to phone it
+  const custom = await send({ targetOrgDetails: { name: 'Sri Sai Ashram', phone: '+91 80 5550 1234', address: 'Hosur Road, Bengaluru', contactPerson: 'Swami' }, transport: { mode: 'vehicle', vehicleType: 'Mini truck', vehicleNumber: 'KA 01 AB 1234', driverName: 'Ravi', driverPhone: '+91 90000 11111', eta } });
+  assert.equal(custom.status, 201);
+  const id = custom.data.listing.id;
+  const pub = (await call('GET', '/api/listings?status=posted')).data.listings.find((l) => l.id === id);
+  assert.equal(pub.targetOrgName, 'Sri Sai Ashram');
+  assert.equal(pub.transport.vehicleNumber, 'KA 01 AB 1234');
+  assert.equal(pub.transport.driverPhone, undefined, 'driver phone is not public');
+  assert.equal(pub.targetOrgCustom.phone, undefined, 'ashram phone is not public');
+  const own = (await call('GET', '/api/listings?status=posted', undefined, tok.donor)).data.listings.find((l) => l.id === id);
+  assert.equal(own.transport.driverPhone, '+91 90000 11111', 'the donor sees their own driver details');
+  assert.ok((await call('GET', '/api/impact', undefined, tok.admin)).data.notifications.some((n) => n.type === 'DIRECTED_DONATION' && /Sri Sai Ashram/.test(n.message) && /KA 01 AB 1234/.test(n.message) && /phone them/.test(n.message)));
+  assert.ok(!(await call('GET', '/api/impact', undefined, tok.ngo)).data.notifications.some((n) => /Sri Sai Ashram/.test(n.message)), 'other NGOs are not shown it');
+  // a listed ashram with a linked NGO account is notified in the app and can see how the food is coming
+  const org = (await call('GET', '/api/organization/me', undefined, tok.ngo)).data;
+  const orgId = (org.organization || org).id;
+  const listed = await send({ foodTitle: 'Veg pulao', targetOrgId: orgId, transport: { mode: 'self' } });
+  assert.equal(listed.status, 201);
+  assert.ok((await call('GET', '/api/impact', undefined, tok.ngo)).data.notifications.some((n) => n.type === 'DIRECTED_DONATION' && /Veg pulao/.test(n.message) && /bring it/.test(n.message)), 'the chosen ashram is notified');
+  const asNgo = (await call('GET', '/api/listings?status=posted', undefined, tok.ngo)).data.listings.find((l) => l.id === listed.data.listing.id);
+  assert.equal(asNgo.transport.mode, 'self');
+});

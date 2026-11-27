@@ -79,7 +79,7 @@
       return `<article class="listing-card ${fresh.includes(l.id) ? 'fresh' : ''}">
         <div class="listing-top"><div class="food-emoji">${EMOJI[l.foodType] || '🍲'}</div><span class="status">${fresh.includes(l.id) ? 'Just posted' : 'Available'}</span></div>
         <h3>${esc(l.foodTitle)}</h3><div class="food-meta">${esc(l.foodType)}${l.notes ? ' • ' + esc(l.notes) : ''}</div>
-        <div class="listing-details"><span>▦ <b>${esc(l.quantityMeals)} meals</b>${l.weightKg ? ` (${esc(l.weightKg)} kg)` : ''}</span><span>◷ Pickup by <b>${esc(when(l.useBefore))}</b></span><span>⌖ ${esc(l.location.address)}</span>${typeof l.distanceKm === 'number' ? `<span>➜ <b>${km(l.distanceKm)}</b> ${from}</span>` : ''}${l.targetOrgName && Date.parse(l.directedUntil) > Date.now() ? `<span>★ Reserved for <b>${esc(l.targetOrgName)}</b></span>` : ''}</div>
+        <div class="listing-details"><span>▦ <b>${esc(l.quantityMeals)} meals</b>${l.weightKg ? ` (${esc(l.weightKg)} kg)` : ''}</span><span>◷ Pickup by <b>${esc(when(l.useBefore))}</b></span><span>⌖ ${esc(l.location.address)}</span>${typeof l.distanceKm === 'number' ? `<span>➜ <b>${km(l.distanceKm)}</b> ${from}</span>` : ''}${l.targetOrgName && (l.targetOrgCustom || Date.parse(l.directedUntil) > Date.now()) ? `<span>★ ${l.targetOrgCustom ? 'Going to' : 'Reserved for'} <b>${esc(l.targetOrgName)}</b></span>` : ''}${l.transport ? `<span>🚚 ${esc(transportText(l.transport))}</span>` : ''}</div>
         <div class="listing-bottom"><span class="donor">Shared by ${esc(l.donorName)}</span><span class="btn-row">${phone ? `<a class="contact-btn" href="tel:${esc(phone)}">Call ↗</a>` : ''}<a class="contact-btn alt" href="${dir}" target="_blank" rel="noopener">Directions</a></span></div>
       </article>`;
     }).join('') || '<p class="empty-note">No food is listed right now. <a href="#donate">Be the first to share</a>.</p>';
@@ -124,6 +124,22 @@
 
   let point = null;
   let chosenOrg = '';
+  const customToggle = $('#custom-toggle'), customBox = $('#custom-org'), vehicleBox = $('#vehicle-box');
+  customToggle.addEventListener('change', () => {
+    customBox.hidden = !customToggle.checked;
+    if (customToggle.checked) { chosenOrg = ''; const any = $('#mp-list').querySelector('input[value=""]'); if (any) any.checked = true; }
+  });
+  form.querySelectorAll('input[name="tmode"]').forEach((r) => r.addEventListener('change', () => { vehicleBox.hidden = form.querySelector('input[name="tmode"]:checked').value !== 'vehicle'; }));
+  function readSend() {
+    const out = {};
+    if (customToggle.checked) out.targetOrgDetails = { name: $('#cf-name').value.trim(), phone: $('#cf-phone').value.trim(), address: $('#cf-address').value.trim(), contactPerson: $('#cf-person').value.trim() };
+    const mode = form.querySelector('input[name="tmode"]:checked').value;
+    out.transport = mode === 'vehicle'
+      ? { mode, vehicleType: $('#tv-type').value, vehicleNumber: $('#tv-number').value.trim(), driverName: $('#tv-driver').value.trim(), driverPhone: $('#tv-phone').value.trim(), ...($('#tv-eta').value ? { eta: new Date($('#tv-eta').value).toISOString() } : {}) }
+      : { mode };
+    return out;
+  }
+  const transportText = (t) => (!t ? '' : t.mode === 'self' ? 'Donor will bring it' : t.mode === 'volunteer' ? 'Volunteer pickup' : `${t.vehicleType}${t.vehicleNumber ? ' ' + t.vehicleNumber : ''} on the way`);
   $('#geo-btn').addEventListener('click', () => {
     const status = $('#geo-status');
     if (!navigator.geolocation) { status.textContent = 'Location is not available in this browser. We will use the campus centre.'; return; }
@@ -236,7 +252,7 @@
     const body = {
       foodTitle: f.foodTitle.value.trim(), foodType: f.foodType.value, ...(f.unit.value === 'kg' ? { quantityKg: Number(f.quantity.value) } : { quantityMeals: Number(f.quantity.value) }), ...(chosenOrg ? { targetOrgId: chosenOrg } : {}), useBefore: new Date(f.useBefore.value).toISOString(),
       address: f.address.value.trim(), donorName: f.donorName.value.trim(), phone: f.phone.value.trim(), notes: f.notes.value.trim(), safetyConfirmed: true, website: f.website.value,
-      ...(point || {}),
+      ...(point || {}), ...readSend(),
     };
     const btn = form.querySelector('.submit-button');
     btn.disabled = true; btn.firstChild.textContent = 'Posting… ';
@@ -246,7 +262,7 @@
       r = await api('/api/listings', { method: 'POST', token: authToken(), body: {
         donorName: body.donorName, donorPhone: body.phone, foodTitle: body.foodTitle, foodType: body.foodType,
         quantityMeals: kg ? Math.max(1, Math.round(kg / 0.35)) : body.quantityMeals, ...(kg ? { weightKg: kg } : {}),
-        useBefore: body.useBefore, notes: body.notes, ...(chosenOrg ? { targetOrgId: chosenOrg } : {}),
+        useBefore: body.useBefore, notes: body.notes, ...(chosenOrg ? { targetOrgId: chosenOrg } : {}), ...(body.targetOrgDetails ? { targetOrgDetails: body.targetOrgDetails } : {}), transport: body.transport,
         location: { address: body.address, lat: point ? point.lat : 12.9716, lng: point ? point.lng : 77.5946 },
         safetyChecklistConfirmed: true, checklistItems: ALL_CHECKS,
       } });
@@ -257,10 +273,10 @@
     if (!r.ok) return showError((r.data.details || [r.data.error || 'Something went wrong. Please try again.']).join('. '));
     const d = r.data;
     const liveBtn = `<button class="button primary" type="button" id="see-live">See it live below ↓</button>`;
-    const again = () => { form.reset(); resetDeadline(); point = null; chosenOrg = ''; $('#match-panel').hidden = true; $('#geo-status').textContent = 'Optional. Without it we show your pickup as near the campus centre.'; form.hidden = false; $('#donation-success').hidden = true; if (account) loadAccount(); };
+    const again = () => { form.reset(); resetDeadline(); point = null; chosenOrg = ''; customBox.hidden = true; vehicleBox.hidden = true; $('#match-panel').hidden = true; $('#geo-status').textContent = 'Optional. Without it we show your pickup as near the campus centre.'; form.hidden = false; $('#donation-success').hidden = true; if (account) loadAccount(); };
     if (d.listing) {
       $('#donation-success').innerHTML = `<div class="success-mark">✓</div><h3>Posted. Everyone can see it now.</h3>
-        <p>"${esc(d.listing.foodTitle)}" is live in <b>Available food nearby</b> for NGOs, volunteers and visitors, and it is in your dashboard.</p>
+        <p>"${esc(d.listing.foodTitle)}" is live in <b>Available food nearby</b> for NGOs, volunteers and visitors, and it is in your dashboard.</p>${d.listing.targetOrgName ? `<p><b>${esc(d.listing.targetOrgName)}</b> has been notified${d.listing.transport ? '. ' + esc(transportText(d.listing.transport)) : ''}.</p>` : ''}
         <div class="success-actions">${liveBtn}<a class="button ghost" href="/app/#/mylistings">Open my dashboard</a><button class="button ghost" type="button" id="donate-again">Share more food</button></div>`;
       form.hidden = true; $('#donation-success').hidden = false;
       $('#donate-again').addEventListener('click', again);
@@ -272,7 +288,7 @@
       store([{ id: d.id, token: d.token, title: body.foodTitle, at: Date.now() }, ...saved().filter((x) => x.id !== d.id)]);
       const link = `${location.origin}/?track=${d.id}.${d.token}`;
       $('#donation-success').innerHTML = `<div class="success-mark">✓</div><h3>Thank you! Your food is live.</h3>
-        <p>${esc(d.message)} It is already visible in <b>Available food nearby</b>.</p>${d.approximateLocation ? '<p class="soft">Your pickup is shown near the campus centre. Add details in your tracking page or call a team if the spot is hard to find.</p>' : ''}
+        <p>${esc(d.message)} It is already visible in <b>Available food nearby</b>.</p>${d.targetOrgName ? `<p><b>${esc(d.targetOrgName)}</b> has been notified${d.ashramPhone ? '. It is not on the platform yet, so our team will phone them. You can also call them on <a href="tel:' + esc(d.ashramPhone) + '">' + esc(d.ashramPhone) + '</a>' : ' on the platform'}.</p>` : ''}${d.approximateLocation ? '<p class="soft">Your pickup is shown near the campus centre. Add details in your tracking page or call a team if the spot is hard to find.</p>' : ''}
         <label class="link-box">Your private tracking link<input readonly value="${esc(link)}" id="track-link" /></label>
         <div class="success-actions">${liveBtn}<button class="button primary" type="button" id="copy-link">Copy tracking link</button><a class="button ghost" href="#my-donations">Track my donation</a><button class="button ghost" type="button" id="donate-again">Share more food</button></div>`;
       form.hidden = true; $('#donation-success').hidden = false;
@@ -299,7 +315,7 @@
       const who = c ? `<p class="who"><b>${esc(c.ngoName)}</b> is collecting. Volunteer: <b>${esc(c.volunteerName)}</b>${c.volunteerPhone ? ` • <a href="tel:${esc(String(c.volunteerPhone).replace(/[^\d+]/g, ''))}">${esc(c.volunteerPhone)}</a>` : ''}</p>` : '';
       const note = d.status === 'posted' ? '<p class="soft">Waiting for a nearby NGO or volunteer to claim it. You will see their details here.</p>' : d.status === 'expired' ? '<p class="soft">The pickup deadline passed before anyone collected this food.</p>' : d.status === 'collected' ? '<p class="soft">Collected and counted in our impact. Thank you for sharing!</p>' : '';
       return `<article class="tracker-card"><div class="tc-top"><h3>${esc(d.foodTitle)}</h3><span class="status s-${esc(d.status)}">${esc(d.status)}</span></div>
-        <p class="soft">${esc(d.quantityMeals)} meals • ${esc(d.address)} • pickup by ${esc(when(d.useBefore))}</p>${d.targetOrgName ? `<p class="soft">Directed to <b>${esc(d.targetOrgName)}</b>. Reserved for them for the first 30 minutes.</p>` : ''}
+        <p class="soft">${esc(d.quantityMeals)} meals • ${esc(d.address)} • pickup by ${esc(when(d.useBefore))}</p>${d.targetOrgName ? `<p class="soft">Directed to <b>${esc(d.targetOrgName)}</b>${d.targetOrgCustom ? ' (notified by our team)' : '. Reserved for them for the first 30 minutes'}.</p>` : ''}${d.transport ? `<p class="soft">🚚 ${esc(transportText(d.transport))}${d.transport.driverPhone ? ' • driver ' + esc(d.transport.driverPhone) : ''}</p>` : ''}
         <ol class="timeline"><li class="done">Posted</li>${step(2, 'Claimed')}${step(3, 'Collected')}</ol>${who}${pin}${note}
         <div class="tc-actions">${d.status === 'posted' ? `<button class="mini-btn danger" data-withdraw="${esc(s.id)}">Withdraw this listing</button>` : ''}${d.status !== 'posted' && d.status !== 'claimed' ? `<button class="mini-btn" data-forget="${esc(s.id)}">Remove from list</button>` : ''}</div></article>`;
     }));
