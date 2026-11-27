@@ -244,6 +244,7 @@ async function updateNavBadges() {
   };
   const rq = await api(`/api/requests?${locQuery()}`);
   if (rq.ok) set('requests', rq.data.requests.length);
+  if (!currentUser) return; // signed out while the request was in flight
   if (currentUser.role === 'admin') { const ms = await api('/api/admin/messages'); if (ms.ok) set('inbox', ms.data.unread); }
   if (currentUser.role !== 'admin') {
     const d = await api(`/api/dashboard?${locQuery()}`);
