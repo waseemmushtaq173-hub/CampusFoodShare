@@ -389,3 +389,64 @@ document.addEventListener('click', async (e) => {
     } else openAuth('signin');
   }, 900);
 })();
+
+/* ── 18. NGO: keep your organisation's requirements up to date ── */
+async function loadOrg() {
+  const r = await api('/api/organization/me');
+  if (!r.ok) return;
+  const o = r.data.organization;
+  const v = o || { name: currentUser.organization || currentUser.name, type: 'NGO', address: '', area: '', phone: currentUser.phone || '', lat: ngoLocation.lat, lng: ngoLocation.lng, hours: { open: '08:00', close: '20:00' }, acceptsDiets: ['Veg', 'Vegan', 'Bakery'], capacityKgPerDay: 50, needsKgToday: 30, peopleServed: 0, canPickup: true, notes: '' };
+  const types = r.data.types.map((t) => `<option ${t === v.type ? 'selected' : ''}>${esc(t)}</option>`).join('');
+  const diet = (d) => `<label class="check-item"><input type="checkbox" name="orgDiet" value="${d}" ${v.acceptsDiets.includes(d) ? 'checked' : ''} /><span>${d}</span></label>`;
+  const live = o ? `<div class="kpi-grid" style="margin-bottom:16px"><div class="kpi"><div class="k-top"><span>Received today</span></div><b>${esc(o.receivedTodayKg)} kg</b><small>claimed or directed to you</small></div><div class="kpi"><div class="k-top"><span>Capacity left</span></div><b>${esc(o.capacityLeftKg)} kg</b><small>of ${esc(o.capacityKgPerDay)} kg a day</small></div><div class="kpi"><div class="k-top"><span>Still needed today</span></div><b>${esc(o.needLeftKg)} kg</b><small>donors see this number</small></div><div class="kpi"><div class="k-top"><span>Right now</span></div><b>${o.openNow ? 'Open' : 'Closed'}</b><small>${esc(o.hours.open)} to ${esc(o.hours.close)}</small></div></div>` : '<div class="big-note wait">Your organisation is not listed yet. Fill this in and donors on the website will start seeing you.</div>';
+  document.getElementById('orgBody').innerHTML = `${live}
+    <form id="orgForm" class="two-col"><div class="panel"><h2>About your organisation</h2><p class="muted" style="margin-bottom:14px">Shown to donors on the website and in the app.</p>
+      <div class="form-group"><label for="orgName">Name</label><input id="orgName" class="input" required value="${esc(v.name)}" /></div>
+      <div class="form-row"><div class="form-group"><label for="orgType">Type</label><select id="orgType" class="input">${types}</select></div><div class="form-group"><label for="orgPhone">Phone</label><input id="orgPhone" class="input" required value="${esc(v.phone)}" /></div></div>
+      <div class="form-row"><div class="form-group"><label for="orgAddress">Address</label><input id="orgAddress" class="input" required value="${esc(v.address)}" /></div><div class="form-group"><label for="orgArea">Area</label><input id="orgArea" class="input" value="${esc(v.area)}" /></div></div>
+      <div class="form-row"><div class="form-group"><label for="orgLat">Latitude</label><input id="orgLat" class="input" type="number" step="any" required value="${esc(v.lat)}" /></div><div class="form-group"><label for="orgLng">Longitude</label><input id="orgLng" class="input" type="number" step="any" required value="${esc(v.lng)}" /></div></div>
+      <button type="button" class="btn btn-ghost btn-sm" id="orgHere">Use my current location</button>
+      <div class="form-group" style="margin-top:14px"><label for="orgNotes">Notes for donors</label><input id="orgNotes" class="input" maxlength="300" value="${esc(v.notes)}" placeholder="e.g. Soft food preferred. Drop-off at the front desk." /></div></div>
+      <div class="panel"><h2>Your requirements</h2><p class="muted" style="margin-bottom:14px">Matching uses these numbers to suggest you to donors, so keep them current.</p>
+      <div class="form-row"><div class="form-group"><label for="orgNeed">Food needed today (kg)</label><input id="orgNeed" class="input" type="number" min="0" step="any" required value="${esc(v.needsKgToday)}" /></div><div class="form-group"><label for="orgCap">Capacity per day (kg)</label><input id="orgCap" class="input" type="number" min="1" step="any" required value="${esc(v.capacityKgPerDay)}" /></div></div>
+      <div class="form-row"><div class="form-group"><label for="orgOpen">Opens</label><input id="orgOpen" class="input" type="time" required value="${esc(v.hours.open)}" /></div><div class="form-group"><label for="orgClose">Closes</label><input id="orgClose" class="input" type="time" required value="${esc(v.hours.close)}" /></div></div>
+      <div class="form-group"><label>Food you accept</label><div style="display:flex;gap:18px;flex-wrap:wrap">${['Veg', 'Non-Veg', 'Vegan', 'Bakery'].map(diet).join('')}</div></div>
+      <div class="form-row"><div class="form-group"><label for="orgServed">People you serve</label><input id="orgServed" class="input" type="number" min="0" value="${esc(v.peopleServed)}" /></div><div class="form-group"><label>Collection</label><label class="check-item" style="margin-top:8px"><input type="checkbox" id="orgPickup" ${v.canPickup ? 'checked' : ''} /><span>We can send a volunteer to collect</span></label></div></div>
+      <div class="form-error" id="orgError" role="alert" hidden></div><button type="submit" class="btn btn-primary btn-block btn-lg">Save requirements</button></div></form>`;
+  const form = document.getElementById('orgForm');
+  form.addEventListener('input', () => setFormError('orgError', ''));
+  document.getElementById('orgHere').addEventListener('click', () => { document.getElementById('orgLat').value = ngoLocation.lat; document.getElementById('orgLng').value = ngoLocation.lng; showToast('Using your current location'); });
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const val = (id) => document.getElementById(id).value;
+    const body = {
+      name: val('orgName'), type: val('orgType'), phone: val('orgPhone'), address: val('orgAddress'), area: val('orgArea'), lat: Number(val('orgLat')), lng: Number(val('orgLng')), notes: val('orgNotes'),
+      hours: { open: val('orgOpen'), close: val('orgClose') }, acceptsDiets: [...form.querySelectorAll('[name=orgDiet]:checked')].map((c) => c.value),
+      capacityKgPerDay: Number(val('orgCap')), needsKgToday: Number(val('orgNeed')), peopleServed: Number(val('orgServed') || 0), canPickup: document.getElementById('orgPickup').checked,
+    };
+    lastOwnAction = Date.now();
+    const res = await api('/api/organization', { method: 'PUT', body });
+    if (!res.ok) return setFormError('orgError', (res.data.details || [res.data.error || 'Could not save']).join('. '));
+    showToast('Requirements saved. Donors now see the update.');
+    loadOrg();
+  });
+}
+
+/* ── 19. Detailed donation form: suggest where the food can go ── */
+(() => {
+  const qty = document.getElementById('quantityMeals'), type = document.getElementById('foodType'), box = document.getElementById('postMatchBox');
+  if (!qty || !box) return;
+  let timer = null;
+  const run = async () => {
+    const meals = Number(qty.value);
+    if (!(meals >= 1)) { box.hidden = true; return; }
+    const r = await api(`/api/match?${new URLSearchParams({ meals, foodType: type.value, lat: ngoLocation.lat, lng: ngoLocation.lng })}`);
+    if (!r.ok) { box.hidden = true; return; }
+    const sel = document.getElementById('targetOrg'), keep = sel.value;
+    sel.innerHTML = '<option value="">Any nearby team (best if you are unsure)</option>' + r.data.matches.slice(0, 5).map((m) => `<option value="${esc(m.organization.id)}" ${m.organization.id === keep ? 'selected' : ''}>${esc(m.organization.name)} · ${m.distanceKm} km · ${m.takesAll ? 'can take all' : 'can take ' + m.canTakeKg + ' kg'}</option>`).join('');
+    document.getElementById('postMatchNote').textContent = r.data.summary;
+    box.hidden = false;
+  };
+  const later = () => { clearTimeout(timer); timer = setTimeout(run, 400); };
+  qty.addEventListener('input', later); type.addEventListener('input', later); later();
+})();

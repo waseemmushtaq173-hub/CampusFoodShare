@@ -7,7 +7,8 @@ const { calculateHaversineDistance } = require('./src/utils/haversine');
 const { rankListingsForNGO } = require('./src/utils/priorityQueue');
 const { analyzeFoodFreshness } = require('./src/utils/aiFoodDetector');
 const { hashPassword, verifyPassword, hashAllPasswords, publicUser } = require('./src/utils/auth');
-const { USER_ROLES, SIGNUP_ROLES, LISTING_STATUS, FOOD_SAFETY_CHECKLIST, validateListingPayload } = require('./src/models/schemas');
+const { USER_ROLES, SIGNUP_ROLES, LISTING_STATUS, FOOD_TYPES, FOOD_SAFETY_CHECKLIST, validateListingPayload } = require('./src/models/schemas');
+const { match: matchOrgs, describe: describeOrg, validateOrganization, KG_PER_MEAL, ORG_TYPES } = require('./src/utils/matcher');
 const { readDb, writeDb, sweepExpiredListings, addNotification } = require('./src/storage/db');
 const { generateSeedData } = require('./src/seed/seedFaker');
 
@@ -28,6 +29,7 @@ app.use('/vendor/leaflet', express.static(path.join(__dirname, '..', 'node_modul
 {
   let db = readDb();
   if (!db.users || db.users.length === 0 || ((!db.listings || db.listings.length === 0) && isDemoData(db))) db = generateSeedData();
+  if (!db.organizations) db.organizations = generateSeedData().organizations;
   hashAllPasswords(db);
   writeDb(db);
 }
@@ -54,6 +56,7 @@ function ensureFreshDemo() {
   fresh.users = fresh.users.concat(mine);
   fresh.sessions = db.sessions || [];
   fresh.messages = db.messages || [];
+  fresh.organizations = db.organizations || fresh.organizations;
   writeDb(fresh);
   return true;
 }
@@ -89,6 +92,28 @@ function attachUser(req, res, next) {
   next();
 }
 app.use(attachUser);
+
+// ---------- request log (feeds the backend console; method, route pattern, status and time only) ----------
+const bootTime = Date.now();
+const apiLog = [];
+app.use('/api', (req, res, next) => {
+  const t0 = process.hrtime.bigint();
+  res.on('finish', () => {
+    if (/^\/(stream|system\/logs)/.test(req.path)) return;
+    apiLog.unshift({ at: new Date().toISOString(), method: req.method, route: req.route ? req.route.path : '/api/*', status: res.statusCode, ms: Math.round(Number(process.hrtime.bigint() - t0) / 1e6) });
+    if (apiLog.length > 100) apiLog.pop();
+  });
+  next();
+});
+
+/** A donor may direct food to one organisation. It is reserved for that organisation for 30 minutes. */
+function resolveTarget(db, body, foodType) {
+  if (!body.targetOrgId) return { fields: {} };
+  const o = (db.organizations || []).find((x) => x.id === body.targetOrgId && x.active !== false);
+  if (!o) return { error: 'The organisation you chose could not be found' };
+  if (foodType && !o.acceptsDiets.includes(foodType)) return { error: `${o.name} does not accept ${foodType} food` };
+  return { fields: { targetOrgId: o.id, targetOrgName: o.name, directedUntil: new Date(Date.now() + 30 * 60000).toISOString() } };
+}
 
 function requireRole(...roles) {
   return (req, res, next) => {
@@ -329,6 +354,8 @@ app.post('/api/listings', requireRole(USER_ROLES.DONOR, USER_ROLES.ADMIN), (req,
   const errors = validateListingPayload(body);
   if (errors.length > 0) return res.status(400).json({ error: 'Validation failed', details: errors });
   const db = readDb();
+  const tgt = resolveTarget(db, body, body.foodType);
+  if (tgt.error) return res.status(400).json({ error: 'Validation failed', details: [tgt.error] });
   const quantityMeals = Number(body.quantityMeals);
   const weightKg = Number(body.weightKg) > 0 ? Number(body.weightKg) : Number((quantityMeals * 0.35).toFixed(1));
   const aiAnalysis = analyzeFoodFreshness({ foodTitle: body.foodTitle, hoursSinceCooked: 1 });
@@ -352,6 +379,7 @@ app.post('/api/listings', requireRole(USER_ROLES.DONOR, USER_ROLES.ADMIN), (req,
     location: { address: body.location.address || 'Campus Pickup Point', lat: body.location.lat, lng: body.location.lng },
     notes: body.notes ? String(body.notes).trim().slice(0, 300) : '',
     source: 'platform',
+    ...tgt.fields,
     claimedBy: null,
     feedback: null,
     createdAt: new Date().toISOString(),
@@ -373,6 +401,13 @@ app.post('/api/listings/:id/claim', requireRole(USER_ROLES.NGO, USER_ROLES.VOLUN
   const listing = findListing(db, req.params.id);
   if (!listing) return res.status(404).json({ error: 'Listing not found' });
   if (listing.status !== LISTING_STATUS.POSTED) return res.status(409).json({ error: `Cannot claim listing in '${listing.status}' status` });
+  if (listing.targetOrgId && Date.parse(listing.directedUntil) > Date.now() && req.user.role !== USER_ROLES.ADMIN) {
+    const owner = (db.organizations || []).find((o) => o.id === listing.targetOrgId);
+    if (!owner || owner.userId !== req.user.id) {
+      const mins = Math.ceil((Date.parse(listing.directedUntil) - Date.now()) / 60000);
+      return res.status(409).json({ error: `Reserved for ${listing.targetOrgName} for the next ${mins} minutes` });
+    }
+  }
 
   listing.status = LISTING_STATUS.CLAIMED;
   listing.claimedBy = {
@@ -669,7 +704,7 @@ const tooMany = (map, ip, max) => overLimit(map, ip, max) || (record(attemptHits
 const ALL_CHECKS = FOOD_SAFETY_CHECKLIST.map((c) => c.id);
 const publicDonation = (l, withPin) => ({
   id: l.id, foodTitle: l.foodTitle, foodType: l.foodType, quantityMeals: l.quantityMeals, status: l.status, useBefore: l.useBefore, createdAt: l.createdAt,
-  address: l.location.address, notes: l.notes || '',
+  address: l.location.address, notes: l.notes || '', targetOrgName: l.targetOrgName || null,
   claimedBy: l.claimedBy ? { ngoName: l.claimedBy.ngoName, volunteerName: l.claimedBy.volunteerName, volunteerPhone: l.claimedBy.volunteerPhone, claimedAt: l.claimedBy.claimedAt, collectedAt: l.claimedBy.collectedAt } : null,
   handoverCode: withPin && l.status === LISTING_STATUS.CLAIMED && l.claimedBy ? l.claimedBy.handoverCode : null,
 });
@@ -691,8 +726,13 @@ app.post('/api/public/donations', (req, res) => {
   const lat = hasPoint ? Number(b.lat) : Number(process.env.DEFAULT_CAMPUS_LAT || 12.9716);
   const lng = hasPoint ? Number(b.lng) : Number(process.env.DEFAULT_CAMPUS_LNG || 77.5946);
   const confirmed = b.safetyConfirmed === true || b.safetyConfirmed === 'true';
+  const kgIn = Number(b.quantityKg) > 0 ? Number(b.quantityKg) : 0;
+  if (kgIn > 2000) errors.push('Quantity must be 2000 kg or less');
+  const mealsIn = Number(b.quantityMeals) > 0 ? Number(b.quantityMeals) : (kgIn ? Math.max(1, Math.round(kgIn / KG_PER_MEAL)) : 0);
+  const tgt = resolveTarget(readDb(), b, b.foodType);
+  if (tgt.error) errors.push(tgt.error);
   const payload = {
-    donorName: b.donorName, foodTitle: b.foodTitle, foodType: b.foodType, quantityMeals: b.quantityMeals, useBefore: b.useBefore,
+    donorName: b.donorName, foodTitle: b.foodTitle, foodType: b.foodType, quantityMeals: mealsIn, useBefore: b.useBefore,
     location: { address: b.address, lat, lng }, safetyChecklistConfirmed: confirmed, checklistItems: confirmed ? ALL_CHECKS : [],
   };
   errors.push(...validateListingPayload(payload));
@@ -701,18 +741,18 @@ app.post('/api/public/donations', (req, res) => {
 
   record(donationHits, req.ip || 'unknown');
   const db = readDb();
-  const meals = Math.round(Number(b.quantityMeals));
+  const meals = Math.round(mealsIn);
   const id = newId('lst');
   const token = crypto.randomBytes(8).toString('hex');
   const listing = {
     id, donorId: 'guest', donorName: String(b.donorName).trim().slice(0, 80), donorPhone: phone,
     foodTitle: String(b.foodTitle).trim(), foodType: b.foodType, quantityMeals: meals,
-    weightKg: Number(b.weightKg) > 0 ? Number(b.weightKg) : Number((meals * 0.35).toFixed(1)),
+    weightKg: kgIn || (Number(b.weightKg) > 0 ? Number(b.weightKg) : Number((meals * KG_PER_MEAL).toFixed(1))),
     aiFreshnessScore: analyzeFoodFreshness({ foodTitle: b.foodTitle, hoursSinceCooked: 1 }).freshnessScore, aiFreshnessStatus: 'Estimated from the dish',
     preparedAt: new Date().toISOString(), useBefore: new Date(b.useBefore).toISOString(), status: LISTING_STATUS.POSTED,
     safetyChecklistConfirmed: true, checklistItems: ALL_CHECKS,
     location: { address: String(b.address).trim().slice(0, 140), lat, lng, approximate: !hasPoint },
-    notes: b.notes ? String(b.notes).trim().slice(0, 300) : '', source: 'public-form', donorVerified: false,
+    notes: b.notes ? String(b.notes).trim().slice(0, 300) : '', source: 'public-form', donorVerified: false, ...tgt.fields,
     claimedBy: null, feedback: null, createdAt: new Date().toISOString(),
   };
   db.listings.unshift(listing);
@@ -770,6 +810,68 @@ app.patch('/api/admin/messages/:id', requireRole(USER_ROLES.ADMIN), (req, res) =
   writeDb(db);
   res.json({ message: m });
 });
+
+// ---------- organisations (ashrams, homes, shelters, kitchens) and donation matching ----------
+app.get('/api/organizations', (req, res) => {
+  const db = readDb();
+  res.json({ organizations: (db.organizations || []).filter((o) => o.active !== false).map((o) => describeOrg(db, o)) });
+});
+
+/** "I have 50 kg of food. Where can I donate it?" Ranks organisations by what they need, their capacity, distance and opening hours. */
+app.get('/api/match', (req, res) => {
+  const q = req.query;
+  let kg = Number(q.kg);
+  if (!(kg > 0) && Number(q.meals) > 0) kg = Number(q.meals) * KG_PER_MEAL;
+  if (!(kg >= 0.5 && kg <= 5000)) return res.status(400).json({ error: 'Enter an amount between 0.5 and 5000 kg' });
+  const foodType = q.foodType || null;
+  if (foodType && !FOOD_TYPES.includes(foodType)) return res.status(400).json({ error: 'foodType must be Veg, Non-Veg, Vegan or Bakery' });
+  const lat = q.lat === undefined ? Number(process.env.DEFAULT_CAMPUS_LAT || 12.9716) : Number(q.lat);
+  const lng = q.lng === undefined ? Number(process.env.DEFAULT_CAMPUS_LNG || 77.5946) : Number(q.lng);
+  if (!isFinite(lat) || !isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return res.status(400).json({ error: 'Invalid location' });
+  const orgType = q.type || null;
+  if (orgType && !ORG_TYPES.includes(orgType)) return res.status(400).json({ error: `type must be one of ${ORG_TYPES.join(', ')}` });
+  res.json(matchOrgs(readDb(), { kg, foodType, lat, lng, orgType }));
+});
+
+app.get('/api/organization/me', requireRole(USER_ROLES.NGO), (req, res) => {
+  const db = readDb();
+  const o = (db.organizations || []).find((x) => x.userId === req.user.id);
+  res.json({ organization: o ? describeOrg(db, o) : null, types: ORG_TYPES });
+});
+
+/** An NGO keeps its requirements up to date: capacity, what it needs today, accepted food, hours, pickup. Matching reflects it immediately. */
+app.put('/api/organization', requireRole(USER_ROLES.NGO), (req, res) => {
+  const { errors, value } = validateOrganization(req.body || {});
+  if (errors.length) return res.status(400).json({ error: 'Validation failed', details: errors });
+  const db = readDb();
+  db.organizations = db.organizations || [];
+  let o = db.organizations.find((x) => x.userId === req.user.id);
+  if (!o) { o = { id: newId('org'), userId: req.user.id, verified: false, active: true }; db.organizations.push(o); }
+  Object.assign(o, value, { updatedAt: new Date().toISOString() });
+  addNotification(db, { type: 'ORG_UPDATE', title: 'Requirements updated', message: `${o.name} updated what it needs: ${o.needsKgToday} kg today, capacity ${o.capacityKgPerDay} kg/day.` });
+  writeDb(db);
+  res.json({ organization: describeOrg(db, o) });
+});
+
+// ---------- system: what is running (backend console) ----------
+app.get('/api/system/status', (req, res) => {
+  const db = readDb();
+  const byStatus = {};
+  (db.listings || []).forEach((l) => { byStatus[l.status] = (byStatus[l.status] || 0) + 1; });
+  const routes = [];
+  app._router.stack.forEach((layer) => {
+    if (layer.route && layer.route.path.startsWith('/api/')) {
+      Object.keys(layer.route.methods).forEach((m) => routes.push({ method: m.toUpperCase(), path: layer.route.path, access: layer.route.path.startsWith('/api/admin') ? 'admin' : layer.route.path.startsWith('/api/public') ? 'public' : 'platform' }));
+    }
+  });
+  res.json({
+    name: 'CampusFoodShare API', version: require('../package.json').version, node: process.version, storage: 'JSON file database', time: new Date().toISOString(),
+    uptimeSeconds: Math.round((Date.now() - bootTime) / 1000),
+    counts: { users: (db.users || []).length, organizations: (db.organizations || []).length, listings: (db.listings || []).length, requests: (db.requests || []).length, messages: (db.messages || []).length },
+    listingsByStatus: byStatus, routes,
+  });
+});
+app.get('/api/system/logs', (req, res) => res.json({ logs: apiLog.slice(0, 60) }));
 
 app.get('/api/directory', (req, res) => res.json({ directory: readDb().directory || [] }));
 

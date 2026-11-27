@@ -231,7 +231,7 @@ const FOODS = [['utensils', 'f1', 'Steamed Rice, Dal Tadka & Veg Curry', 'Veg'],
 const MEAL_CHOICES = [10, 25, 50, 100, 200];
 const HOUR_CHOICES = [[1.5, '1½'], [2.5, '2½'], [4, '4']];
 const CHECKS = [['c1', 'flame'], ['c2', 'box'], ['c3', 'leaf'], ['c4', 'tag']];
-function newGive() { return { step: 1, food: null, meals: null, hours: null, checks: [false, false, false, false], done: false, sending: false }; }
+function newGive() { return { step: 1, food: null, meals: null, hours: null, checks: [false, false, false, false], done: false, sending: false, target: '' }; }
 let give = newGive();
 
 function renderGive() {
@@ -256,13 +256,24 @@ function renderGive() {
     if (give.checks.every(Boolean)) body += `<button class="big-cta cta-green" data-give="next"><b>${esc(t('next'))}</b>${ic('arrow')}</button>`;
   }
   if (s === 5) {
-    body = `<div class="panel"><label for="giveWhere">${esc(t('g5'))}</label><input id="giveWhere" class="input big" value="${esc(currentUser.organization || '')}" placeholder="${esc(t('whereHint'))}" />
+    body = `<div class="panel" id="giveMatches"><p class="muted">Checking which ashrams and NGOs need this…</p></div><div class="panel"><label for="giveWhere">${esc(t('g5'))}</label><input id="giveWhere" class="input big" value="${esc(currentUser.organization || '')}" placeholder="${esc(t('whereHint'))}" />
       <div class="big-note ${gpsAcc ? 'good' : 'wait'}" style="margin:14px 0 0">${ic('pin')}<span>${esc(t('usingLoc'))}${gpsAcc ? ` (±${Math.round(gpsAcc)} m)` : ''}</span></div></div>
       <button class="big-cta cta-green" data-give="send">${ic('send')}<b>${esc(t('sendFood'))}</b></button>`;
   }
   el.innerHTML = `<div class="dots">${dots}</div>
     <div class="start-head"><h2>${esc(t('g' + s))}</h2><span class="speak" role="button" tabindex="0" data-speak="g${s}" title="Listen">${ic('volume')}</span></div>
     ${body}${s > 1 ? `<button class="big-btn back" data-give="back">${esc(t('back'))}</button>` : ''}`;
+  if (s === 5) loadGiveMatches();
+}
+
+async function loadGiveMatches() {
+  const f = FOODS[give.food];
+  const r = await api(`/api/match?${new URLSearchParams({ meals: give.meals, foodType: f[3], lat: ngoLocation.lat, lng: ngoLocation.lng })}`);
+  const box = document.getElementById('giveMatches');
+  if (!box) return;
+  if (!r.ok) { box.innerHTML = ''; return; }
+  const opt = (id, title, sub) => `<label class="match-opt"><input type="radio" name="giveTarget" value="${esc(id)}" ${give.target === id ? 'checked' : ''} /><span><strong>${esc(title)}</strong><small>${esc(sub)}</small></span></label>`;
+  box.innerHTML = `<h3 style="margin-bottom:4px">Where can it go?</h3><p class="muted" style="margin-bottom:10px">${esc(r.data.summary)}</p>${r.data.matches.slice(0, 3).map((m) => opt(m.organization.id, m.organization.name, `${m.organization.type} · ${m.distanceKm} km · ${m.takesAll ? 'can take all' : 'can take ' + m.canTakeKg + ' kg'} · ${m.openNow ? 'open now' : 'closed now'}`)).join('')}${opt('', 'Any nearby team', 'Posted for every NGO and volunteer. Best if you are unsure.')}`;
 }
 async function sendGive() {
   if (give.sending) return;
@@ -273,6 +284,7 @@ async function sendGive() {
     useBefore: new Date(Date.now() + give.hours * 3600000).toISOString(), safetyChecklistConfirmed: true,
     checklistItems: ['temp_control', 'hygienic_containers', 'no_spoilage', 'allergen_labeled'],
     location: { address: ($('giveWhere') && $('giveWhere').value) || 'My location (GPS)', lat: ngoLocation.lat, lng: ngoLocation.lng },
+    ...(give.target ? { targetOrgId: give.target } : {}),
   } });
   give.sending = false;
   if (!r.ok) return showToast((r.data.details || [r.data.error || 'Could not send']).join(', '));
@@ -375,3 +387,5 @@ document.addEventListener('DOMContentLoaded', () => {
   applyLang();
   setInterval(tickExp2, 30000);
 });
+
+document.addEventListener('change', (ev) => { if (ev.target.name === 'giveTarget') give.target = ev.target.value; });

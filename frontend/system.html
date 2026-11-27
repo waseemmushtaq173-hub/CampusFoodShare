@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CampusFoodShare | Backend console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" />
+  <style>
+    :root{--green:#287b50;--green-dark:#185c3a;--mint:#eaf5ed;--ink:#18352a;--muted:#6b7a71;--line:#e4ebe5;--bg:#f6f8f5;--blue:#2b62b8;--amber:#b36a14;--red:#b3261e}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:'DM Sans',sans-serif;line-height:1.55}a{color:var(--green);font-weight:700;text-decoration:none}
+    header{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}.bar{max-width:1180px;margin:auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .brand{font:800 18px Manrope;letter-spacing:-.5px}.brand b{color:var(--green)}.pill{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;padding:6px 12px;border-radius:99px;background:var(--mint);color:var(--green)}.pill i{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}.pill.off{background:#fdecea;color:var(--red)}.pill.off i{background:var(--red);animation:none}
+    @keyframes pulse{70%{box-shadow:0 0 0 7px transparent}0%{box-shadow:0 0 0 0 #287b5066}}
+    main{max-width:1180px;margin:auto;padding:30px 24px 70px}h1{font:800 32px Manrope;letter-spacing:-1.2px;margin:6px 0 8px}h2{font:700 19px Manrope;margin:0 0 4px}.lead{color:var(--muted);max-width:760px;margin:0 0 6px;font-size:14px}.sub{color:var(--muted);font-size:12.5px;margin:0 0 16px}
+    section{margin-top:38px}.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px}
+    .layers{display:grid;grid-template-columns:1fr 70px 1.2fr 70px 1fr;align-items:stretch;gap:0}.layer{border:1px solid var(--line);border-radius:16px;background:#fff;padding:20px}.layer h3{font:800 11px Manrope;letter-spacing:1.4px;text-transform:uppercase;margin:0 0 4px}.layer .t{font:700 17px Manrope;margin:0 0 12px}
+    .l1 h3{color:var(--blue)}.l2 h3{color:var(--green)}.l3 h3{color:var(--amber)}.box{border:1px solid var(--line);background:#fafcfa;border-radius:10px;padding:9px 12px;margin-bottom:8px;font-size:12.5px}.box b{display:block;font-size:12.5px}.box small{color:var(--muted);font-size:11px}
+    .arrow{display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--green);font-size:11px;font-weight:700;text-align:center;gap:4px}.arrow span{font-size:26px;line-height:1}
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}.stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px}.stat b{display:block;font:800 26px Manrope;letter-spacing:-1px}.stat span{font-size:11.5px;color:var(--muted)}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px}.row label{display:flex;flex-direction:column;gap:6px;font-size:11px;font-weight:700;color:#43584a}.row input,.row select{border:1px solid #dbe5dc;border-radius:9px;padding:10px 12px;font:13px 'DM Sans',sans-serif;background:#fff;min-width:130px}
+    button{border:0;border-radius:9px;padding:11px 16px;font:700 12.5px 'DM Sans',sans-serif;cursor:pointer;background:var(--green);color:#fff}button:hover{background:var(--green-dark)}button.ghost{background:#fff;color:var(--green);border:1px solid #cfe3d4}button.ghost:hover{background:#eff7f0}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:18px}.req{font:12px 'JetBrains Mono',monospace;background:#0f1d16;color:#b9e6c9;border-radius:10px;padding:12px 14px;overflow:auto;word-break:break-all}pre{font:11.5px/1.55 'JetBrains Mono',monospace;background:#0f1d16;color:#d5eadc;border-radius:12px;padding:16px;overflow:auto;max-height:340px;margin:0}
+    .res{display:grid;gap:8px;margin-top:6px}.res .m{display:grid;grid-template-columns:42px 1fr auto;gap:12px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:11px 13px;background:#fff}.res .sc{font:800 17px Manrope;color:var(--green);text-align:center}.res .m b{font-size:13px}.res .m small{display:block;color:var(--muted);font-size:11px;line-height:1.5}.tag{font-size:10px;font-weight:800;padding:3px 8px;border-radius:6px;background:var(--mint);color:var(--green);white-space:nowrap}.tag.w{background:#fff3e0;color:var(--amber)}
+    .summary{background:var(--mint);border-radius:12px;padding:12px 14px;font-size:13px;font-weight:600;color:#1f5a3a;margin-bottom:10px}
+    ol.flow{list-style:none;counter-reset:s;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}ol.flow li{counter-increment:s;background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 16px 16px 52px;position:relative;font-size:12.5px;color:#4d6055}ol.flow li::before{content:counter(s);position:absolute;left:14px;top:14px;width:26px;height:26px;border-radius:50%;background:var(--green);color:#fff;display:grid;place-items:center;font:800 12px Manrope}ol.flow b{display:block;color:var(--ink);font-size:13px;margin-bottom:3px}code{font:11px 'JetBrains Mono',monospace;background:#eef3ef;padding:2px 6px;border-radius:5px}
+    table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line)}th{font-size:10.5px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}td.p{font-family:'JetBrains Mono',monospace;font-size:11.5px}
+    .m-GET{color:var(--blue)}.m-POST{color:var(--green)}.m-PUT,.m-PATCH{color:var(--amber)}.m-DELETE{color:var(--red)}.m{font-weight:800}.s2{color:var(--green)}.s4{color:var(--amber)}.s5{color:var(--red)}
+    .acc{font-size:10px;font-weight:800;padding:2px 7px;border-radius:5px;background:#eef1ee;color:#53675b}.acc.public{background:var(--mint);color:var(--green)}.acc.admin{background:#fdecea;color:var(--red)}
+    .scroll{max-height:380px;overflow:auto}.filter{border:1px solid #dbe5dc;border-radius:9px;padding:9px 12px;font:13px 'DM Sans',sans-serif;width:240px}
+    @media(max-width:900px){.layers{grid-template-columns:1fr}.arrow{flex-direction:row;padding:6px}.arrow span{transform:rotate(90deg)}.split{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <header><div class="bar"><div class="brand">Campus<b>FoodShare</b> <span style="font-weight:600;color:var(--muted);font-size:14px">/ Backend console</span></div><div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap"><a href="/">Public website</a><a href="/app/">Platform</a><span class="pill" id="live"><i></i><span id="live-text">Connecting…</span></span></div></div></header>
+
+  <main>
+    <h1>One project, three layers</h1>
+    <p class="lead">This page shows the frontend, the application logic and the database working together, live. Everything below is read from the running backend.</p>
+
+    <section>
+      <div class="layers">
+        <div class="layer l1"><h3>Layer 1 · Frontend</h3><div class="t">What people see</div>
+          <div class="box"><b>Public website <a href="/">/</a></b><small>Donate with no account, find where to donate, track a donation</small></div>
+          <div class="box"><b>Platform app <a href="/app/">/app/</a></b><small>Donor, NGO, volunteer and admin dashboards, live map</small></div>
+          <div class="box"><b>Backend console</b><small>This page</small></div></div>
+        <div class="arrow"><span>⇄</span>HTTP + JSON<br />REST API</div>
+        <div class="layer l2"><h3>Layer 2 · Application logic (backend)</h3><div class="t">Node.js + Express</div>
+          <div class="box"><b>Matching engine</b><small>"I have 50 kg. Which ashram can take it?" Ranks by what each place needs, capacity, distance (Haversine) and opening hours</small></div>
+          <div class="box"><b>Priority queue (min-heap)</b><small>Nearest and soonest-expiring food first</small></div>
+          <div class="box"><b>Accounts and roles</b><small>Donor, NGO, volunteer, admin. Hashed passwords, sessions, PIN handover</small></div>
+          <div class="box"><b>Live updates + spam protection</b><small>Server-sent events, rate limits, honeypot, validation</small></div></div>
+        <div class="arrow"><span>⇄</span>read / write</div>
+        <div class="layer l3"><h3>Layer 3 · Data</h3><div class="t">Database</div><div id="db-boxes"><div class="box"><small>Loading…</small></div></div></div>
+      </div>
+    </section>
+
+    <section><h2>Live status</h2><p class="sub">Refreshes every few seconds from <code>GET /api/system/status</code></p><div class="stats" id="stats"></div></section>
+
+    <section class="card">
+      <h2>Try the matching engine</h2>
+      <p class="sub">The teacher's example: "I have 50 kg of food. Where can I donate it?" Change the numbers and the backend recalculates.</p>
+      <form id="mform" class="row">
+        <label>Amount<input id="m-kg" type="number" step="any" min="0.5" value="50" /></label>
+        <label>Unit<select id="m-unit"><option value="kg">kg</option><option value="meals">meals</option></select></label>
+        <label>Food type<select id="m-type"><option>Veg</option><option>Non-Veg</option><option>Vegan</option><option>Bakery</option></select></label>
+        <label>Only show<select id="m-org"><option value="">All kinds</option><option>Ashram</option><option>Old-age home</option><option>Orphanage</option><option>Shelter</option><option>Community kitchen</option><option>Hostel</option></select></label>
+        <label>Starting point<select id="m-loc"><option value="12.9716,77.5946">Central campus</option><option value="12.9128,77.5618">South (Jayanagar)</option><option value="13.0358,77.5970">North (Hebbal)</option><option value="12.9784,77.6408">East (Indiranagar)</option><option value="12.9352,77.5365">West (Kengeri)</option></select></label>
+        <button type="submit">Find where to donate</button>
+      </form>
+      <div class="split"><div><div id="m-summary"></div><div class="res" id="m-results"></div></div><div><div class="req" id="m-url">GET /api/match?…</div><pre id="m-json" style="margin-top:10px">Run a search to see the raw response.</pre></div></div>
+    </section>
+
+    <section><h2>How one donation travels through the system</h2><p class="sub">Frontend, backend and database, in order.</p>
+      <ol class="flow">
+        <li><b>1. Donor fills the form</b>Website asks <code>GET /api/match</code> and shows suitable ashrams.</li>
+        <li><b>2. Backend validates</b><code>POST /api/public/donations</code> checks phone, safety, deadline, food type and spam.</li>
+        <li><b>3. Database stores it</b>A listing and a private tracking token are saved. The donor gets a link.</li>
+        <li><b>4. Everyone is updated</b>Server-sent events refresh every open screen. NGOs see it ranked by distance and expiry.</li>
+        <li><b>5. NGO claims it</b>A 4-digit PIN is generated. Food directed to an ashram is reserved for it for 30 minutes.</li>
+        <li><b>6. Verified handover</b>Volunteer enters the PIN, food is marked collected and counted in the impact numbers.</li>
+      </ol></section>
+
+    <section class="card"><div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center"><div><h2>Live request log</h2><p class="sub" style="margin:0">Every API call the backend handles (method, route, status, time). Click a sample call, then watch it appear.</p></div>
+      <div class="row" style="margin:0"><button class="ghost" data-call="/api/impact">GET impact</button><button class="ghost" data-call="/api/organizations">GET organizations</button><button class="ghost" data-call="/api/listings?status=posted">GET listings</button></div></div>
+      <div class="scroll" style="margin-top:12px"><table><thead><tr><th>Time</th><th>Method</th><th>Route</th><th>Status</th><th>ms</th></tr></thead><tbody id="log"></tbody></table></div></section>
+
+    <section class="card"><div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center"><div><h2>API endpoints</h2><p class="sub" style="margin:0" id="route-count"></p></div><input class="filter" id="rfilter" placeholder="Filter endpoints" /></div>
+      <div class="scroll" style="margin-top:12px"><table><thead><tr><th>Method</th><th>Path</th><th>Access</th></tr></thead><tbody id="routes"></tbody></table></div></section>
+  </main>
+
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const get = async (u) => { const r = await fetch(u); return { ok: r.ok, status: r.status, data: await r.json().catch(() => ({})) }; };
+    let routes = [];
+    const dur = (s) => (s < 90 ? `${s}s` : s < 5400 ? `${Math.round(s / 60)} min` : `${(s / 3600).toFixed(1)} h`);
+
+    async function status() {
+      let r; try { r = await get('/api/system/status'); } catch (e) { r = { ok: false }; }
+      const pill = $('#live');
+      if (!r.ok) { pill.classList.add('off'); $('#live-text').textContent = 'Backend offline'; return; }
+      pill.classList.remove('off'); $('#live-text').textContent = `Backend running · up ${dur(r.data.uptimeSeconds)}`;
+      const c = r.data.counts, s = r.data.listingsByStatus;
+      $('#stats').innerHTML = [[c.users, 'Users'], [c.organizations, 'Ashrams / NGOs'], [c.listings, 'Food listings'], [s.posted || 0, 'Open now'], [s.collected || 0, 'Collected'], [c.requests, 'Help requests'], [c.messages, 'Messages'], [r.data.routes.length, 'API endpoints']].map(([n, l]) => `<div class="stat"><b>${n}</b><span>${l}</span></div>`).join('');
+      $('#db-boxes').innerHTML = [['users', c.users], ['organizations', c.organizations], ['listings', c.listings], ['requests', c.requests], ['messages', c.messages]].map(([k, n]) => `<div class="box"><b>${k}</b><small>${n} records</small></div>`).join('') + `<div class="box"><small>${esc(r.data.storage)} · Node ${esc(r.data.node)} · v${esc(r.data.version)}</small></div>`;
+      routes = r.data.routes; drawRoutes();
+    }
+    function drawRoutes() {
+      const q = $('#rfilter').value.toLowerCase();
+      const list = routes.filter((x) => `${x.method} ${x.path} ${x.access}`.toLowerCase().includes(q));
+      $('#route-count').textContent = `${routes.length} endpoints, discovered from the running server`;
+      $('#routes').innerHTML = list.map((x) => `<tr><td class="m m-${x.method}">${x.method}</td><td class="p">${esc(x.path)}</td><td><span class="acc ${x.access}">${x.access}</span></td></tr>`).join('');
+    }
+    async function logs() {
+      const r = await get('/api/system/logs').catch(() => null);
+      if (!r || !r.ok) return;
+      $('#log').innerHTML = r.data.logs.slice(0, 40).map((l) => `<tr><td>${new Date(l.at).toLocaleTimeString()}</td><td class="m m-${l.method}">${l.method}</td><td class="p">${esc(l.route)}</td><td class="s${String(l.status)[0]}">${l.status}</td><td>${l.ms}</td></tr>`).join('');
+    }
+    $('#rfilter').addEventListener('input', drawRoutes);
+    document.querySelectorAll('[data-call]').forEach((b) => b.addEventListener('click', async () => { await get(b.dataset.call); logs(); }));
+
+    $('#mform').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const [lat, lng] = $('#m-loc').value.split(',');
+      const q = new URLSearchParams({ [$('#m-unit').value]: $('#m-kg').value, foodType: $('#m-type').value, lat, lng });
+      if ($('#m-org').value) q.set('type', $('#m-org').value);
+      const url = `/api/match?${q}`;
+      $('#m-url').textContent = `GET ${url}`;
+      const r = await get(url);
+      $('#m-json').textContent = JSON.stringify(r.data, null, 2);
+      if (!r.ok) { $('#m-summary').innerHTML = `<div class="summary" style="background:#fdecea;color:var(--red)">${esc(r.data.error || 'Request failed')}</div>`; $('#m-results').innerHTML = ''; logs(); return; }
+      const d = r.data;
+      $('#m-summary').innerHTML = `<div class="summary">${esc(d.summary)}</div>`;
+      $('#m-results').innerHTML = d.matches.slice(0, 5).map((m) => `<div class="m"><div class="sc">${m.score}</div><div><b>${esc(m.organization.name)}</b><small>${esc(m.organization.type)} · ${m.distanceKm} km · ${esc(m.reasons.slice(0, 3).join(' · '))}</small>${m.warnings.length ? `<small style="color:var(--amber)">${esc(m.warnings.join('. '))}</small>` : ''}</div><span class="tag ${m.takesAll ? '' : 'w'}">${m.takesAll ? 'takes all' : m.canTakeKg + ' kg'}</span></div>`).join('') + (d.excluded.length ? `<small style="color:var(--muted)">Excluded: ${d.excluded.map((x) => esc(x.organization.name) + ' (' + esc(x.reason) + ')').join('; ')}</small>` : '');
+      logs();
+    });
+    status(); logs(); $('#mform').requestSubmit();
+    setInterval(status, 6000); setInterval(logs, 3000);
+  </script>
+</body>
+</html>

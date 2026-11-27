@@ -9,27 +9,39 @@
 
 ---
 
-## Project structure: frontend and backend
+## Project structure: frontend, application logic and backend
 
-CampusFoodShare is a full-stack project with two clearly separated parts that talk over a JSON API.
+The project has three layers. The **Backend console** (`/system.html`) shows all three working live, so it can be demonstrated in front of an examiner.
+
+| Layer | What it is | Where |
+|---|---|---|
+| **1. Frontend** | What people see: the public website (`/`), the platform web app (`/app/`) and the backend console (`/system.html`). Plain HTML, CSS and JavaScript, no build step. | `frontend/` |
+| **2. Application logic (backend)** | Node.js + Express REST API. Holds the rules: the **matching engine**, ranking (Haversine distance + min-heap), roles and permissions, PIN handover, validation, spam protection, live updates. | `backend/server.js`, `backend/src/` |
+| **3. Data** | A JSON-file database (collections: users, organizations, listings, requests, messages). Created and seeded on first run. | `backend/data/db.json` |
 
 ```
 CampusFoodShare/
-├── frontend/                  FRONTEND (what people see, plain HTML / CSS / JavaScript, no build step)
-│   ├── index.html, site.css, site.js    Public website: explains the project, donate WITHOUT an account,
-│   │                                    track your donation, live food listings, helplines, FAQ, contact form
-│   └── app/                             Platform web app: role dashboards (donor, NGO, volunteer, admin),
-│       ├── index.html, styles.css       live map, GPS, claim / PIN collect / rate, requests, admin console
-│       └── app.js, easy.js, ux.js
-├── backend/                   BACKEND (Node.js + Express REST API, serves the frontend too)
-│   ├── server.js                        Routes: auth, listings, requests, live updates (SSE), public API, admin
-│   ├── src/models, src/storage, src/utils, src/seed    Validation, JSON-file database, Haversine, heap queue, seed data
-│   ├── data/db.json                     Database file (created and seeded on first run)
-│   └── test/api.test.js                 25 automated API tests (npm test)
-├── package.json, render.yaml, .env.example
+├── frontend/
+│   ├── index.html, site.css, site.js     Public website: donate with NO account, "where can I donate this?", ashram directory, tracker, FAQ, contact
+│   ├── system.html                       Backend console: architecture, live database counts, matching tester, API list, live request log
+│   └── app/                              Platform web app: donor / NGO / volunteer / admin dashboards, live map, GPS, claim, PIN, requirements
+├── backend/
+│   ├── server.js                         REST API (about 47 endpoints) and static hosting of the frontend
+│   ├── src/utils/matcher.js              Matching engine
+│   ├── src/models, src/storage, src/utils, src/seed
+│   ├── data/db.json                      Database file
+│   └── test/api.test.js                  31 automated API tests (npm test)
+└── package.json, render.yaml, .env.example
 ```
 
-**How the two parts connect:** the frontend never stores real data. The public website and the platform call the backend (`/api/...`); the backend validates, applies role permissions, stores data and pushes live updates to every open browser. Open **`/`** for the public website and **`/app/`** for the platform.
+### "I have 50 kg of food. Where can I donate it?"
+Organisations (ashrams, old-age homes, orphanages, shelters, community kitchens, hostels) keep their **requirements** up to date: how much food they need today, daily capacity, which food they accept (Veg / Non-Veg / Vegan / Bakery), opening hours, whether they can send a volunteer, and where they are. NGO users edit this on the **Our Requirements** page.
+
+When a donor enters an amount and a food type, `GET /api/match` ranks every organisation:
+
+`score = 40% how much of the food it can take + 25% closeness (Haversine) + 20% how much it still needs today + 15% open now`
+
+Organisations that do not accept that food (for example a vegetarian-only ashram for non-veg food) are excluded with the reason shown. If no single place can take everything, the engine suggests a **split** (for example "97 kg to A, 172 kg to B"). A donor can then **direct** the donation to a chosen ashram: it is reserved for that organisation for 30 minutes, after which any NGO can claim it. Capacity is reduced as food is claimed or directed during the day, so the numbers stay honest.
 
 ### What a brand-new visitor can do (no account, no prior knowledge)
 1. Open the website, read **"What would you like to do?"** (donate / need food / NGO or volunteer) and the FAQ.
@@ -41,9 +53,9 @@ CampusFoodShare/
 ### Main API endpoints
 | Area | Endpoints |
 |---|---|
-| Public (no login) | `GET /api/listings`, `GET /api/impact`, `GET /api/directory`, `POST /api/public/donations`, `GET /api/public/donations/:id?token=`, `POST /api/public/donations/:id/withdraw`, `POST /api/public/contact`, `POST /api/requests`, `GET /api/requests/:id` |
+| Public (no login) | `GET /api/match`, `GET /api/organizations`, `GET /api/system/status`, `GET /api/system/logs`, `GET /api/listings`, `GET /api/impact`, `GET /api/directory`, `POST /api/public/donations`, `GET /api/public/donations/:id?token=`, `POST /api/public/donations/:id/withdraw`, `POST /api/public/contact`, `POST /api/requests`, `GET /api/requests/:id` |
 | Auth | `POST /api/auth/signup`, `signin`, `signout`, `forgot`, `reset`, `password`, `GET /api/auth/me` |
-| Donor / NGO / Volunteer | `POST /api/listings`, `/:id/claim`, `/:id/release`, `/:id/collect`, `/:id/feedback`, `GET /api/dashboard`, `/api/locations`, `POST /api/location` |
+| Donor / NGO / Volunteer | `GET/PUT /api/organization` (NGO requirements), `POST /api/listings`, `/:id/claim`, `/:id/release`, `/:id/collect`, `/:id/feedback`, `GET /api/dashboard`, `/api/locations`, `POST /api/location` |
 | Admin | `GET /api/admin/users`, `PATCH /api/admin/users/:id`, `GET/PATCH /api/admin/messages`, `POST /api/admin/start-fresh`, `POST /api/reset-demo` |
 | Live | `GET /api/stream` (server-sent events) |
 

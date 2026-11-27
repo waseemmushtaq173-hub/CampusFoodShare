@@ -139,7 +139,24 @@ function generateSeedData() {
     { name: 'City Hunger Helpline (demo)', area: 'All areas', phone: '+91 80000 12004', hours: '24 hours' },
   ];
 
-  return { meta: { demo: true, seededAt: iso(now) }, users, donors: [], ngos: [], listings, claims: [], notifications, feedbacks: [], requests, directory };
+  // ---- ashrams, homes, shelters and kitchens, each with its own requirements (demo data) ----
+  const org = (id, name, type, area, lat, lng, phone, open, close, diets, cap, need, served, pickup, notes, userId) => ({
+    id, name, type, area, address: `${name}, ${area}`, lat, lng, phone, hours: { open, close }, acceptsDiets: diets,
+    capacityKgPerDay: cap, needsKgToday: need, peopleServed: served, canPickup: pickup, notes, userId: userId || null, verified: true, active: true, updatedAt: iso(now - 2 * H),
+  });
+  const ALL = ['Veg', 'Non-Veg', 'Vegan', 'Bakery'];
+  const organizations = [
+    org('org-ngo-1', 'Robin Hood Army, Campus Chapter', 'Community kitchen', 'Central Campus', 12.9716, 77.5946, '+91 99001 22334', '08:00', '22:00', ALL, 150, 90, 400, true, 'Volunteers collect from any campus gate.', 'usr-ngo-1'),
+    org('org-ngo-2', 'Akshaya Seva Trust & Shelter', 'Shelter', 'Basavanagudi', 12.9425, 77.5731, '+91 99001 55667', '06:00', '22:00', ALL, 200, 120, 260, true, 'Night shelter. Hot meals served at 7 pm and 8 am.', 'usr-ngo-2'),
+    org('org-ngo-3', 'Annapurna Community Kitchen', 'Community kitchen', 'Jayanagar', 12.9128, 77.5618, '+91 99001 88990', '07:00', '21:00', ALL, 100, 60, 300, true, 'Serves a free lunch every day.', 'usr-ngo-3'),
+    org('org-1', 'Sri Annapoorna Ashram', 'Ashram', 'Malleshwaram', 13.0035, 77.5647, '+91 80000 22001', '06:00', '21:00', ['Veg', 'Vegan', 'Bakery'], 120, 70, 150, true, 'Vegetarian only. Residents and visiting pilgrims.'),
+    org('org-2', 'Shanthi Nilaya Old Age Home', 'Old-age home', 'Jayanagar', 12.9308, 77.5838, '+91 80000 22002', '07:00', '20:00', ['Veg', 'Vegan', 'Bakery'], 40, 25, 60, false, 'Soft, lightly spiced food preferred. Please drop off at the front desk.'),
+    org('org-3', "Bala Vikas Children's Home", 'Orphanage', 'Indiranagar', 12.9784, 77.6408, '+91 80000 22003', '08:00', '20:00', ['Veg', 'Non-Veg', 'Bakery'], 60, 35, 80, true, 'Fresh fruit and bakery items are especially welcome.'),
+    org('org-4', 'Sri Ramakrishna Seva Ashram', 'Ashram', 'Hebbal', 13.0358, 77.597, '+91 80000 22004', '05:30', '20:30', ['Veg', 'Vegan'], 150, 80, 200, true, 'Large kitchen. Can take big quantities in the evening.'),
+    org('org-5', 'Vidya Dhama Hostel for the Underprivileged', 'Hostel', 'Kengeri', 12.9352, 77.5365, '+91 80000 22005', '07:00', '21:00', ['Veg', 'Bakery'], 80, 50, 120, false, 'Students arrive at 6 pm. Drop-off only.'),
+  ];
+
+  return { meta: { demo: true, seededAt: iso(now) }, users, donors: [], ngos: [], listings, claims: [], notifications, feedbacks: [], requests, directory, organizations };
 }
 
 if (require.main === module) {

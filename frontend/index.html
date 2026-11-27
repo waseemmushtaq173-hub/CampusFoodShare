@@ -11,7 +11,7 @@
   <header class="topbar">
     <a class="brand" href="#home"><span class="brand-mark">🍃</span><span>Campus<span class="brand-green">FoodShare</span></span></a>
     <nav aria-label="Main">
-      <a href="#get-started">Get started</a><a href="#how-it-works">How it works</a><a href="#food-listings">Food nearby</a><a href="#faq">FAQ</a><a href="#contact">Contact</a>
+      <a href="#get-started">Get started</a><a href="#donate">Donate</a><a href="#organizations">Ashrams &amp; NGOs</a><a href="#food-listings">Food nearby</a><a href="#faq">FAQ</a><a href="#contact">Contact</a>
     </nav>
     <div class="nav-actions"><a class="nav-link" href="/app/">Open platform</a><a class="nav-cta" href="#donate">+ Donate food</a></div>
   </header>
@@ -71,7 +71,7 @@
     </section>
 
     <section class="section donate-section" id="donate">
-      <div class="donate-intro"><div class="eyebrow">START YOUR FIRST DONATION</div><h2>Share food with<br /><span>someone who needs it.</span></h2><p>Fill in a few details. Your food listing goes live straight away so a local team can claim it. You do not need an account.</p>
+      <div class="donate-intro"><div class="eyebrow">START YOUR FIRST DONATION</div><h2>Share food with<br /><span>someone who needs it.</span></h2><p>Fill in a few details. Your food listing goes live straight away so a local team can claim it. You do not need an account.</p><div class="match-tip"><strong>Not sure where to donate?</strong><p>Enter how much food you have (for example <b>50 kg</b>) and the type. We suggest nearby ashrams and NGOs that need it, can take that amount and are open.</p></div>
         <div class="safety-note"><span>ⓘ</span><div><strong>Food safety reminder</strong><p>Only share fresh, safely stored food in clean containers. Add a realistic pickup deadline and mention allergens or special handling.</p></div></div>
       </div>
       <div class="donate-side">
@@ -80,10 +80,15 @@
           <div class="form-grid">
             <label>Food name *<input name="foodTitle" required maxlength="140" placeholder="e.g. Vegetable rice" /></label>
             <label>Type of food *<select name="foodType" required><option value="">Choose type</option><option value="Veg">Vegetarian</option><option value="Non-Veg">Non-vegetarian</option><option value="Vegan">Vegan</option><option value="Bakery">Bakery / packaged</option></select></label>
-            <label>Approx. number of meals *<input name="quantityMeals" required type="number" min="1" max="5000" inputmode="numeric" placeholder="e.g. 25" /></label>
+            <label>How much food? *<span class="qty"><input name="quantity" required type="number" min="0.5" max="2000" step="any" inputmode="decimal" placeholder="e.g. 50" /><select name="unit" aria-label="Unit"><option value="kg">kg</option><option value="meals">meals</option></select></span></label>
             <label>Pickup deadline *<input name="useBefore" required type="datetime-local" /></label>
             <label class="full">Pickup location *<input name="address" required maxlength="140" placeholder="Building, campus or street" /></label>
             <div class="full geo-row"><button type="button" class="button ghost" id="geo-btn">Use my current location</button><span id="geo-status" class="geo-status">Optional. Without it we show your pickup as near the campus centre.</span></div>
+            <div class="full match-panel" id="match-panel" hidden>
+              <div class="mp-head"><strong>Where can you donate this?</strong><span id="mp-sub"></span><select id="mp-type" aria-label="Show only"><option value="">All kinds</option><option>Ashram</option><option>Old-age home</option><option>Orphanage</option><option>Shelter</option><option>Community kitchen</option><option>Hostel</option></select></div>
+              <div id="mp-list" class="mp-list"></div>
+              <p id="mp-note" class="mp-note"></p>
+            </div>
             <label>Donor name *<input name="donorName" required maxlength="80" placeholder="Your name / canteen name" /></label>
             <label>Phone number *<input name="phone" required type="tel" pattern="[0-9+() -]{7,20}" placeholder="Your contact number" /></label>
             <label class="full">Additional information<textarea name="notes" rows="3" maxlength="300" placeholder="Preparation time, allergens, packaging, instructions..."></textarea></label>
@@ -107,6 +112,12 @@
       <div class="section-heading listings-heading"><div><div class="eyebrow">HELP FOOD FIND A HOME</div><h2>Available food nearby</h2></div><span class="listing-subtitle" id="listing-subtitle">Live listings • Updated automatically</span></div>
       <div id="listings" class="listing-grid"></div>
       <p class="listing-footer">NGOs and volunteers: <a href="/app/?join=ngo">sign in to claim food</a> and see the live map. Looking for food? <a href="/app/#/need">Use Find food</a>.</p>
+    </section>
+
+    <section class="section org-section" id="organizations">
+      <div class="section-heading"><div><div class="eyebrow">WHERE YOUR FOOD CAN GO</div><h2>Ashrams, homes and NGOs that need food</h2></div><p>Each one keeps its own requirements up to date: what it needs today, how much it can take, what food it accepts and when it is open.</p></div>
+      <div id="org-filters" class="org-filters"></div>
+      <div id="org-list" class="org-grid"></div>
     </section>
 
     <section class="section help-section" id="need-help">
@@ -143,7 +154,7 @@
       </form>
     </section>
   </main>
-  <footer><a class="brand" href="#home"><span class="brand-mark">🍃</span><span>Campus<span class="brand-green">FoodShare</span></span></a><p>Sharing surplus. Supporting communities. Reducing waste.</p><small>Student project • Waseem Mushtaq Mir &amp; Harsha S • Guide: AT Sangeeta • <a href="/app/">Platform</a></small></footer>
+  <footer><a class="brand" href="#home"><span class="brand-mark">🍃</span><span>Campus<span class="brand-green">FoodShare</span></span></a><p>Sharing surplus. Supporting communities. Reducing waste.</p><small>Student project • Waseem Mushtaq Mir &amp; Harsha S • Guide: AT Sangeeta • <a href="/app/">Platform</a> • <a href="/system.html">Backend console</a></small></footer>
   <script src="site.js"></script>
 </body>
 </html>

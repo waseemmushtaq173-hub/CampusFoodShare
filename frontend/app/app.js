@@ -46,7 +46,7 @@ const CLAIM_ROLES = ['ngo', 'volunteer', 'admin'];
 const NAV = {
   guest: [['start', 'Start Here', 'home'], ['need', 'Find Food', 'utensils'], ['track', 'My Request', 'clock'], ['explore', 'Live Map', 'map'], ['insights', 'Insights', 'chart'], ['overview', 'About', 'heart'], ['roadmap', 'Roadmap', 'rocket']],
   donor: [['dashboard', 'Dashboard', 'grid'], ['give', 'Donate Food', 'gift'], ['mylistings', 'My Listings', 'list'], ['explore', 'Live Map', 'map'], ['post', 'Detailed Form', 'plus'], ['schedules', 'Recurring Surplus', 'calendar', true], ['insights', 'Insights', 'chart'], ['roadmap', 'Roadmap', 'rocket'], ['settings', 'Settings', 'sliders']],
-  ngo: [['dashboard', 'Dashboard', 'grid'], ['requests', 'Food Requests', 'heart'], ['explore', 'Find & Claim', 'map'], ['pickups', 'My Pickups', 'truck'], ['routes', 'Route Planner', 'route', true], ['insights', 'Insights', 'chart'], ['roadmap', 'Roadmap', 'rocket'], ['settings', 'Settings', 'sliders']],
+  ngo: [['dashboard', 'Dashboard', 'grid'], ['requests', 'Food Requests', 'heart'], ['explore', 'Find & Claim', 'map'], ['pickups', 'My Pickups', 'truck'], ['org', 'Our Requirements', 'store'], ['routes', 'Route Planner', 'route', true], ['insights', 'Insights', 'chart'], ['roadmap', 'Roadmap', 'rocket'], ['settings', 'Settings', 'sliders']],
   volunteer: [['dashboard', 'Dashboard', 'grid'], ['requests', 'Food Requests', 'heart'], ['explore', 'Available Pickups', 'map'], ['pickups', 'My Tasks', 'truck'], ['routes', 'Route Planner', 'route', true], ['insights', 'Insights', 'chart'], ['roadmap', 'Roadmap', 'rocket'], ['settings', 'Settings', 'sliders']],
   admin: [['dashboard', 'Overview', 'grid'], ['requests', 'Food Requests', 'heart'], ['moderation', 'All Listings', 'list'], ['users', 'Users & Roles', 'users'], ['inbox', 'Messages', 'message'], ['explore', 'Live Map', 'map'], ['insights', 'Insights', 'chart'], ['reports', 'Reports & Certificates', 'award', true], ['integrations', 'SMS & WhatsApp', 'message', true], ['roadmap', 'Roadmap', 'rocket'], ['settings', 'Settings', 'sliders']],
 };
@@ -55,7 +55,7 @@ const PAGE_SUB = {
   overview: 'Public, read-only view of the platform', explore: 'Real-time listings ranked by distance and expiry', post: 'Alert nearby NGOs in under a minute',
   mylistings: 'Track every listing you have posted', pickups: 'Your claimed and completed rescues', moderation: 'Review and moderate every listing',
   users: 'Manage roles and access', insights: 'Impact analytics and leaderboards', roadmap: 'Shipped features and what is next',
-  start: 'Share surplus food with people nearby', inbox: 'Messages from the public website', track: 'Follow your request for food', settings: 'Your account and preferences', start_: '', need: 'Free food close to you', give: 'Give food in a few taps', requests: 'People asking for food near you',
+  start: 'Share surplus food with people nearby', org: 'Tell donors what your organisation needs', inbox: 'Messages from the public website', track: 'Follow your request for food', settings: 'Your account and preferences', start_: '', need: 'Free food close to you', give: 'Give food in a few taps', requests: 'People asking for food near you',
 };
 const hasRequest = () => { try { return !!localStorage.getItem('cf_req'); } catch (e) { return false; } };
 const roleOf = () => (currentUser ? currentUser.role : 'guest');
@@ -237,11 +237,11 @@ function loadRoute(route) {
   loadNotifications(route === 'overview');
   if (SOON[route]) return renderSoon(route);
   ({
-    overview: () => {}, inbox: loadInbox, track: loadTrack, settings: renderSettings, start: loadStart, need: loadNeed, give: renderGive, requests: loadRequests, dashboard: loadDashboard, explore: () => { loadListings(); loadLocations(); }, mylistings: loadMyListings, pickups: loadPickups,
+    overview: () => {}, org: loadOrg, inbox: loadInbox, track: loadTrack, settings: renderSettings, start: loadStart, need: loadNeed, give: renderGive, requests: loadRequests, dashboard: loadDashboard, explore: () => { loadListings(); loadLocations(); }, mylistings: loadMyListings, pickups: loadPickups,
     moderation: loadModeration, users: loadUsers, insights: loadInsights, roadmap: renderRoadmap, post: () => {},
   }[route] || (() => {}))();
 }
-const STATIC_ROUTES = ['settings', 'post', 'give', 'roadmap'];
+const STATIC_ROUTES = ['settings', 'post', 'give', 'roadmap', 'org'];
 const refreshCurrent = () => { const r = currentRoute(); if (!STATIC_ROUTES.includes(r) && !SOON[r]) loadRoute(r); };
 function debouncedRefresh() { clearTimeout(refreshTimer); refreshTimer = setTimeout(refreshCurrent, 250); }
 const go = (r) => { location.hash = `#/${r}`; };
@@ -425,7 +425,7 @@ function cardHtml(item, idx) {
       <div><span class="listing-title">#${idx + 1} · ${esc(item.foodTitle)}</span>
         <div class="sub">${esc(item.donorName)}${item.donorPhone ? ` · <a href="tel:${esc(item.donorPhone.replace(/\s/g, ''))}">${esc(item.donorPhone)}</a>` : ''}</div></div>
       <div class="badges"><span class="badge badge-${esc(item.status)}">${esc(item.status.toUpperCase())}</span>${item.status === 'posted' ? timerBadge(item.useBefore) : ''}
-        <span class="badge">Freshness ${esc(item.aiFreshnessScore || 95)}%</span><span class="badge">${esc(item.distanceKm)} km</span>${item.source === 'public-form' ? '<span class="badge" title="Posted from the public website without an account">Website donor</span>' : ''}</div>
+        <span class="badge">Freshness ${esc(item.aiFreshnessScore || 95)}%</span><span class="badge">${esc(item.distanceKm)} km</span>${item.source === 'public-form' ? '<span class="badge" title="Posted from the public website without an account">Website donor</span>' : ''}${item.targetOrgName && Date.parse(item.directedUntil) > Date.now() ? `<span class="badge" title="Reserved for the first 30 minutes">Reserved: ${esc(item.targetOrgName)}</span>` : ''}</div>
     </div>
     <div class="stepper"><div class="done">1 · Posted</div><div class="${done(2)}">2 · Claimed</div><div class="${item.status === 'collected' ? 'done' : ''}">3 · Collected</div></div>
     <div class="listing-meta">
@@ -897,6 +897,7 @@ async function handleDonorSubmit(e) {
     donorName: $('donorName').value, donorPhone: $('donorPhone').value, foodType: $('foodType').value, foodTitle: $('foodTitle').value,
     quantityMeals: Number($('quantityMeals').value), aiFreshnessScore: latestAiScan.freshnessScore, aiFreshnessStatus: latestAiScan.freshnessStatus,
     useBefore: new Date(Date.now() + parseFloat($('hoursValid').value) * 3600000).toISOString(),
+    ...($('targetOrg') && $('targetOrg').value ? { targetOrgId: $('targetOrg').value } : {}),
     safetyChecklistConfirmed: total > 0 && checked.length === total, checklistItems: checked,
     location: { address: $('pickupAddress').value, lat: parseFloat($('pickupLat').value), lng: parseFloat($('pickupLng').value) },
   } });

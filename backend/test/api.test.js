@@ -445,3 +445,107 @@ test('public forms are rate limited per device', async () => {
     assert.equal(c.status, 429);
   } finally { await srv.stop(); try { fs.unlinkSync(file); } catch (e) { /* ignore */ } }
 });
+
+/* ---- matching: "I have 50 kg of food, where can I donate it?" ---- */
+const { match: matchUnit, isOpen } = require('../src/utils/matcher');
+const { generateSeedData: seedForMatch } = require('../src/seed/seedFaker');
+const NOON = new Date(2026, 10, 27, 12, 0);
+
+test('matcher: ranks organisations by fit, distance, need and opening hours', () => {
+  const db = seedForMatch();
+  const r = matchUnit(db, { kg: 50, foodType: 'Veg', lat: 12.9128, lng: 77.5618, now: NOON });
+  assert.ok(r.matches.length >= 4);
+  assert.ok(r.matches[0].takesAll, 'the best match can take everything');
+  assert.ok(r.matches[0].distanceKm <= r.matches[r.matches.length - 1].distanceKm || r.matches[0].score >= r.matches[1].score);
+  for (let i = 1; i < r.matches.length; i++) assert.ok(r.matches[i - 1].score >= r.matches[i].score, 'sorted by score');
+  assert.ok(r.matches.every((m) => m.reasons.length >= 3), 'every match explains itself');
+  assert.match(r.summary, /can take all 50 kg/);
+  assert.equal(r.plan.length, 0, 'no split needed when one place can take it all');
+});
+
+test('matcher: respects accepted food, capacity and a closed organisation', () => {
+  const db = seedForMatch();
+  const nonVeg = matchUnit(db, { kg: 30, foodType: 'Non-Veg', lat: 12.97, lng: 77.59, now: NOON });
+  assert.ok(nonVeg.matches.every((m) => m.organization.acceptsDiets.includes('Non-Veg')), 'veg-only ashrams are never recommended for non-veg food');
+  assert.ok(nonVeg.excluded.some((e) => /Ashram/.test(e.organization.name) && /Non-Veg/.test(e.reason)), 'and the reason is shown');
+  const big = matchUnit(db, { kg: 500, foodType: 'Veg', lat: 12.97, lng: 77.59, now: NOON });
+  assert.ok(big.plan.length >= 2, 'a very large donation is split across organisations');
+  const planned = big.plan.reduce((s, p) => s + p.kg, 0) + big.leftoverKg;
+  assert.ok(Math.abs(planned - 500) < 1, 'the split adds up to the donation');
+  const night = matchUnit(db, { kg: 20, foodType: 'Veg', lat: 12.97, lng: 77.59, now: new Date(2026, 10, 27, 23, 30) });
+  assert.ok(night.matches.every((m) => !m.openNow) && night.matches[0].warnings.some((w) => /Closed now/.test(w)), 'closed places carry a warning');
+  const org = db.organizations[0];
+  assert.equal(isOpen({ hours: { open: '22:00', close: '02:00' } }, new Date(2026, 10, 27, 1, 0)), true, 'hours past midnight');
+  assert.equal(isOpen(org, NOON), true);
+  const ashrams = matchUnit(db, { kg: 20, foodType: 'Veg', lat: 12.97, lng: 77.59, orgType: 'Ashram', now: NOON });
+  assert.ok(ashrams.matches.length >= 2 && ashrams.matches.every((m) => m.organization.type === 'Ashram'), 'can ask for ashrams only');
+});
+
+test('match API is public and validates input', async () => {
+  const ok = await call('GET', '/api/match?kg=50&foodType=Veg&lat=12.9128&lng=77.5618');
+  assert.equal(ok.status, 200);
+  assert.equal(ok.data.request.kg, 50);
+  assert.ok(ok.data.matches.length > 0 && ok.data.summary);
+  assert.equal((await call('GET', '/api/match?meals=100')).data.request.kg, 35, 'meals convert to kg');
+  assert.equal((await call('GET', '/api/match')).status, 400);
+  assert.equal((await call('GET', '/api/match?kg=99999')).status, 400);
+  assert.equal((await call('GET', '/api/match?kg=10&foodType=Soup')).status, 400);
+  assert.equal((await call('GET', '/api/match?kg=10&type=Palace')).status, 400);
+  assert.equal((await call('GET', '/api/match?kg=10&type=Ashram&foodType=Veg')).data.matches.every((m) => m.organization.type === 'Ashram'), true);
+  const list = await call('GET', '/api/organizations');
+  assert.ok(list.data.organizations.length >= 8);
+  assert.ok(list.data.organizations.every((o) => typeof o.capacityLeftKg === 'number' && typeof o.openNow === 'boolean'));
+});
+
+test('an NGO updates its requirements and matching reflects it straight away', async () => {
+  assert.equal((await call('GET', '/api/organization/me')).status, 401);
+  assert.equal((await call('GET', '/api/organization/me', undefined, tok.donor)).status, 403);
+  const mine = (await call('GET', '/api/organization/me', undefined, tok.ngo)).data.organization;
+  assert.equal(mine.id, 'org-ngo-1');
+  const body = { name: mine.name, type: mine.type, address: mine.address, area: mine.area, phone: mine.phone, lat: mine.lat, lng: mine.lng, hours: mine.hours, acceptsDiets: ['Veg'], capacityKgPerDay: 400, needsKgToday: 300, peopleServed: 500, canPickup: true, notes: 'Big event tonight' };
+  assert.equal((await call('PUT', '/api/organization', { ...body, capacityKgPerDay: 0 }, tok.ngo)).status, 400, 'capacity must be positive');
+  assert.equal((await call('PUT', '/api/organization', { ...body, acceptsDiets: [] }, tok.ngo)).status, 400, 'must accept something');
+  assert.equal((await call('PUT', '/api/organization', { ...body, hours: { open: '6am', close: '9pm' } }, tok.ngo)).status, 400, 'hours format');
+  assert.equal((await call('PUT', '/api/organization', body, tok.donor)).status, 403);
+  const saved = await call('PUT', '/api/organization', body, tok.ngo);
+  assert.equal(saved.status, 200);
+  assert.equal(saved.data.organization.needsKgToday, 300);
+  const m = (await call('GET', '/api/match?kg=100&foodType=Veg&lat=12.9716&lng=77.5946')).data.matches.find((x) => x.organization.id === 'org-ngo-1');
+  assert.ok(m && m.canTakeKg === 100 && /Still needs about/.test(m.reasons.join(' ')), 'new capacity and need are used');
+  assert.equal((await call('GET', '/api/match?kg=20&foodType=Non-Veg&lat=12.9716&lng=77.5946')).data.matches.some((x) => x.organization.id === 'org-ngo-1'), false, 'new diet list is used');
+});
+
+test('food can be directed to a chosen ashram: reserved for it, then open to everyone', async () => {
+  assert.equal((await call('POST', '/api/public/donations', guestDonation({ quantityMeals: undefined, quantityKg: 50, targetOrgId: 'org-nope' }))).status, 400, 'unknown organisation');
+  assert.equal((await call('POST', '/api/public/donations', guestDonation({ quantityMeals: undefined, quantityKg: 50, foodType: 'Non-Veg', targetOrgId: 'org-1' }))).status, 400, 'organisation does not accept it');
+  const d = await call('POST', '/api/public/donations', guestDonation({ foodTitle: 'Directed 50 kg rice', quantityMeals: undefined, quantityKg: 50, foodType: 'Veg', targetOrgId: 'org-ngo-2' }));
+  assert.equal(d.status, 201);
+  const listed = (await call('GET', '/api/listings?status=posted')).data.listings.find((l) => l.id === d.data.id);
+  assert.equal(listed.weightKg, 50, 'kilograms are stored exactly');
+  assert.equal(listed.quantityMeals, 143, '50 kg is about 143 meals');
+  assert.equal(listed.targetOrgName, 'Akshaya Seva Trust & Shelter');
+  const other = await call('POST', `/api/listings/${d.data.id}/claim`, { ngoName: 'Other', volunteerName: 'V' }, tok.ngo);
+  assert.equal(other.status, 409, 'another NGO cannot take reserved food');
+  assert.match(other.data.error, /Reserved for Akshaya/);
+  const admin = await call('POST', `/api/listings/${d.data.id}/release`, {}, tok.admin);
+  assert.equal(admin.status, 409, 'unclaimed food cannot be released');
+  const ngo2 = (await call('POST', '/api/auth/signin', { email: 'imran@campusfoodshare.org', password: 'ngo123', role: 'ngo' })).data.token;
+  assert.equal((await call('POST', `/api/listings/${d.data.id}/claim`, { ngoName: 'Akshaya', volunteerName: 'Irfan' }, ngo2)).status, 200, 'the chosen ashram can claim it');
+  const plat = await call('POST', '/api/listings', { foodTitle: 'Platform directed', foodType: 'Veg', quantityMeals: 20, useBefore: new Date(Date.now() + 2 * 3600000).toISOString(), location: { address: 'Gate', lat: 12.97, lng: 77.59 }, safetyChecklistConfirmed: true, checklistItems: ['temp_control', 'hygienic_containers', 'no_spoilage', 'allergen_labeled'], targetOrgId: 'org-2' }, tok.donor);
+  assert.equal(plat.status, 201);
+  assert.equal(plat.data.listing.targetOrgName, 'Shanthi Nilaya Old Age Home');
+});
+
+test('system status and request log describe the running backend', async () => {
+  const st = await call('GET', '/api/system/status');
+  assert.equal(st.status, 200);
+  assert.ok(st.data.counts.organizations >= 8 && st.data.counts.listings > 0);
+  assert.ok(st.data.routes.some((r) => r.path === '/api/match' && r.method === 'GET'));
+  assert.ok(st.data.routes.some((r) => r.path === '/api/public/donations' && r.access === 'public'));
+  assert.ok(st.data.routes.some((r) => r.path === '/api/admin/users' && r.access === 'admin'));
+  await call('GET', '/api/match?kg=5&foodType=Veg');
+  const logs = (await call('GET', '/api/system/logs')).data.logs;
+  assert.ok(logs.length > 0 && logs.every((l) => l.method && l.route && typeof l.status === 'number' && typeof l.ms === 'number'));
+  assert.ok(logs.some((l) => l.route === '/api/match'));
+  assert.ok(logs.every((l) => !String(l.route).includes('?') && !String(l.route).includes('token')), 'no query strings or secrets in the log');
+});

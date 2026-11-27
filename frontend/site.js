@@ -58,7 +58,7 @@
       return `<article class="listing-card">
         <div class="listing-top"><div class="food-emoji">${EMOJI[l.foodType] || '🍲'}</div><span class="status">Available</span></div>
         <h3>${esc(l.foodTitle)}</h3><div class="food-meta">${esc(l.foodType)}${l.notes ? ' • ' + esc(l.notes) : ''}</div>
-        <div class="listing-details"><span>▦ <b>${esc(l.quantityMeals)} meals</b></span><span>◷ Pickup by <b>${esc(when(l.useBefore))}</b></span><span>⌖ ${esc(l.location.address)}</span></div>
+        <div class="listing-details"><span>▦ <b>${esc(l.quantityMeals)} meals</b></span><span>◷ Pickup by <b>${esc(when(l.useBefore))}</b></span><span>⌖ ${esc(l.location.address)}</span>${l.targetOrgName && Date.parse(l.directedUntil) > Date.now() ? `<span>★ Reserved for <b>${esc(l.targetOrgName)}</b></span>` : ''}</div>
         <div class="listing-bottom"><span class="donor">Shared by ${esc(l.donorName)}</span><span class="btn-row">${phone ? `<a class="contact-btn" href="tel:${esc(phone)}">Call ↗</a>` : ''}<a class="contact-btn alt" href="${dir}" target="_blank" rel="noopener">Directions</a></span></div>
       </article>`;
     }).join('') || '<p class="empty-note">No food is listed right now. <a href="#donate">Be the first to share</a>.</p>';
@@ -83,15 +83,80 @@
   resetDeadline();
 
   let point = null;
+  let chosenOrg = '';
   $('#geo-btn').addEventListener('click', () => {
     const status = $('#geo-status');
     if (!navigator.geolocation) { status.textContent = 'Location is not available in this browser. We will use the campus centre.'; return; }
     status.textContent = 'Finding your location…';
     navigator.geolocation.getCurrentPosition(
-      (pos) => { point = { lat: Number(pos.coords.latitude.toFixed(5)), lng: Number(pos.coords.longitude.toFixed(5)) }; status.textContent = `Location saved (±${Math.round(pos.coords.accuracy)} m). Volunteers will get directions to this spot.`; status.classList.add('ok'); },
+      (pos) => { point = { lat: Number(pos.coords.latitude.toFixed(5)), lng: Number(pos.coords.longitude.toFixed(5)) }; status.textContent = `Location saved (±${Math.round(pos.coords.accuracy)} m). Volunteers will get directions to this spot.`; status.classList.add('ok'); updateMatches(); },
       () => { point = null; status.textContent = 'We could not get your location. Allow location access, or just continue: we will use the campus centre.'; },
       { enableHighAccuracy: true, timeout: 12000 }
     );
+  });
+
+
+  /* ── where can I donate this? ── */
+  const kgFromForm = () => { const q = Number(form.elements.quantity.value); return form.elements.unit.value === 'kg' ? q : q * 0.35; };
+  let matchTimer = null;
+  function updateMatches() { clearTimeout(matchTimer); matchTimer = setTimeout(runMatch, 400); }
+  async function runMatch() {
+    const panel = $('#match-panel');
+    const kg = kgFromForm();
+    const type = form.elements.foodType.value;
+    if (!(kg >= 0.5)) { panel.hidden = true; chosenOrg = ''; return; }
+    const q = new URLSearchParams({ kg: kg.toFixed(2) });
+    if (type) q.set('foodType', type);
+    if ($('#mp-type').value) q.set('type', $('#mp-type').value);
+    if (point) { q.set('lat', point.lat); q.set('lng', point.lng); }
+    const r = await api(`/api/match?${q}`);
+    panel.hidden = false;
+    if (!r.ok) { $('#mp-list').innerHTML = ''; $('#mp-sub').textContent = ''; $('#mp-note').textContent = r.data.error || 'Could not check where to donate right now.'; return; }
+    const d = r.data;
+    $('#mp-sub').textContent = `${d.request.kg} kg ≈ ${d.request.meals} meals${type ? ' • ' + type : ''}${point ? '' : ' • distance from the campus centre'}`;
+    const top = d.matches.slice(0, 4);
+    if (!top.some((m) => m.organization.id === chosenOrg)) chosenOrg = '';
+    const opt = (id, title, body, checked) => `<label class="mp-card ${checked ? 'on' : ''}"><input type="radio" name="targetOrg" value="${esc(id)}" ${checked ? 'checked' : ''} /><span class="mp-body"><span class="mp-title">${title}</span>${body}</span></label>`;
+    $('#mp-list').innerHTML = top.map((m, i) => {
+      const o = m.organization;
+      const tags = [`<span class="chip">${esc(o.type)}</span>`, m.takesAll ? '<span class="chip ok">Can take all</span>' : `<span class="chip warn">Can take ${esc(m.canTakeKg)} kg</span>`, m.openNow ? '<span class="chip ok">Open now</span>' : '<span class="chip warn">Closed now</span>', i === 0 ? '<span class="chip best">Best match</span>' : ''].join('');
+      return opt(o.id, `<strong>${esc(o.name)}</strong> ${tags}`, `<small>${esc(m.distanceKm)} km • ${esc(m.reasons.filter((x) => /needs|Needs/.test(x)).join('') || '')} • ${esc(o.canPickup ? 'Can send a volunteer' : 'Drop-off only')} • ${esc(o.phone)}</small>${m.warnings.length ? `<small class="warn-line">${esc(m.warnings.join('. '))}</small>` : ''}`, o.id === chosenOrg);
+    }).join('') + opt('', '<strong>Let any nearby team claim it</strong>', '<small>Best when you are unsure. Posted for every NGO and volunteer.</small>', !chosenOrg);
+    $('#mp-note').textContent = (d.plan.length ? 'Suggested split: ' + d.summary.replace(/^.*Suggested split: /, '') + ' Post one donation per place.' : d.summary) + (d.excluded.length ? ` Not suggested: ${d.excluded.slice(0, 3).map((e) => e.organization.name).join(', ')} (${d.excluded[0].reason.toLowerCase()}).` : '');
+  }
+  $('#mp-type').addEventListener('change', runMatch);
+  ['quantity', 'unit', 'foodType'].forEach((n) => form.elements[n].addEventListener('input', updateMatches));
+  $('#mp-list').addEventListener('change', () => { const sel = $('#mp-list').querySelector('input:checked'); chosenOrg = sel ? sel.value : ''; $('#mp-list').querySelectorAll('.mp-card').forEach((c) => c.classList.toggle('on', c.querySelector('input').checked)); });
+
+  /* ── ashrams, homes and NGOs with their live requirements ── */
+  let orgs = [], orgFilter = 'All';
+  const left = (o) => (o.needLeftKg > 0 ? `Needs about ${o.needLeftKg} kg today` : 'No urgent need left today');
+  function renderOrgs() {
+    const types = ['All', ...new Set(orgs.map((o) => o.type))];
+    $('#org-filters').innerHTML = types.map((t) => `<button type="button" class="chip-btn ${t === orgFilter ? 'on' : ''}" data-type="${esc(t)}">${esc(t)}</button>`).join('');
+    const list = orgs.filter((o) => orgFilter === 'All' || o.type === orgFilter);
+    $('#org-list').innerHTML = list.map((o) => {
+      const dir = `https://www.google.com/maps/dir/?api=1&destination=${o.lat},${o.lng}`;
+      const pct = Math.min(100, Math.round((o.receivedTodayKg / Math.max(1, o.capacityKgPerDay)) * 100));
+      return `<article class="org-card"><div class="oc-top"><span class="chip">${esc(o.type)}</span><span class="chip ${o.openNow ? 'ok' : 'warn'}">${o.openNow ? 'Open now' : 'Closed now'}</span></div>
+        <h3>${esc(o.name)}</h3><p class="oc-area">${esc(o.area)} • serves about ${esc(o.peopleServed)} people</p>
+        <div class="need-line"><strong>${esc(left(o))}</strong><div class="bar"><i style="width:${pct}%"></i></div><small>${esc(o.receivedTodayKg)} of ${esc(o.capacityKgPerDay)} kg capacity used today</small></div>
+        <ul class="oc-facts"><li>Accepts: ${esc(o.acceptsDiets.join(', '))}</li><li>Hours: ${esc(o.hours.open)} to ${esc(o.hours.close)}</li><li>${o.canPickup ? 'Can send a volunteer to collect' : 'Drop-off only'}</li>${o.notes ? `<li class="oc-note">${esc(o.notes)}</li>` : ''}</ul>
+        <div class="btn-row"><a class="contact-btn" href="tel:${esc(String(o.phone).replace(/[^\d+]/g, ''))}">Call ↗</a><a class="contact-btn alt" href="${dir}" target="_blank" rel="noopener">Directions</a><button type="button" class="contact-btn" data-donate-to="${esc(o.id)}">Donate here</button></div></article>`;
+    }).join('') || '<p class="empty-note">No organisations to show.</p>';
+  }
+  async function loadOrganizations() { const r = await api('/api/organizations'); if (r.ok) { orgs = r.data.organizations; renderOrgs(); } }
+  $('#org-filters').addEventListener('click', (e) => { const b = e.target.closest('[data-type]'); if (b) { orgFilter = b.dataset.type; renderOrgs(); } });
+  $('#org-list').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-donate-to]');
+    if (!b) return;
+    const o = orgs.find((x) => x.id === b.dataset.donateTo);
+    chosenOrg = o.id;
+    if (!form.elements.quantity.value) form.elements.quantity.value = Math.max(1, Math.min(50, Math.round(o.needLeftKg || 10)));
+    document.getElementById('donate').scrollIntoView({ behavior: 'smooth' });
+    await runMatch();
+    const radio = $('#mp-list').querySelector(`input[value="${CSS.escape(o.id)}"]`);
+    if (radio) { radio.checked = true; $('#mp-list').dispatchEvent(new Event('change')); } else $('#mp-note').textContent = `${o.name} is not in the top suggestions for this food type or amount. Check the type and quantity above.`;
   });
 
   const showError = (msg) => { const e = $('#form-error'); e.textContent = msg; e.hidden = !msg; };
@@ -102,7 +167,7 @@
     if (!form.elements.safetyConfirmed.checked) return showError('Please confirm the food safety statement before posting.');
     const f = form.elements;
     const body = {
-      foodTitle: f.foodTitle.value.trim(), foodType: f.foodType.value, quantityMeals: Number(f.quantityMeals.value), useBefore: new Date(f.useBefore.value).toISOString(),
+      foodTitle: f.foodTitle.value.trim(), foodType: f.foodType.value, ...(f.unit.value === 'kg' ? { quantityKg: Number(f.quantity.value) } : { quantityMeals: Number(f.quantity.value) }), ...(chosenOrg ? { targetOrgId: chosenOrg } : {}), useBefore: new Date(f.useBefore.value).toISOString(),
       address: f.address.value.trim(), donorName: f.donorName.value.trim(), phone: f.phone.value.trim(), notes: f.notes.value.trim(), safetyConfirmed: true, website: f.website.value,
       ...(point || {}),
     };
@@ -121,7 +186,7 @@
         <div class="success-actions"><button class="button primary" type="button" id="copy-link">Copy link</button><a class="button ghost" href="#my-donations">Track my donation</a><button class="button ghost" type="button" id="donate-again">Share more food</button></div>`;
       form.hidden = true; $('#donation-success').hidden = false;
       $('#copy-link').addEventListener('click', async (e) => { try { await navigator.clipboard.writeText(link); e.target.textContent = 'Copied'; } catch (err) { $('#track-link').select(); } });
-      $('#donate-again').addEventListener('click', () => { form.reset(); resetDeadline(); point = null; $('#geo-status').textContent = 'Optional. Without it we show your pickup as near the campus centre.'; form.hidden = false; $('#donation-success').hidden = true; });
+      $('#donate-again').addEventListener('click', () => { form.reset(); resetDeadline(); point = null; chosenOrg = ''; $('#match-panel').hidden = true; $('#geo-status').textContent = 'Optional. Without it we show your pickup as near the campus centre.'; form.hidden = false; $('#donation-success').hidden = true; });
     }
     refreshAll();
   }) ;
@@ -142,7 +207,7 @@
       const who = c ? `<p class="who"><b>${esc(c.ngoName)}</b> is collecting. Volunteer: <b>${esc(c.volunteerName)}</b>${c.volunteerPhone ? ` • <a href="tel:${esc(String(c.volunteerPhone).replace(/[^\d+]/g, ''))}">${esc(c.volunteerPhone)}</a>` : ''}</p>` : '';
       const note = d.status === 'posted' ? '<p class="soft">Waiting for a nearby NGO or volunteer to claim it. You will see their details here.</p>' : d.status === 'expired' ? '<p class="soft">The pickup deadline passed before anyone collected this food.</p>' : d.status === 'collected' ? '<p class="soft">Collected and counted in our impact. Thank you for sharing!</p>' : '';
       return `<article class="tracker-card"><div class="tc-top"><h3>${esc(d.foodTitle)}</h3><span class="status s-${esc(d.status)}">${esc(d.status)}</span></div>
-        <p class="soft">${esc(d.quantityMeals)} meals • ${esc(d.address)} • pickup by ${esc(when(d.useBefore))}</p>
+        <p class="soft">${esc(d.quantityMeals)} meals • ${esc(d.address)} • pickup by ${esc(when(d.useBefore))}</p>${d.targetOrgName ? `<p class="soft">Directed to <b>${esc(d.targetOrgName)}</b>. Reserved for them for the first 30 minutes.</p>` : ''}
         <ol class="timeline"><li class="done">Posted</li>${step(2, 'Claimed')}${step(3, 'Collected')}</ol>${who}${pin}${note}
         <div class="tc-actions">${d.status === 'posted' ? `<button class="mini-btn danger" data-withdraw="${esc(s.id)}">Withdraw this listing</button>` : ''}${d.status !== 'posted' && d.status !== 'claimed' ? `<button class="mini-btn" data-forget="${esc(s.id)}">Remove from list</button>` : ''}</div></article>`;
     }));
@@ -185,7 +250,7 @@
 
   /* ── keep everything live ── */
   let timer = null;
-  function refreshAll() { clearTimeout(timer); timer = setTimeout(() => { loadImpact(); loadListings(); renderTracker(); }, 200); }
+  function refreshAll() { clearTimeout(timer); timer = setTimeout(() => { loadImpact(); loadListings(); renderTracker(); loadOrganizations(); }, 200); }
   loadHelplines();
   refreshAll();
   setInterval(refreshAll, 30000);
