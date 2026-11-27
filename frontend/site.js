@@ -7,7 +7,7 @@
 
   async function api(path, opts = {}) {
     try {
-      const res = await fetch(path, { method: opts.method || 'GET', headers: { 'Content-Type': 'application/json' }, body: opts.body ? JSON.stringify(opts.body) : undefined });
+      const res = await fetch(path, { method: opts.method || 'GET', headers: { 'Content-Type': 'application/json', ...(opts.token ? { Authorization: `Bearer ${opts.token}` } : {}) }, body: opts.body ? JSON.stringify(opts.body) : undefined });
       let data = {};
       try { data = await res.json(); } catch (e) { /* empty body */ }
       return { ok: res.ok, status: res.status, data };
@@ -47,16 +47,28 @@
   }
 
   /* ── available food ── */
+  let seenIds = null;
+  function liveToast(text) {
+    const t = document.createElement('div');
+    t.className = 'live-toast'; t.textContent = text;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 7000);
+  }
   async function loadListings() {
     const r = await api('/api/listings?status=posted');
     const box = $('#listings');
     if (!r.ok) { box.innerHTML = '<p class="empty-note">Could not load listings right now. Please try again in a moment.</p>'; return; }
-    const items = r.data.listings.slice(0, 9);
+    const items = r.data.listings.slice(0, 12);
+    // anything that appeared since the last refresh was posted just now: highlight it and say so
+    const ids = items.map((l) => l.id);
+    const fresh = seenIds ? ids.filter((id) => !seenIds.has(id)) : [];
+    seenIds = new Set(ids);
+    if (fresh.length) { const n = items.find((x) => x.id === fresh[0]); liveToast(`New food just posted: ${n.foodTitle} (${n.quantityMeals} meals, ${n.donorName})`); }
     box.innerHTML = items.map((l) => {
       const phone = String(l.donorPhone || '').replace(/[^\d+]/g, '');
       const dir = `https://www.google.com/maps/dir/?api=1&destination=${l.location.lat},${l.location.lng}`;
-      return `<article class="listing-card">
-        <div class="listing-top"><div class="food-emoji">${EMOJI[l.foodType] || '🍲'}</div><span class="status">Available</span></div>
+      return `<article class="listing-card ${fresh.includes(l.id) ? 'fresh' : ''}">
+        <div class="listing-top"><div class="food-emoji">${EMOJI[l.foodType] || '🍲'}</div><span class="status">${fresh.includes(l.id) ? 'Just posted' : 'Available'}</span></div>
         <h3>${esc(l.foodTitle)}</h3><div class="food-meta">${esc(l.foodType)}${l.notes ? ' • ' + esc(l.notes) : ''}</div>
         <div class="listing-details"><span>▦ <b>${esc(l.quantityMeals)} meals</b></span><span>◷ Pickup by <b>${esc(when(l.useBefore))}</b></span><span>⌖ ${esc(l.location.address)}</span>${l.targetOrgName && Date.parse(l.directedUntil) > Date.now() ? `<span>★ Reserved for <b>${esc(l.targetOrgName)}</b></span>` : ''}</div>
         <div class="listing-bottom"><span class="donor">Shared by ${esc(l.donorName)}</span><span class="btn-row">${phone ? `<a class="contact-btn" href="tel:${esc(phone)}">Call ↗</a>` : ''}<a class="contact-btn alt" href="${dir}" target="_blank" rel="noopener">Directions</a></span></div>
@@ -159,6 +171,33 @@
     if (radio) { radio.checked = true; $('#mp-list').dispatchEvent(new Event('change')); } else $('#mp-note').textContent = `${o.name} is not in the top suggestions for this food type or amount. Check the type and quantity above.`;
   });
 
+
+  /* ── signed-in donors post under their own account, right from the website ── */
+  let account = null, useAccount = false;
+  const ALL_CHECKS = ['temp_control', 'hygienic_containers', 'no_spoilage', 'allergen_labeled'];
+  const authToken = () => { try { return localStorage.getItem('cf_token'); } catch (e) { return null; } };
+  async function loadAccount() {
+    const token = authToken();
+    if (!token) return;
+    const r = await api('/api/auth/me', { token });
+    if (!r.ok || !['donor', 'admin'].includes(r.data.user.role)) return;
+    account = r.data.user; useAccount = true;
+    form.elements.donorName.value = account.organization || account.name;
+    if (account.phone) form.elements.phone.value = account.phone;
+    renderAcctBar();
+  }
+  function renderAcctBar() {
+    const bar = $('#acct-bar');
+    bar.hidden = !account;
+    if (!account) return;
+    bar.innerHTML = useAccount
+      ? `<span><b>Posting as ${esc(account.name)}</b> (${esc(account.role)}). This food appears on the public list below and in your dashboard.</span><span class="acct-actions"><a href="/app/#/mylistings">My dashboard</a><button type="button" id="acct-guest">Post as a guest instead</button></span>`
+      : `<span>You are signed in as <b>${esc(account.name)}</b>.</span><span class="acct-actions"><button type="button" id="acct-use">Post with my account</button></span>`;
+    $('#acct-guest') && $('#acct-guest').addEventListener('click', () => { useAccount = false; renderAcctBar(); });
+    $('#acct-use') && $('#acct-use').addEventListener('click', () => { useAccount = true; renderAcctBar(); });
+  }
+  const seeItLive = (title) => { const card = [...document.querySelectorAll('#listings .listing-card')].find((c) => c.querySelector('h3') && c.querySelector('h3').textContent === title); (card || $('#food-listings')).scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+
   const showError = (msg) => { const e = $('#form-error'); e.textContent = msg; e.hidden = !msg; };
   form.addEventListener('input', () => showError(''));
   form.addEventListener('submit', async (ev) => {
@@ -173,20 +212,45 @@
     };
     const btn = form.querySelector('.submit-button');
     btn.disabled = true; btn.firstChild.textContent = 'Posting… ';
-    const r = await api('/api/public/donations', { method: 'POST', body });
+    let r;
+    if (account && useAccount) {
+      const kg = f.unit.value === 'kg' ? Number(f.quantity.value) : 0;
+      r = await api('/api/listings', { method: 'POST', token: authToken(), body: {
+        donorName: body.donorName, donorPhone: body.phone, foodTitle: body.foodTitle, foodType: body.foodType,
+        quantityMeals: kg ? Math.max(1, Math.round(kg / 0.35)) : body.quantityMeals, ...(kg ? { weightKg: kg } : {}),
+        useBefore: body.useBefore, notes: body.notes, ...(chosenOrg ? { targetOrgId: chosenOrg } : {}),
+        location: { address: body.address, lat: point ? point.lat : 12.9716, lng: point ? point.lng : 77.5946 },
+        safetyChecklistConfirmed: true, checklistItems: ALL_CHECKS,
+      } });
+    } else {
+      r = await api('/api/public/donations', { method: 'POST', body });
+    }
     btn.disabled = false; btn.firstChild.textContent = 'Post food donation ';
     if (!r.ok) return showError((r.data.details || [r.data.error || 'Something went wrong. Please try again.']).join('. '));
     const d = r.data;
+    const liveBtn = `<button class="button primary" type="button" id="see-live">See it live below ↓</button>`;
+    const again = () => { form.reset(); resetDeadline(); point = null; chosenOrg = ''; $('#match-panel').hidden = true; $('#geo-status').textContent = 'Optional. Without it we show your pickup as near the campus centre.'; form.hidden = false; $('#donation-success').hidden = true; if (account) loadAccount(); };
+    if (d.listing) {
+      $('#donation-success').innerHTML = `<div class="success-mark">✓</div><h3>Posted. Everyone can see it now.</h3>
+        <p>"${esc(d.listing.foodTitle)}" is live in <b>Available food nearby</b> for NGOs, volunteers and visitors, and it is in your dashboard.</p>
+        <div class="success-actions">${liveBtn}<a class="button ghost" href="/app/#/mylistings">Open my dashboard</a><button class="button ghost" type="button" id="donate-again">Share more food</button></div>`;
+      form.hidden = true; $('#donation-success').hidden = false;
+      $('#donate-again').addEventListener('click', again);
+      $('#see-live').addEventListener('click', () => seeItLive(d.listing.foodTitle));
+      refreshAll();
+      return;
+    }
     if (d.id) {
       store([{ id: d.id, token: d.token, title: body.foodTitle, at: Date.now() }, ...saved().filter((x) => x.id !== d.id)]);
       const link = `${location.origin}/?track=${d.id}.${d.token}`;
       $('#donation-success').innerHTML = `<div class="success-mark">✓</div><h3>Thank you! Your food is live.</h3>
-        <p>${esc(d.message)}</p>${d.approximateLocation ? '<p class="soft">Your pickup is shown near the campus centre. Add details in your tracking page or call a team if the spot is hard to find.</p>' : ''}
+        <p>${esc(d.message)} It is already visible in <b>Available food nearby</b>.</p>${d.approximateLocation ? '<p class="soft">Your pickup is shown near the campus centre. Add details in your tracking page or call a team if the spot is hard to find.</p>' : ''}
         <label class="link-box">Your private tracking link<input readonly value="${esc(link)}" id="track-link" /></label>
-        <div class="success-actions"><button class="button primary" type="button" id="copy-link">Copy link</button><a class="button ghost" href="#my-donations">Track my donation</a><button class="button ghost" type="button" id="donate-again">Share more food</button></div>`;
+        <div class="success-actions">${liveBtn}<button class="button primary" type="button" id="copy-link">Copy tracking link</button><a class="button ghost" href="#my-donations">Track my donation</a><button class="button ghost" type="button" id="donate-again">Share more food</button></div>`;
       form.hidden = true; $('#donation-success').hidden = false;
       $('#copy-link').addEventListener('click', async (e) => { try { await navigator.clipboard.writeText(link); e.target.textContent = 'Copied'; } catch (err) { $('#track-link').select(); } });
-      $('#donate-again').addEventListener('click', () => { form.reset(); resetDeadline(); point = null; chosenOrg = ''; $('#match-panel').hidden = true; $('#geo-status').textContent = 'Optional. Without it we show your pickup as near the campus centre.'; form.hidden = false; $('#donation-success').hidden = true; });
+      $('#donate-again').addEventListener('click', again);
+      $('#see-live').addEventListener('click', () => seeItLive(body.foodTitle));
     }
     refreshAll();
   }) ;
@@ -252,6 +316,7 @@
   let timer = null;
   function refreshAll() { clearTimeout(timer); timer = setTimeout(() => { loadImpact(); loadListings(); renderTracker(); loadOrganizations(); }, 200); }
   loadHelplines();
+  loadAccount();
   refreshAll();
   setInterval(refreshAll, 30000);
   try { new EventSource('/api/stream').addEventListener('update', refreshAll); } catch (e) { /* live updates are optional */ }

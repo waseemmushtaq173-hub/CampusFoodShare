@@ -50,6 +50,8 @@ Organisations that do not accept that food (for example a vegetarian-only ashram
 4. **Need food?** Find free food nearby with directions, or ask for help and call a helpline.
 5. **Contact the team:** messages go to the admin's inbox in the platform.
 
+**Signed-in donors can post from the website too.** If a donor is signed in to the platform, the website's donate form shows "Posting as <name>", posts under that account (so it also appears in their dashboard), and shows it in the public "Available food nearby" list instantly. "Post as a guest instead" keeps the no-account flow.
+
 ### Main API endpoints
 | Area | Endpoints |
 |---|---|
