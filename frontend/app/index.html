@@ -183,10 +183,13 @@
                 </div>
                 <div class="form-group" id="postMatchBox" hidden><label for="targetOrg">Send it to a specific ashram or NGO (optional)</label><select id="targetOrg" class="input"></select><p class="muted" id="postMatchNote" style="margin-top:6px"></p></div>
                 <div class="form-group"><label for="pickupAddress">Pickup location</label><input type="text" id="pickupAddress" class="input" required value="North Campus Mess Loading Bay" /></div>
-                <div class="form-row">
-                  <div class="form-group"><label for="pickupLat">Latitude</label><input type="number" step="any" id="pickupLat" class="input" value="12.9732" required /></div>
-                  <div class="form-group"><label for="pickupLng">Longitude</label><input type="number" step="any" id="pickupLng" class="input" value="77.5955" required /></div>
-                </div>
+                <div class="pickup-pin"><p id="pickupHint" class="muted"></p><div class="btn-row"><button type="button" class="btn btn-ghost btn-sm" id="pickupUseMe">Use my current location</button><button type="button" class="btn btn-ghost btn-sm" id="pickupCampus">Campus centre</button></div><p class="muted">Or tap the map on the right to drop the pin where the food is.</p></div>
+                <details class="pickup-adv"><summary>Exact coordinates (advanced)</summary>
+                  <div class="form-row">
+                    <div class="form-group"><label for="pickupLat">Latitude</label><input type="number" step="any" id="pickupLat" class="input" value="12.9732" required /></div>
+                    <div class="form-group"><label for="pickupLng">Longitude</label><input type="number" step="any" id="pickupLng" class="input" value="77.5955" required /></div>
+                  </div>
+                </details>
                 <div class="checklist"><h4>Food-safety checklist (required)</h4><div id="safetyChecklistContainer"></div></div>
                 <button type="submit" class="btn btn-primary btn-block btn-lg">Post surplus</button>
                 <div id="formFeedback" class="form-feedback"></div>

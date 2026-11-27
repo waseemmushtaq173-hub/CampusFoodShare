@@ -241,7 +241,7 @@ function renderGive() {
     return;
   }
   if (give.done) {
-    el.innerHTML = `<div class="panel req-done"><div class="now-ico" style="margin:0 auto;width:60px;height:60px">${ic('check')}</div><h3>${esc(t('doneGive'))}</h3><div class="action-row" style="justify-content:center;margin-top:14px"><button class="btn btn-primary" data-give="again">${esc(t('giveMore'))}</button><button class="btn btn-ghost" data-go="mylistings">${esc(navLabel('mylistings', 'My Listings'))}</button></div></div>`;
+    el.innerHTML = `<div class="panel req-done"><div class="now-ico" style="margin:0 auto;width:60px;height:60px">${ic('check')}</div><h3>${esc(t('doneGive'))}</h3><p class="muted">It is now live on the public website for people nearby.</p><div class="action-row" style="justify-content:center;margin-top:14px"><a class="btn btn-ghost" href="/#food-listings" target="_blank" rel="noopener">See it on the website</a><button class="btn btn-primary" data-give="again">${esc(t('giveMore'))}</button><button class="btn btn-ghost" data-go="mylistings">${esc(navLabel('mylistings', 'My Listings'))}</button></div></div>`;
     return;
   }
   const s = give.step;

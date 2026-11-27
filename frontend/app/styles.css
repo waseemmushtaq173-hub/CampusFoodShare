@@ -296,3 +296,5 @@ body.easy .cmd-btn, body.easy .live-badge, body.easy .page-heading p { display: 
 .msg-card { padding: 16px 18px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); } .msg-card.read { opacity: .75; } .msg-card .msg-top { display: flex; justify-content: space-between; gap: 10px; } .msg-card p { margin: 8px 0 12px; font-size: .92rem; white-space: pre-wrap; }
 
 .match-opt { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; margin-bottom: 8px; border: 1.5px solid var(--border); border-radius: 12px; cursor: pointer; background: var(--surface); } .match-opt:has(input:checked) { border-color: var(--primary); background: var(--primary-tint); } .match-opt input { margin-top: 4px; } .match-opt strong { display: block; font-size: .95rem; } .match-opt small { display: block; color: var(--muted); font-size: .8rem; margin-top: 2px; }
+
+.pickup-pin{margin:4px 0 12px}.pickup-pin .btn-row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.pickup-adv{margin:0 0 14px}.pickup-adv summary{cursor:pointer;font-size:12px;color:var(--faint)}

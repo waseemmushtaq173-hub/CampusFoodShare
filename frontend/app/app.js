@@ -311,7 +311,7 @@ function onPosition(pos) {
     firstFix = false; if (map) map.setView([ngoLocation.lat, ngoLocation.lng], 15);
     showToast(`Live GPS locked (±${Math.round(accuracy)} m). Distances now update as you move.`);
   }
-  if (!pickupDirty) { $('pickupLat').value = ngoLocation.lat; $('pickupLng').value = ngoLocation.lng; }
+  if (!pickupDirty) { $('pickupLat').value = ngoLocation.lat; $('pickupLng').value = ngoLocation.lng; updatePickupHint(); }
   const moved = lastFetchPos ? distKm(lastFetchPos, ngoLocation) * 1000 : Infinity;
   if (moved > 25 || Date.now() - lastFetchAt > 20000) {
     lastFetchPos = { ...ngoLocation }; lastFetchAt = Date.now();
@@ -330,7 +330,7 @@ function updateNgoCoordsUI(accuracy) {
 }
 
 function applyPickupDefaults() {
-  if (!pickupDirty) { $('pickupLat').value = ngoLocation.lat; $('pickupLng').value = ngoLocation.lng; }
+  if (!pickupDirty) { $('pickupLat').value = ngoLocation.lat; $('pickupLng').value = ngoLocation.lng; updatePickupHint(); }
 }
 
 /* ── Share & watch live volunteer locations ── */
@@ -526,6 +526,16 @@ async function loadModeration() {
   const r = await api(`/api/listings?includeExpired=true&${locQuery()}`);
   if (!r.ok) return;
   $('moderationBody').innerHTML = r.data.listings.map((l) => `<tr><td><strong>${esc(l.foodTitle)}</strong></td><td>${esc(l.donorName)}</td><td><span class="badge badge-${esc(l.status)}">${esc(l.status)}</span></td><td>${esc(l.quantityMeals)}</td><td>${new Date(l.useBefore).toLocaleString()}</td><td><button class="btn btn-danger btn-sm" data-act="delete" data-id="${esc(l.id)}">Remove</button></td></tr>`).join('') || '<tr><td colspan="6">No listings.</td></tr>';
+}
+const CAMPUS = { lat: 12.9716, lng: 77.5946 };
+function kmBetween(a, b) { const R = 6371, rad = (x) => (x * Math.PI) / 180; const dLat = rad(b.lat - a.lat), dLng = rad(b.lng - a.lng); const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); }
+function updatePickupHint() {
+  const el = $('pickupHint'); if (!el) return;
+  const p = { lat: parseFloat($('pickupLat').value), lng: parseFloat($('pickupLng').value) };
+  if (!Number.isFinite(p.lat) || !Number.isFinite(p.lng)) { el.textContent = 'Pin not set yet.'; el.style.color = 'var(--red)'; return; }
+  const d = kmBetween(CAMPUS, p);
+  el.textContent = d > 30 ? `Check this pin: it is ${d.toFixed(0)} km from the campus area, so nearby NGOs will not see it as close.` : `Pin set: ${d < 1 ? Math.round(d * 1000) + ' m' : d.toFixed(1) + ' km'} from the campus centre. Visitors will see this distance on the website.`;
+  el.style.color = d > 30 ? 'var(--red)' : '';
 }
 async function loadUsers() {
   const r = await api('/api/admin/users');
@@ -774,11 +784,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   initMap();
   if (map) map.on('click', (e) => {
     pickupDirty = true;
-    $('pickupLat').value = Number(e.latlng.lat.toFixed(5)); $('pickupLng').value = Number(e.latlng.lng.toFixed(5));
+    $('pickupLat').value = Number(e.latlng.lat.toFixed(5)); $('pickupLng').value = Number(e.latlng.lng.toFixed(5)); updatePickupHint();
     showToast(`Pickup pin set to ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`);
   });
   updateNgoCoordsUI();
-  ['pickupLat', 'pickupLng'].forEach((id) => $(id).addEventListener('input', () => { pickupDirty = true; }));
+  ['pickupLat', 'pickupLng'].forEach((id) => $(id).addEventListener('input', () => { pickupDirty = true; updatePickupHint(); }));
+  $('pickupUseMe').addEventListener('click', () => { pickupDirty = false; $('pickupLat').value = ngoLocation.lat; $('pickupLng').value = ngoLocation.lng; updatePickupHint(); showToast('Pin moved to your current location'); });
+  $('pickupCampus').addEventListener('click', () => { pickupDirty = true; $('pickupLat').value = CAMPUS.lat; $('pickupLng').value = CAMPUS.lng; updatePickupHint(); });
+  updatePickupHint();
 
   // role cards on the guest home page
   const roleCards = [
@@ -898,6 +911,8 @@ async function handleDonorSubmit(e) {
   const fb = $('formFeedback');
   const checked = Array.from(document.querySelectorAll('input[name="safetyCheck"]:checked')).map((c) => c.value);
   const total = document.querySelectorAll('input[name="safetyCheck"]').length;
+  const far = kmBetween(CAMPUS, { lat: parseFloat($('pickupLat').value), lng: parseFloat($('pickupLng').value) });
+  if (far > 30 && !(await confirmDialog({ title: 'This pin looks far away', message: `The pickup pin is ${far.toFixed(0)} km from the campus area. People nearby will not see this food as close. Post it anyway?`, confirmText: 'Post anyway' }))) return;
   lastOwnAction = Date.now();
   const r = await api('/api/listings', { method: 'POST', body: {
     donorName: $('donorName').value, donorPhone: $('donorPhone').value, foodType: $('foodType').value, foodTitle: $('foodTitle').value,
@@ -908,7 +923,7 @@ async function handleDonorSubmit(e) {
     location: { address: $('pickupAddress').value, lat: parseFloat($('pickupLat').value), lng: parseFloat($('pickupLng').value) },
   } });
   if (!r.ok) { fb.style.color = 'var(--red)'; fb.textContent = (r.data.details || [r.data.error || 'Could not post']).join(', '); return; }
-  fb.style.color = 'var(--green)'; fb.textContent = 'Surplus food broadcast successfully!';
+  fb.style.color = 'var(--green)'; fb.innerHTML = 'Posted. It is now live on the <a href="/#food-listings" target="_blank" rel="noopener">public website</a> for anyone nearby.';
   showToast('Surplus alert published to nearby NGOs');
   $('foodTitle').value = ''; document.querySelectorAll('input[name="safetyCheck"]').forEach((c) => { c.checked = false; });
   setTimeout(() => { fb.textContent = ''; go('mylistings'); }, 900);
