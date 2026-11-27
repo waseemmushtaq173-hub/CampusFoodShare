@@ -1,4 +1,4 @@
-# CampusFoodShare: A Web Platform to Reduce Food Waste by Connecting Surplus Food Donors with NGOs
+﻿# CampusFoodShare: A Web Platform to Reduce Food Waste by Connecting Surplus Food Donors with NGOs
 
 **Department of Computer Science and Engineering**  
 **Domain:** Web Development (Full-Stack) | Social Impact (SDG 2, 11 and 12)  
@@ -21,17 +21,17 @@ The project has three layers. The **Backend console** (`/system.html`) shows all
 
 ```
 CampusFoodShare/
-├── frontend/
-│   ├── index.html, site.css, site.js     Public website: donate with NO account, "where can I donate this?", ashram directory, tracker, FAQ, contact
-│   ├── system.html                       Backend console: architecture, live database counts, matching tester, API list, live request log
-│   └── app/                              Platform web app: donor / NGO / volunteer / admin dashboards, live map, GPS, claim, PIN, requirements
-├── backend/
-│   ├── server.js                         REST API (about 47 endpoints) and static hosting of the frontend
-│   ├── src/utils/matcher.js              Matching engine
-│   ├── src/models, src/storage, src/utils, src/seed
-│   ├── data/db.json                      Database file
-│   └── test/api.test.js                  31 automated API tests (npm test)
-└── package.json, render.yaml, .env.example
+â”œâ”€â”€ frontend/
+â”‚   â”œâ”€â”€ index.html, site.css, site.js     Public website: donate with NO account, "where can I donate this?", ashram directory, tracker, FAQ, contact
+â”‚   â”œâ”€â”€ system.html                       Backend console: architecture, live database counts, matching tester, API list, live request log
+â”‚   â””â”€â”€ app/                              Platform web app: donor / NGO / volunteer / admin dashboards, live map, GPS, claim, PIN, requirements
+â”œâ”€â”€ backend/
+â”‚   â”œâ”€â”€ server.js                         REST API (about 47 endpoints) and static hosting of the frontend
+â”‚   â”œâ”€â”€ src/utils/matcher.js              Matching engine
+â”‚   â”œâ”€â”€ src/models, src/storage, src/utils, src/seed
+â”‚   â”œâ”€â”€ data/db.json                      Database file
+â”‚   â””â”€â”€ test/api.test.js                  31 automated API tests (npm test)
+â””â”€â”€ package.json, render.yaml, .env.example
 ```
 
 ### "I have 50 kg of food. Where can I donate it?"
@@ -49,6 +49,8 @@ Organisations that do not accept that food (for example a vegetarian-only ashram
 3. **Track the donation:** see when an NGO claims it, who is coming, and the 4-digit handover PIN to give the volunteer. Withdraw it any time before it is claimed.
 4. **Need food?** Find free food nearby with directions, or ask for help and call a helpline.
 5. **Contact the team:** messages go to the admin's inbox in the platform.
+
+**Admin approval.** New donor, NGO and volunteer sign-ups start as *Waiting for approval*: they can look around but cannot post, claim or deliver. The admin sees them first in Users & Roles and clicks Approve or Reject. Demo accounts are already approved.
 
 **Signed-in donors can post from the website too.** If a donor is signed in to the platform, the website's donate form shows "Posting as <name>", posts under that account (so it also appears in their dashboard), and shows it in the public "Available food nearby" list instantly. "Post as a guest instead" keeps the no-account flow.
 
@@ -73,9 +75,9 @@ Colleges, hostels, canteens, and campus events often throw away good cooked food
 ## 2. Key Features Mapped to Synopsis Objectives
 1. **Donor Surplus Posting (Objective 1):** Donors post surplus food with dietary type (`Veg`, `Non-Veg`, `Vegan`, `Bakery`), meal quantity, GPS pickup coordinates, and a "use before" expiry window.
 2. **Nearest & Soonest-Expiring Ranking (Objective 2):** Combines the **Haversine Formula** (`src/utils/haversine.js`) and a **Min-Heap Priority Queue** (`src/utils/priorityQueue.js`) to rank listings for NGOs and volunteers.
-3. **NGO Claim & Pickup Lifecycle Tracking (Objective 3):** Full state machine (`posted` → `claimed` → `collected` → `expired`) with volunteer attribution and timestamps.
+3. **NGO Claim & Pickup Lifecycle Tracking (Objective 3):** Full state machine (`posted` â†’ `claimed` â†’ `collected` â†’ `expired`) with volunteer attribution and timestamps.
 4. **Automatic Expiry Cleanup & Food-Safety Checklist (Objective 4):** Expired listings are automatically swept on every query, and donors must verify a 4-point food-safety checklist before publishing.
-5. **SDG 2, 11 & 12 Impact Dashboard (Objective 5):** Real-time dashboard tracking total meals saved, kilograms of food rescued, and CO₂e emissions prevented.
+5. **SDG 2, 11 & 12 Impact Dashboard (Objective 5):** Real-time dashboard tracking total meals saved, kilograms of food rescued, and COâ‚‚e emissions prevented.
 
 ### Extensions beyond the five objectives (working today)
 - **Role-based accounts and dashboards** (donor, NGO, volunteer, admin) with server-enforced permissions, scrypt-hashed passwords, token sessions and sign-in lockout.
@@ -122,5 +124,5 @@ Open **`http://localhost:3000`** for the public website and **`http://localhost:
 
 ## 4. Deploying on Render
 1. Push this repository to GitHub.
-2. In Render, click **New + → Blueprint** (or **Web Service**).
+2. In Render, click **New + â†’ Blueprint** (or **Web Service**).
 3. Connect the repository; Render automatically reads `render.yaml` (`Build Command: npm install`, `Start Command: npm start`).

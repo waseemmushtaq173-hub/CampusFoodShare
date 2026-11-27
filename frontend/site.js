@@ -54,27 +54,55 @@
     document.body.appendChild(t);
     setTimeout(() => t.remove(), 7000);
   }
+  let viewer = null, sortBy = 'new', showAll = false;
+  const km = (d) => (d < 1 ? `${Math.round(d * 1000)} m` : `${d.toFixed(1)} km`);
   async function loadListings() {
-    const r = await api('/api/listings?status=posted');
+    const q = viewer ? `&lat=${viewer.lat}&lng=${viewer.lng}` : '';
+    const r = await api('/api/listings?status=posted' + q);
     const box = $('#listings');
     if (!r.ok) { box.innerHTML = '<p class="empty-note">Could not load listings right now. Please try again in a moment.</p>'; return; }
-    const items = r.data.listings.slice(0, 12);
+    const all = [...r.data.listings];
+    all.sort(sortBy === 'near' && viewer ? (a, b) => a.distanceKm - b.distanceKm : (a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     // anything that appeared since the last refresh was posted just now: highlight it and say so
-    const ids = items.map((l) => l.id);
+    const ids = all.map((l) => l.id);
     const fresh = seenIds ? ids.filter((id) => !seenIds.has(id)) : [];
     seenIds = new Set(ids);
-    if (fresh.length) { const n = items.find((x) => x.id === fresh[0]); liveToast(`New food just posted: ${n.foodTitle} (${n.quantityMeals} meals, ${n.donorName})`); }
+    if (fresh.length) { const n = all.find((x) => x.id === fresh[0]); liveToast(`New food just posted: ${n.foodTitle} (${n.quantityMeals} meals, ${n.donorName})`); }
+    const items = showAll ? all : all.slice(0, 12);
+    const from = viewer ? 'from you' : 'from campus centre';
+    const more = $('#show-all');
+    more.hidden = all.length <= 12;
+    more.textContent = showAll ? 'Show fewer' : `Show all ${all.length} listings`;
     box.innerHTML = items.map((l) => {
       const phone = String(l.donorPhone || '').replace(/[^\d+]/g, '');
       const dir = `https://www.google.com/maps/dir/?api=1&destination=${l.location.lat},${l.location.lng}`;
       return `<article class="listing-card ${fresh.includes(l.id) ? 'fresh' : ''}">
         <div class="listing-top"><div class="food-emoji">${EMOJI[l.foodType] || '🍲'}</div><span class="status">${fresh.includes(l.id) ? 'Just posted' : 'Available'}</span></div>
         <h3>${esc(l.foodTitle)}</h3><div class="food-meta">${esc(l.foodType)}${l.notes ? ' • ' + esc(l.notes) : ''}</div>
-        <div class="listing-details"><span>▦ <b>${esc(l.quantityMeals)} meals</b></span><span>◷ Pickup by <b>${esc(when(l.useBefore))}</b></span><span>⌖ ${esc(l.location.address)}</span>${l.targetOrgName && Date.parse(l.directedUntil) > Date.now() ? `<span>★ Reserved for <b>${esc(l.targetOrgName)}</b></span>` : ''}</div>
+        <div class="listing-details"><span>▦ <b>${esc(l.quantityMeals)} meals</b>${l.weightKg ? ` (${esc(l.weightKg)} kg)` : ''}</span><span>◷ Pickup by <b>${esc(when(l.useBefore))}</b></span><span>⌖ ${esc(l.location.address)}</span>${typeof l.distanceKm === 'number' ? `<span>➜ <b>${km(l.distanceKm)}</b> ${from}</span>` : ''}${l.targetOrgName && Date.parse(l.directedUntil) > Date.now() ? `<span>★ Reserved for <b>${esc(l.targetOrgName)}</b></span>` : ''}</div>
         <div class="listing-bottom"><span class="donor">Shared by ${esc(l.donorName)}</span><span class="btn-row">${phone ? `<a class="contact-btn" href="tel:${esc(phone)}">Call ↗</a>` : ''}<a class="contact-btn alt" href="${dir}" target="_blank" rel="noopener">Directions</a></span></div>
       </article>`;
     }).join('') || '<p class="empty-note">No food is listed right now. <a href="#donate">Be the first to share</a>.</p>';
   }
+  function setSort(mode) {
+    sortBy = mode;
+    $('#sort-new').classList.toggle('active', mode === 'new');
+    $('#sort-near').classList.toggle('active', mode === 'near');
+    loadListings();
+  }
+  $('#sort-new').addEventListener('click', () => setSort('new'));
+  $('#sort-near').addEventListener('click', () => {
+    if (viewer) return setSort('near');
+    const note = $('#listing-loc');
+    if (!navigator.geolocation) { note.textContent = 'Location is not available in this browser.'; return; }
+    note.textContent = 'Finding your location…';
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { viewer = { lat: Number(pos.coords.latitude.toFixed(5)), lng: Number(pos.coords.longitude.toFixed(5)) }; note.textContent = 'Distances are from your location.'; setSort('near'); },
+      () => { note.textContent = 'Allow location access to see how far each place is. Distances now are from the campus centre.'; },
+      { enableHighAccuracy: true, timeout: 12000 }
+    );
+  });
+  $('#show-all').addEventListener('click', () => { showAll = !showAll; loadListings(); });
 
   async function loadHelplines() {
     const r = await api('/api/directory');

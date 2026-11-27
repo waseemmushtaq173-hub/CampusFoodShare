@@ -506,7 +506,7 @@ async function loadDashboard() {
   } else if (d.role === 'admin') {
     const roles = Object.entries(s.roles).map(([k, v]) => `<div class="stat-row"><span>${ROLE_LABEL[k] || k}</span><b>${v}</b></div>`).join('');
     const bar = (label, v, tone) => `<div class="stat-row"><span>${label}</span><b>${v}</b></div><div class="meter"><i style="width:${s.listings ? (v / s.listings) * 100 : 0}%;background:${tone}"></i></div>`;
-    body.innerHTML = welcome('Platform health at a glance.', `<button class="btn btn-primary" data-go="users">${ic('users')} Manage users</button><button class="btn btn-ghost" data-go="moderation">Moderate listings</button><button class="btn btn-ghost" data-act="startfresh">Start empty</button><button class="btn btn-danger" data-act="reset">Reset demo data</button>`) +
+    body.innerHTML = welcome('Platform health at a glance.', `<button class="btn btn-primary" data-go="users">${ic('users')} ${s.pendingApprovals ? `Approve ${s.pendingApprovals} new sign-up${s.pendingApprovals > 1 ? 's' : ''}` : 'Manage users'}</button><button class="btn btn-ghost" data-go="moderation">Moderate listings</button><button class="btn btn-ghost" data-act="startfresh">Start empty</button><button class="btn btn-danger" data-act="reset">Reset demo data</button>`) +
       `<div class="kpi-grid">${kpi('Users', s.users, `${s.suspended} suspended`, 'users', 'var(--blue)')}${kpi('Listings', s.listings, `${s.posted} open now`, 'list', 'var(--accent)')}${kpi('Meals saved', s.mealsSaved, 'platform total', 'heart', 'var(--green)')}${kpi('Rescue rate', pct(s.rescueRate), 'rescued vs expired', 'chart', 'var(--primary)')}${kpi('Expiring < 30 min', s.expiringSoon, s.expiringSoon ? 'needs attention' : 'all clear', 'alert', 'var(--red)', s.expiringSoon > 0)}</div>
       <div class="dash-grid"><div class="glass panel"><h2>Listing pipeline</h2><div style="margin-top:.8rem">${bar('Posted', s.posted, 'var(--green)')}${bar('Claimed', s.claimed, 'var(--accent)')}${bar('Collected', s.collected, 'var(--blue)')}${bar('Expired', s.expired, 'var(--muted)')}</div><h3 style="margin-top:1rem">Users by role</h3>${roles}</div>
       <div class="glass panel"><h2>Audit log</h2><div class="mini-list" style="margin-top:.8rem">${d.audit.map((n) => mini(n.title, esc(n.message), `<small>${timeAgo(n.createdAt)}</small>`)).join('')}</div></div></div>`;
@@ -530,10 +530,15 @@ async function loadModeration() {
 async function loadUsers() {
   const r = await api('/api/admin/users');
   if (!r.ok) return;
-  $('userTableBody').innerHTML = r.data.users.map((u) => {
+  const order = (u) => (u.approval === 'pending' ? 0 : 1);
+  $('userTableBody').innerHTML = [...r.data.users].sort((x, y) => order(x) - order(y)).map((u) => {
     const self = currentUser && u.id === currentUser.id;
     const opts = ['donor', 'ngo', 'volunteer', 'admin'].map((x) => `<option value="${x}" ${u.role === x ? 'selected' : ''}>${ROLE_LABEL[x]}</option>`).join('');
-    return `<tr><td>${esc(u.name)}</td><td>${esc(u.email)}</td><td>${esc(u.organization || '')}</td><td><select class="input" data-role-user="${esc(u.id)}" ${self ? 'disabled' : ''}>${opts}</select></td><td><span class="badge ${u.suspended ? 'badge-expired' : 'badge-posted'}">${u.suspended ? 'Suspended' : 'Active'}</span></td><td>${self ? '<span class="hint">You</span>' : `<button class="btn ${u.suspended ? 'btn-ok' : 'btn-danger'} btn-sm" data-act="suspend" data-id="${esc(u.id)}" data-val="${u.suspended ? 0 : 1}">${u.suspended ? 'Reactivate' : 'Suspend'}</button>`}</td></tr>`;
+    const ap = u.suspended ? ['expired', 'Suspended'] : u.approval === 'pending' ? ['claimed', 'Waiting for approval'] : u.approval === 'rejected' ? ['expired', 'Rejected'] : ['posted', 'Active'];
+    const approve = u.approval === 'pending' || u.approval === 'rejected' ? `<button class="btn btn-ok btn-sm" data-act="approve" data-id="${esc(u.id)}" data-val="approved">Approve</button>` : '';
+    const reject = u.approval === 'pending' ? `<button class="btn btn-danger btn-sm" data-act="approve" data-id="${esc(u.id)}" data-val="rejected">Reject</button>` : '';
+    const susp = u.approval === 'pending' ? '' : `<button class="btn ${u.suspended ? 'btn-ok' : 'btn-danger'} btn-sm" data-act="suspend" data-id="${esc(u.id)}" data-val="${u.suspended ? 0 : 1}">${u.suspended ? 'Reactivate' : 'Suspend'}</button>`;
+    return `<tr><td>${esc(u.name)}</td><td>${esc(u.email)}</td><td>${esc(u.organization || '')}</td><td><select class="input" data-role-user="${esc(u.id)}" ${self ? 'disabled' : ''}>${opts}</select></td><td><span class="badge badge-${ap[0]}">${ap[1]}</span></td><td>${self ? '<span class="hint">You</span>' : `<span class="btn-row">${approve}${reject}${susp}</span>`}</td></tr>`;
   }).join('');
 }
 
@@ -687,6 +692,7 @@ document.addEventListener('click', (e) => {
     release: () => requireAuth('release a pickup') && act(`/api/listings/${encodeURIComponent(id)}/release`, {}, 'Claim released. The listing is available again.'),
     signout: signOut, reset: resetDemo,
     notify: () => { try { localStorage.setItem('cf_notify_' + id, '1'); } catch (e) { /* ignore */ } showToast("Thanks. We'll let you know when it is ready."); renderSoon(id); },
+    approve: async () => { lastOwnAction = Date.now(); const r = await api(`/api/admin/users/${encodeURIComponent(id)}`, { method: 'PATCH', body: { approval: a.dataset.val } }); showToast(r.ok ? (a.dataset.val === 'approved' ? 'Approved. They can now post and claim.' : 'Sign-up rejected') : (r.data.error || 'Failed')); loadUsers(); },
     suspend: async () => { if (a.dataset.val === '1' && !(await confirmDialog({ title: 'Suspend this user?', message: 'They will be signed out and unable to sign in until you reactivate them.', confirmText: 'Suspend', danger: true }))) return; lastOwnAction = Date.now(); const r = await api(`/api/admin/users/${encodeURIComponent(id)}`, { method: 'PATCH', body: { suspended: a.dataset.val === '1' } }); showToast(r.ok ? 'User updated' : (r.data.error || 'Failed')); loadUsers(); },
   }[a.dataset.act] || (() => {}))();
 });

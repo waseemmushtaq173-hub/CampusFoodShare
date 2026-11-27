@@ -84,7 +84,7 @@ function attachUser(req, res, next) {
     const h = sha(token);
     const sess = (db.sessions || []).find((x) => x.h === h && x.exp > Date.now());
     const user = sess && (db.users || []).find((u) => u.id === sess.userId);
-    if (user && !user.suspended) {
+    if (user && !user.suspended && user.approval !== 'rejected') {
       req.user = user;
       req.token = token;
     }
@@ -92,6 +92,12 @@ function attachUser(req, res, next) {
   next();
 }
 app.use(attachUser);
+app.use((req, res, next) => {
+  if (req.user && req.user.approval === 'pending' && !['GET', 'HEAD', 'OPTIONS'].includes(req.method) && !req.path.startsWith('/api/auth/')) {
+    return res.status(403).json({ error: 'Your account is waiting for admin approval. You can look around now; posting and claiming unlock once an admin approves you.', code: 'PENDING_APPROVAL' });
+  }
+  next();
+});
 
 // ---------- request log (feeds the backend console; method, route pattern, status and time only) ----------
 const bootTime = Date.now();
@@ -198,9 +204,11 @@ app.post('/api/auth/signup', (req, res) => {
     organization: organization ? String(organization).trim() : String(name).trim(),
     phone: phone ? String(phone).trim() : '',
     verified: true,
+    approval: 'pending',
     createdAt: new Date().toISOString(),
   };
   db.users.push(user);
+  addNotification(db, { type: 'NEW_SIGNUP', title: 'New account to approve', message: `${user.name} signed up as ${user.role.toUpperCase()} (${user.email}). Open Users & Roles to approve or reject.`, channel: 'Audit Log' });
   writeDb(db);
   const token = createSession(user.id);
   res.status(201).json({ message: 'Account created', user: publicUser(user), token });
@@ -224,6 +232,7 @@ app.post('/api/auth/signin', (req, res) => {
     return res.status(401).json({ error: 'Invalid email or password' });
   }
   if (user.suspended) return res.status(403).json({ error: 'This account has been suspended by an admin' });
+  if (user.approval === 'rejected') return res.status(403).json({ error: 'This sign-up was not approved by an admin. Please contact the team.' });
   if (role && role !== user.role) {
     return res.status(403).json({ error: `This account is registered as ${user.role.toUpperCase()}. Select "${user.role}" to sign in.` });
   }
@@ -899,7 +908,13 @@ app.patch('/api/admin/users/:id', requireRole(USER_ROLES.ADMIN), (req, res) => {
   const target = db.users.find((u) => u.id === req.params.id);
   if (!target) return res.status(404).json({ error: 'User not found' });
   if (target.id === req.user.id) return res.status(400).json({ error: 'You cannot change your own account' });
-  const { role, suspended } = req.body || {};
+  const { role, suspended, approval } = req.body || {};
+  if (approval !== undefined) {
+    if (!['approved', 'rejected', 'pending'].includes(approval)) return res.status(400).json({ error: 'Invalid approval value' });
+    target.approval = approval;
+    if (approval === 'rejected') db.sessions = (db.sessions || []).filter((x) => x.userId !== target.id);
+    addNotification(db, { type: 'ADMIN_ACTION', title: approval === 'approved' ? 'Account approved' : 'Account ' + approval, message: `${req.user.name} ${approval} ${target.name} (${target.role}).`, channel: 'Audit Log' });
+  }
   if (role !== undefined) {
     if (!Object.values(USER_ROLES).includes(role)) return res.status(400).json({ error: 'Invalid role' });
     target.role = role;
@@ -962,7 +977,7 @@ app.get('/api/dashboard', (req, res) => {
   return res.json({
     role: 'admin',
     stats: {
-      users: db.users.length, suspended: db.users.filter((u) => u.suspended).length, roles,
+      users: db.users.length, suspended: db.users.filter((u) => u.suspended).length, pendingApprovals: db.users.filter((u) => u.approval === 'pending').length, roles,
       listings: L.length, posted: st(L, 'posted').length, claimed: st(L, 'claimed').length,
       collected: st(L, 'collected').length, expired: st(L, 'expired').length,
       expiringSoon: st(L, 'posted').filter((l) => new Date(l.useBefore) - now < 30 * 60000).length,

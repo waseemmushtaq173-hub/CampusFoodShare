@@ -549,3 +549,24 @@ test('system status and request log describe the running backend', async () => {
   assert.ok(logs.some((l) => l.route === '/api/match'));
   assert.ok(logs.every((l) => !String(l.route).includes('?') && !String(l.route).includes('token')), 'no query strings or secrets in the log');
 });
+
+test('new sign-ups wait for admin approval before they can post', async () => {
+  const su = await call('POST', '/api/auth/signup', { name: 'Fresh Mess', email: 'fresh@test.io', password: 'secret1', role: 'donor' });
+  assert.equal(su.status, 201);
+  assert.equal(su.data.user.approval, 'pending');
+  const blocked = await call('POST', '/api/listings', listing(), su.data.token);
+  assert.equal(blocked.status, 403);
+  assert.equal(blocked.data.code, 'PENDING_APPROVAL');
+  assert.equal((await call('GET', '/api/listings', undefined, su.data.token)).status, 200, 'pending users can still look around');
+  assert.equal((await call('PATCH', `/api/admin/users/${su.data.user.id}`, { approval: 'approved' }, tok.donor)).status, 403, 'only an admin can approve');
+  assert.equal((await call('PATCH', `/api/admin/users/${su.data.user.id}`, { approval: 'approved' }, tok.admin)).status, 200);
+  assert.equal((await call('POST', '/api/listings', listing(), su.data.token)).status, 201, 'approved users can post');
+  const su2 = await call('POST', '/api/auth/signup', { name: 'Nope Mess', email: 'nope@test.io', password: 'secret1', role: 'ngo' });
+  await call('PATCH', `/api/admin/users/${su2.data.user.id}`, { approval: 'rejected' }, tok.admin);
+  assert.equal((await call('POST', '/api/auth/signin', { email: 'nope@test.io', password: 'secret1' })).status, 403, 'rejected sign-ups cannot sign in');
+});
+
+test('listings carry creation time and distance so the website can sort them', async () => {
+  const r = await call('GET', '/api/listings?status=posted&lat=13.0&lng=77.6');
+  assert.ok(r.data.listings.every((l) => l.createdAt && typeof l.distanceKm === 'number'));
+});

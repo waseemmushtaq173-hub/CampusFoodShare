@@ -331,6 +331,13 @@ window.addEventListener('hashchange', () => {
 
 /* ── 15. Sample data is labelled as sample data; admins can start with nothing ── */
 function renderDemoBanner() {
+  const oldPending = document.getElementById('pendingBanner'); if (oldPending) oldPending.remove();
+  if (currentUser && currentUser.approval === 'pending') {
+    const p = document.createElement('div');
+    p.id = 'pendingBanner'; p.className = 'demo-banner';
+    p.innerHTML = '<span><strong>Waiting for admin approval.</strong> You can look around now. Posting food, claiming and delivering unlock as soon as an admin approves your account.</span>';
+    document.getElementById('views').prepend(p);
+  }
   api('/api/meta').then((r) => {
     const old = document.getElementById('demoBanner'); if (old) old.remove();
     if (!r.ok || !r.data.demo) return;
